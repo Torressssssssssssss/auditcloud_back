@@ -1,12 +1,10 @@
 [
   {
     "id_estado": 1,
-    "clave": "PENDIENTE",
-    "nombre": "Pendiente de pago"
+    "nombre": "PENDIENTE"
   },
   {
     "id_estado": 2,
-    "clave": "PAGADA",
-    "nombre": "Pago realizado"
+    "nombre": "PAGADA"
   }
 ]

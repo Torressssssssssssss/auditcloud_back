@@ -1,32 +1,14 @@
 [
   {
     "id_empresa": 1,
+    "nombre": "Auditora Demo",
     "id_tipo_empresa": 1,
-    "nombre": "Auditora Demo S.A. de C.V.",
-    "rfc": "AUD010203XX1",
-    "giro": "Servicios de auditoría ambiental",
-    "direccion": "Calle Falsa 123",
-    "ciudad": "Aguascalientes",
-    "estado": "Aguascalientes",
-    "pais": "México",
-    "contacto_nombre": "Supervisor Demo",
-    "contacto_correo": "supervisor@auditora-demo.com",
-    "contacto_telefono": "4490000000",
-    "activo": true
+    "activa": true
   },
   {
     "id_empresa": 2,
+    "nombre": "Empresa Demo",
     "id_tipo_empresa": 2,
-    "nombre": "TOWERS",
-    "rfc": null,
-    "giro": null,
-    "direccion": null,
-    "ciudad": "Aguascalientes",
-    "estado": "Aguascalientes",
-    "pais": "México",
-    "contacto_nombre": "Angel Torres",
-    "contacto_correo": "angel@towers.com",
-    "contacto_telefono": null,
-    "activo": true
+    "activa": true
   }
 ]

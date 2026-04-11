@@ -1,16 +1,1 @@
-[
-  {
-    "id_solicitud": 1,
-    "id_empresa": 1,
-    "id_empresa_auditora": 1,
-    "id_empresa_cliente": 2,
-    "id_cliente": 2,
-    "monto": 1500,
-    "concepto": "paguaito\n",
-    "id_estado": 2,
-    "creado_en": "2025-12-08T00:37:42.055Z",
-    "creado_por_supervisor": 1,
-    "pagada_en": "2025-12-08T00:39:06.545Z",
-    "paypal_order_id": "2FP2466342019221K"
-  }
-]
+[]

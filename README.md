@@ -1,83 +1,93 @@
-# AuditCloud Backend (JSON)
+API backend de AuditCloud construida con Express y persistencia local en JSON.
 
-Servidor Express con almacenamiento en JSON para prototipado rápido.
 
-## Ejecutar
+## Stack
 
-```powershell
-cd "c:\Users\angel\Desktop\Redes III\auditcloud-back"
-$env:JWT_SECRET = "cambia_este_secreto_en_produccion"
-$env:ENCRYPTION_KEY = "cambia_esta_clave_de_cifrado_en_produccion"  # Opcional, se genera una por defecto
+```
+Node.js + Express + JWT + JSON files
+PayPal + Firebase (opcional) + SMTP
+Puerto: 3000
+```
+
+
+## Inicio Rapido
+
+```bash
 npm install
 npm run dev
 ```
 
-## Cifrado
+Salud:
 
-Todos los archivos en `data/` (archivos `.json` y `uploads/`) están cifrados con **AES-256-GCM**.
-
-- Los archivos JSON se cifran/descifran automáticamente al leer/escribir
-- Los archivos subidos se cifran automáticamente al guardarse
-- Los archivos se descifran automáticamente al servirse o descargarse
-- Los archivos existentes sin cifrar se migran automáticamente al primer acceso
-
-**Importante**: En producción, configura la variable de entorno `ENCRYPTION_KEY` con una clave segura de 32 bytes (o más). Si no se configura, se usa una clave por defecto (no segura para producción).
-
-### Verificar que el cifrado funciona
-
-```powershell
-# Verificación rápida
-node verificar-cifrado.js
-
-# Pruebas completas
-node test-encryption.js
+```bash
+curl http://localhost:3000/
 ```
 
-Los scripts verifican:
-- ✅ Que los archivos JSON están cifrados
-- ✅ Que los archivos en uploads están cifrados
-- ✅ Que el cifrado/descifrado funciona correctamente
-- ✅ Que los datos se pueden leer después de cifrar
+
+## .env Minimo
+
+```env
+JWT_SECRET=replace_with_a_strong_secret
+
+PAYPAL_CLIENT_ID=your_client_id
+PAYPAL_CLIENT_SECRET=your_client_secret
+PAYPAL_API=https://api-m.sandbox.paypal.com
+
+EMAIL_USER=youremail@gmail.com
+EMAIL_PASS=your_app_password
+
+# Opcional Firebase
+# FIREBASE_SERVICE_ACCOUNT_KEY={"type":"service_account",...}
+# FIREBASE_SERVICE_ACCOUNT_PATH=./serviceAccountKey.json
+# FIREBASE_STORAGE_BUCKET=your-bucket.appspot.com
+```
+
 
 ## Estructura
-- `app.js`: servidor y montaje de rutas
-- `routes/`: `auth`, `supervisor`, `auditor`, `cliente`
-- `utils/jsonDb.js`: helper JSON
-- `utils/auth.js`: JWT (`authenticate`, `authorize`, `signToken`)
-- `data/*.json`: datos
 
-## Login
-`POST /api/auth/login`
-Body:
-```json
-{ "correo": "supervisor@auditora-demo.com", "password": "supervisor123" }
 ```
-Respuesta incluye `token` (Bearer).
+app.js
+routes/
+utils/
+data/
+```
 
-## Supervisor (Bearer + rol SUPERVISOR)
-- `GET /api/supervisor/auditores/:idEmpresa`
-- `POST /api/supervisor/auditores`
-- `POST /api/supervisor/solicitudes-pago`
-- `GET /api/supervisor/solicitudes-pago/:idEmpresa`
-- `POST /api/supervisor/solicitudes-pago/:idSolicitud/pagar` (crea auditoría)
-- `POST /api/supervisor/auditorias/:idAuditoria/asignar` `{ id_auditor }`
-- `POST /api/supervisor/auditorias/:idAuditoria/modulos` `{ id_modulo }`
 
-## Auditor (Bearer + rol AUDITOR)
-- `GET /api/auditor/auditorias-asignadas/:idAuditor`
-- `POST /api/auditor/evidencias`
-- `GET /api/auditor/evidencias/:idAuditoria`
-- `PUT /api/auditor/evidencias/:idEvidencia`
-- `DELETE /api/auditor/evidencias/:idEvidencia`
+## Roles
 
-## Cliente (Bearer + rol CLIENTE)
-- `GET /api/cliente/conversaciones/:idCliente`
-- `POST /api/cliente/conversaciones`
-- `GET /api/cliente/auditorias/:idCliente`
-- `GET /api/cliente/solicitudes-pago/:idCliente`
-- `POST /api/cliente/solicitudes-pago`
+```
+1 = Supervisor
+2 = Auditor
+3 = Cliente
+```
 
-## Notas
-- Semillas: `roles`, `tipos_empresa`, `empresas`, `usuarios` con supervisor; estados de pago y módulos ambientales básicos.
-- Validaciones incluidas para existencia de entidades y permisos.
-- Este backend está pensado para fines académicos y prototipado.
+
+## Rutas Base
+
+```
+/api/auth
+/api/supervisor
+/api/auditor
+/api/cliente
+/api/paypal
+/api/timeline
+```
+
+
+## Scripts
+
+```bash
+npm start
+npm run dev
+node test.js
+node test-firebase.js
+```
+
+
+## Notas Clave
+
+- La persistencia es por archivos JSON (sin DB relacional/no relacional).
+- Las rutas protegidas usan `Authorization: Bearer <token>`.
+- Hay integraciones opcionales con PayPal, Firebase y SMTP.
+
++

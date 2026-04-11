@@ -1,10 +1,10 @@
+// Rutas de cliente: registro, conversaciones, mensajes y acciones del cliente.
 const express = require('express');
 const router = express.Router();
 const path = require('path');
 const fs = require('fs');
 const { readJson, writeJson, getNextId, crearNotificacion } = require('../utils/jsonDb');
 const { authenticate, authorize, signToken } = require('../utils/auth');
-const bcrypt = require('bcryptjs');
 
 // POST /api/cliente/registro
 // Registro de nuevo cliente (no requiere autenticación)
@@ -22,15 +22,15 @@ router.post('/registro', async (req, res) => {
     const usuarios = await readJson('usuarios.json');
     const empresas = await readJson('empresas.json');
 
-    // Verificar que el correo no esté ya registrado
+    // Validar correo unico
     const correoExistente = usuarios.find(u => u.correo === correo && u.activo);
     if (correoExistente) {
-      return res.status(400).json({ 
-        message: 'El correo ya está registrado' 
+      return res.status(400).json({
+        message: 'El correo ya está registrado'
       });
     }
 
-    // Crear la empresa cliente
+    // Crear empresa cliente
     const idEmpresa = await getNextId('empresas.json', 'id_empresa');
     const nuevaEmpresa = {
       id_empresa: idEmpresa,
@@ -50,26 +50,24 @@ router.post('/registro', async (req, res) => {
     empresas.push(nuevaEmpresa);
     await writeJson('empresas.json', empresas);
 
-    // Crear el usuario cliente
+    // Crear usuario cliente
     const idUsuario = await getNextId('usuarios.json', 'id_usuario');
-    const passwordHash = bcrypt.hashSync(password, 10);
     const nuevoUsuario = {
       id_usuario: idUsuario,
       id_empresa: idEmpresa,
       nombre: nombre,
       correo: correo,
-      password_hash: passwordHash,
+      password_hash: password,
       id_rol: 3, // Rol de cliente
       activo: true,
       creado_en: new Date().toISOString()
     };
     usuarios.push(nuevoUsuario);
     await writeJson('usuarios.json', usuarios);
-
     // Generar token
     const token = signToken(nuevoUsuario);
 
-    // Respuesta esperada por el frontend
+    // Respuesta para frontend
     res.status(201).json({
       token: token,
       usuario: {
@@ -99,30 +97,28 @@ router.get('/conversaciones', authenticate, authorize([2]), async (req, res) => 
     const mensajes = await readJson('mensajes.json');
     const usuarios = await readJson('usuarios.json');
     
-    // TABLAS PARA CRUCE DE PERMISOS
+    // Datos para validar permisos
     const participantes = await readJson('auditoria_participantes.json');
     const auditorias = await readJson('auditorias.json');
 
-    // 1. Obtener IDs de auditorías donde participa el auditor
+    // IDs de auditorias del auditor
     const misAuditoriasIds = participantes
       .filter(p => p.id_auditor === idAuditor)
       .map(p => p.id_auditoria);
 
-    // 2. Obtener los IDs de los Clientes de esas auditorías
+    // IDs de clientes asignados
     const misClientesIds = auditorias
       .filter(a => misAuditoriasIds.includes(a.id_auditoria))
       .map(a => a.id_cliente);
 
-    // 3. Filtrar conversaciones:
-    // - Pertenecen a mi empresa auditora
-    // - Y el cliente es uno de mis asignados
+    // Conversaciones de su empresa y clientes asignados
     const misConversaciones = conversaciones.filter(c => 
       c.id_empresa_auditora === idEmpresa && 
       c.activo &&
       misClientesIds.includes(c.id_cliente)
     );
 
-    // 4. Enriquecer datos
+    // Enriquecer respuesta
     const listaFinal = misConversaciones.map(conv => {
       const msgs = mensajes.filter(m => m.id_conversacion === conv.id_conversacion);
       const ultimoMensaje = msgs.length > 0 ? msgs[msgs.length - 1] : null;
@@ -134,7 +130,7 @@ router.get('/conversaciones', authenticate, authorize([2]), async (req, res) => 
         cliente: {
           id_usuario: conv.id_cliente,
           nombre: clienteUser?.nombre || 'Cliente',
-          // Importante: No mandamos datos sensibles
+          // No exponer datos sensibles
         },
         ultimo_mensaje: ultimoMensaje
       };
@@ -160,10 +156,10 @@ router.get('/mensajes/:idConversacion', authenticate, authorize([3]), async (req
   const idConversacion = Number(req.params.idConversacion);
   const mensajes = await readJson('mensajes.json');
   
-  // Filtramos los mensajes de esta conversación
+  // Filtrar mensajes de la conversacion
   const historial = mensajes.filter(m => m.id_conversacion === idConversacion);
   
-  // Aseguramos orden cronológico (antiguo -> nuevo) para lectura natural
+  // Orden cronologico ascendente
   historial.sort((a, b) => new Date(a.creado_en) - new Date(b.creado_en));
 
   res.json(historial);
@@ -183,11 +179,11 @@ router.post('/mensajes', authenticate, authorize([3]), async (req, res) => {
 
     let conversacionId = id_conversacion;
 
-    // 1. SI NO HAY ID, CREAMOS LA CONVERSACIÓN (Primer contacto)
+    // Si no hay conversacion, crearla
     if (!conversacionId) {
       if (!id_empresa_auditora) return res.status(400).json({ message: 'Falta id_empresa_auditora' });
 
-      // Verificar si YA existe una para no duplicar (Safety check)
+      // Evitar duplicados
       const existe = conversaciones.find(c => 
         c.id_cliente === idUsuario && 
         c.id_empresa_auditora === Number(id_empresa_auditora)
@@ -196,7 +192,7 @@ router.post('/mensajes', authenticate, authorize([3]), async (req, res) => {
       if (existe) {
         conversacionId = existe.id_conversacion;
       } else {
-        // Crear nueva
+        // Crear conversacion
         conversacionId = await getNextId('conversaciones.json', 'id_conversacion');
         const nueva = {
           id_conversacion: conversacionId,
@@ -211,7 +207,7 @@ router.post('/mensajes', authenticate, authorize([3]), async (req, res) => {
       }
     }
 
-    // 2. CREAR MENSAJE
+    // Crear mensaje
     const idMensaje = await getNextId('mensajes.json', 'id_mensaje');
     const nuevoMensaje = {
       id_mensaje: idMensaje,
@@ -224,7 +220,7 @@ router.post('/mensajes', authenticate, authorize([3]), async (req, res) => {
 
     mensajes.push(nuevoMensaje);
     
-    // Actualizar fecha ult msg en conversación
+    // Actualizar fecha del ultimo mensaje
     const idx = conversaciones.findIndex(c => c.id_conversacion === Number(conversacionId));
     if(idx !== -1) {
         conversaciones[idx].ultimo_mensaje_fecha = nuevoMensaje.creado_en;
@@ -923,14 +919,10 @@ router.get('/auditorias/:idAuditoria/reporte', authenticate, authorize([3]), asy
       return res.status(404).json({ message: 'Archivo de reporte no encontrado en el servidor' });
     }
 
-    // Descifrar el archivo antes de enviarlo
-    const { decryptFile } = require('../utils/encryption');
-    const decrypted = await decryptFile(filePath);
-
-    // Enviar el archivo PDF descifrado
+    // Enviar el archivo PDF directo
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `inline; filename="${reporte.nombre_archivo || fileName}"`);
-    res.send(decrypted);
+    res.sendFile(filePath);
   } catch (error) {
     console.error('Error al descargar reporte:', error);
     res.status(500).json({ message: error.message || 'Error al descargar reporte' });

@@ -1,12 +1,10 @@
-// backend/utils/auth.js
+// Utilidad de auth: genera JWT y valida permisos de acceso a rutas.
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
 const SECRET_KEY = process.env.JWT_SECRET || 'secreto_super_seguro_para_token';
 
-/**
- * Genera un token JWT para un usuario.
- */
+// Genera JWT de usuario
 const signToken = (usuario) => {
   return jwt.sign(
     {
@@ -21,12 +19,10 @@ const signToken = (usuario) => {
   );
 };
 
-/**
- * Middleware para proteger rutas (Verificar Token).
- */
+// Verifica token JWT
 const authenticate = (req, res, next) => {
   const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+  const token = authHeader && authHeader.split(' ')[1];
 
   if (!token) {
     return res.status(401).json({ message: 'Token no proporcionado' });
@@ -41,9 +37,7 @@ const authenticate = (req, res, next) => {
   });
 };
 
-/**
- * Middleware para verificar roles específicos.
- */
+// Valida roles permitidos
 const authorize = (rolesPermitidos = []) => {
   return (req, res, next) => {
     if (!req.user) {

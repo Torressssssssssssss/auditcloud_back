@@ -1,17 +1,14 @@
 [
   {
     "id_modulo": 1,
-    "clave": "AGUA",
-    "nombre": "Gestión de agua"
+    "nombre": "AGUA"
   },
   {
     "id_modulo": 2,
-    "clave": "RESIDUOS",
-    "nombre": "Gestión de residuos"
+    "nombre": "RESIDUOS"
   },
   {
     "id_modulo": 3,
-    "clave": "ENERGIA",
-    "nombre": "Consumo energético"
+    "nombre": "ENERGIA"
   }
 ]

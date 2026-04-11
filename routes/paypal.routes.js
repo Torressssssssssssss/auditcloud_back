@@ -1,3 +1,4 @@
+// Rutas de PayPal: crea y captura ordenes y actualiza solicitudes de pago.
 const express = require('express');
 const router = express.Router();
 const fetch = require('node-fetch'); // Necesitas instalar: npm install node-fetch

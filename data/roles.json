@@ -1,17 +1,14 @@
 [
   {
     "id_rol": 1,
-    "clave": "SUPERVISOR",
-    "nombre": "Supervisor / Jefe de empresa auditora"
+    "nombre": "SUPERVISOR"
   },
   {
     "id_rol": 2,
-    "clave": "AUDITOR",
-    "nombre": "Auditor de campo / Segurista"
+    "nombre": "AUDITOR"
   },
   {
     "id_rol": 3,
-    "clave": "CLIENTE",
-    "nombre": "Usuario cliente (empresa auditada)"
+    "nombre": "CLIENTE"
   }
 ]

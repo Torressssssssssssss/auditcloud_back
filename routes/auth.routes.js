@@ -1,8 +1,8 @@
+// Rutas de autenticacion: login, acceso con Google y completar perfil.
 // backend/routes/auth.routes.js
 const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken'); // Para decodificar el token de Google
-const bcrypt = require('bcryptjs');
 const { readJson, writeJson, getNextId } = require('../utils/jsonDb');
 const { signToken, authenticate } = require('../utils/auth'); // Importamos las utilidades
 
@@ -13,8 +13,9 @@ router.post('/login', async (req, res) => {
     const usuarios = await readJson('usuarios.json');
     
     const usuario = usuarios.find(u => u.correo === correo && u.activo);
+    const passwordValido = password === usuario?.password_hash;
     
-    if (!usuario || !bcrypt.compareSync(password, usuario.password_hash)) {
+    if (!usuario || !passwordValido) {
       return res.status(401).json({ message: 'Credenciales inválidas' });
     }
 
@@ -91,7 +92,7 @@ router.post('/google', async (req, res) => {
   }
 });
 
-// POST /api/auth/complete-profile (Llenar datos del Pop Up)
+// POST /api/auth/complete-profile
 router.post('/complete-profile', authenticate, async (req, res) => {
   try {
     const { nombre_empresa, ciudad, estado, rfc } = req.body;
@@ -104,7 +105,7 @@ router.post('/complete-profile', authenticate, async (req, res) => {
     const usuarios = await readJson('usuarios.json');
     const empresas = await readJson('empresas.json');
 
-    // 1. Crear la nueva empresa
+    // Crear empresa
     const idEmpresa = await getNextId('empresas.json', 'id_empresa');
     const nuevaEmpresa = {
       id_empresa: idEmpresa,
@@ -125,14 +126,14 @@ router.post('/complete-profile', authenticate, async (req, res) => {
     empresas.push(nuevaEmpresa);
     await writeJson('empresas.json', empresas);
 
-    // 2. Actualizar al usuario con su nueva empresa
+    // Asociar empresa al usuario
     const usuarioIdx = usuarios.findIndex(u => u.id_usuario === idUsuario);
     if (usuarioIdx !== -1) {
       usuarios[usuarioIdx].id_empresa = idEmpresa;
       await writeJson('usuarios.json', usuarios);
     }
 
-    // Opcional: Podrías regenerar el token aquí si incluyes id_empresa en el payload
+    // Opcional: regenerar token con id_empresa
     // const newToken = signToken(usuarios[usuarioIdx]);
 
     res.json({ 

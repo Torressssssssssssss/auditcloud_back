@@ -1,3 +1,4 @@
+// Rutas de supervisor: gestion de auditores, empresa, pagos y evidencias.
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
@@ -7,9 +8,7 @@ const { readJson, writeJson, getNextId, crearNotificacion } = require('../utils/
 const { authenticate, authorize } = require('../utils/auth');
 const { uploadFileToFirebase } = require('../utils/firebaseStorage');
 
-// ==========================================
-// 1. CONFIGURACIÓN DE MULTER
-// ==========================================
+// Configuracion de carga de archivos
 const storage = multer.memoryStorage(); // Para Firebase
 
 const fileFilter = (req, file, cb) => {
@@ -27,9 +26,7 @@ const upload = multer({
   fileFilter: fileFilter
 });
 
-// ==========================================
-// 2. GESTIÓN DE AUDITORES
-// ==========================================
+// Gestion de auditores
 
 // GET /api/supervisor/auditores/:idEmpresa
 router.get('/auditores/:idEmpresa', authenticate, authorize([1]), async (req, res) => {
@@ -74,7 +71,6 @@ router.post('/auditores', authenticate, authorize([1]), async (req, res) => {
     return res.status(400).json({ message: 'Ese correo ya está registrado' });
   }
 
-  const bcrypt = require('bcryptjs');
   const idNuevo = await getNextId('usuarios.json', 'id_usuario');
 
   const nuevoAuditor = {
@@ -82,7 +78,7 @@ router.post('/auditores', authenticate, authorize([1]), async (req, res) => {
     id_empresa: Number(id_empresa),
     nombre,
     correo,
-    password_hash: bcrypt.hashSync(password, 10),
+    password_hash: password,
     id_rol: 2,
     activo: true,
     creado_en: new Date().toISOString()
@@ -103,9 +99,7 @@ router.post('/auditores', authenticate, authorize([1]), async (req, res) => {
   });
 });
 
-// ==========================================
-// 3. CONFIGURACIÓN DE EMPRESA
-// ==========================================
+// Configuracion de empresa
 
 // GET /api/supervisor/empresa/:id
 router.get('/empresa/:id', authenticate, authorize([1]), async (req, res) => {
@@ -167,7 +161,7 @@ router.put('/empresa/:id', authenticate, authorize([1]), async (req, res) => {
       return res.status(403).json({ message: 'No tienes permisos para modificar esta empresa' });
     }
 
-    // Validar módulos
+    // Validar modulos
     if (modulos && Array.isArray(modulos)) {
       for (const idModulo of modulos) {
         const moduloValido = modulosAmbientales.some(m => m.id_modulo === Number(idModulo));
@@ -175,7 +169,7 @@ router.put('/empresa/:id', authenticate, authorize([1]), async (req, res) => {
       }
     }
 
-    // Actualizar empresa
+    // Guardar datos de empresa
     empresas[empresaIdx].nombre = nombre;
     empresas[empresaIdx].rfc = rfc || null;
     empresas[empresaIdx].direccion = direccion || null;
@@ -183,7 +177,7 @@ router.put('/empresa/:id', authenticate, authorize([1]), async (req, res) => {
 
     await writeJson('empresas.json', empresas);
 
-    // Actualizar módulos
+    // Guardar modulos
     const modulosActualizados = empresaModulos.filter(em => em.id_empresa !== idEmpresa);
     
     if (modulos && Array.isArray(modulos)) {
@@ -212,9 +206,7 @@ router.put('/empresa/:id', authenticate, authorize([1]), async (req, res) => {
   }
 });
 
-// ==========================================
-// 4. SOLICITUDES DE PAGO (CORREGIDO)
-// ==========================================
+// Solicitudes de pago
 
 // POST /api/supervisor/solicitudes-pago
 router.post('/solicitudes-pago', authenticate, authorize([1]), async (req, res) => {
@@ -234,7 +226,7 @@ router.post('/solicitudes-pago', authenticate, authorize([1]), async (req, res) 
     const idSolicitud = await getNextId('solicitudes_pago.json', 'id_solicitud');
     let id_usuario_destino = null;
 
-    // Caso A: Se envió un usuario específico
+    // Caso A: empresa y usuario destino
     if (id_empresa_destino && id_cliente) {
       const empresaValida = empresas.some(e => e.id_empresa === Number(id_empresa_destino) && e.activo);
       const clienteValido = usuarios.some(u => u.id_usuario === Number(id_cliente) && u.id_rol === 3 && u.activo);
@@ -244,7 +236,7 @@ router.post('/solicitudes-pago', authenticate, authorize([1]), async (req, res) 
       
       id_usuario_destino = Number(id_cliente);
     } 
-    // Caso B: Solo se envió la empresa, buscamos al admin
+    // Caso B: solo empresa, usar usuario principal
     else if (id_empresa_destino && !id_cliente) {
       const empresaObjetivo = empresas.find(e => e.id_empresa === Number(id_empresa_destino) && e.activo);
       if (!empresaObjetivo || empresaObjetivo.id_tipo_empresa !== 2) { 
@@ -295,7 +287,7 @@ router.get('/solicitudes-pago', authenticate, authorize([1]), async (req, res) =
     const solicitudes = await readJson('solicitudes_pago.json');
     const empresas = await readJson('empresas.json');
 
-    // Filtramos buscando donde NOSOTROS somos la empresa auditora
+    // Filtrar solicitudes de esta empresa auditora
     const misSolicitudes = solicitudes.filter(s => {
       const ownerId = s.id_empresa_auditora ? Number(s.id_empresa_auditora) : Number(s.id_empresa);
       return ownerId === idEmpresaAuditora;
@@ -331,9 +323,7 @@ router.get('/solicitudes-pago', authenticate, authorize([1]), async (req, res) =
   }
 });
 
-// ==========================================
-// 5. GESTIÓN DE AUDITORÍAS
-// ==========================================
+// Gestion de auditorias
 
 // GET /api/supervisor/auditorias/:idEmpresa
 router.get('/auditorias/:idEmpresa', authenticate, authorize([1]), async (req, res) => {
@@ -403,7 +393,7 @@ router.get('/auditorias/:idEmpresa', authenticate, authorize([1]), async (req, r
   }
 });
 
-// PUT Estado de Auditoría
+// Actualizar estado de auditoria
 router.put('/auditorias/:idAuditoria/estado', authenticate, authorize([1]), async (req, res) => {
   const idAuditoria = Number(req.params.idAuditoria);
   const { id_estado } = req.body;
@@ -423,7 +413,7 @@ router.put('/auditorias/:idAuditoria/estado', authenticate, authorize([1]), asyn
   auditorias[idx].estado_actualizado_en = new Date().toISOString();
   await writeJson('auditorias.json', auditorias);
 
-  // Notificación al cliente
+  // Notificar al cliente
   try {
     if (auditorias[idx].id_cliente) {
       await crearNotificacion({
@@ -439,7 +429,7 @@ router.put('/auditorias/:idAuditoria/estado', authenticate, authorize([1]), asyn
   res.json({ message: 'Estado actualizado', auditoria: auditorias[idx] });
 });
 
-// Asignar Auditor
+// Asignar auditor
 router.post('/auditorias/:idAuditoria/asignar', authenticate, authorize([1]), async (req, res) => {
   const idAuditoria = Number(req.params.idAuditoria);
   const { id_auditor } = req.body;
@@ -469,7 +459,7 @@ router.post('/auditorias/:idAuditoria/asignar', authenticate, authorize([1]), as
   res.status(201).json({ message: 'Asignado correctamente', participante: nuevo });
 });
 
-// Modulos de Auditoría
+// Agregar modulo a auditoria
 router.post('/auditorias/:idAuditoria/modulos', authenticate, authorize([1]), async (req, res) => {
   const idAuditoria = Number(req.params.idAuditoria);
   const { id_modulo } = req.body;
@@ -488,7 +478,7 @@ router.post('/auditorias/:idAuditoria/modulos', authenticate, authorize([1]), as
   res.status(201).json({ message: 'Módulo agregado', item: nuevo });
 });
 
-// Obtener Participantes
+// Obtener participantes
 router.get('/auditorias/:idAuditoria/participantes', authenticate, authorize([1]), async (req, res) => {
   const idAuditoria = Number(req.params.idAuditoria);
   const participantes = await readJson('auditoria_participantes.json');
@@ -502,7 +492,7 @@ router.get('/auditorias/:idAuditoria/participantes', authenticate, authorize([1]
   res.json(resultado);
 });
 
-// Clientes con Auditorías
+// Listar clientes con auditorias
 router.get('/clientes-con-auditorias', authenticate, authorize([1]), async (req, res) => {
   const idEmpresa = req.user.id_empresa;
   const auditorias = await readJson('auditorias.json');
@@ -532,9 +522,7 @@ router.get('/clientes-con-auditorias', authenticate, authorize([1]), async (req,
   res.json(resultado);
 });
 
-// ==========================================
-// 6. MENSAJERÍA Y CHAT (¡LA PARTE QUE FALTABA!)
-// ==========================================
+// Mensajeria y chat
 
 // GET /api/supervisor/conversaciones
 // Lista conversaciones de la empresa del supervisor
@@ -547,11 +535,11 @@ router.get('/conversaciones', authenticate, authorize([1]), async (req, res) => 
     const usuarios = await readJson('usuarios.json');
     const empresas = await readJson('empresas.json');
 
-    // Filtrar conversaciones de la empresa
+    // Conversaciones de la empresa
     const misConversaciones = conversaciones.filter(c => c.id_empresa_auditora === idEmpresa && c.activo);
 
     const listaFinal = misConversaciones.map(conv => {
-      // Último mensaje
+      // Ultimo mensaje
       const msgs = mensajes.filter(m => m.id_conversacion === conv.id_conversacion);
       const ultimoMensaje = msgs.length > 0 ? msgs[msgs.length - 1] : null;
 
@@ -634,7 +622,7 @@ router.post('/mensajes', authenticate, authorize([1]), async (req, res) => {
     conversaciones[idxConv].ultimo_mensaje_fecha = nuevoMensaje.creado_en;
     await writeJson('conversaciones.json', conversaciones);
 
-    // Notificar al cliente
+    // Notificar cliente
     try {
       const empresa = empresas.find(e => e.id_empresa === conversaciones[idxConv].id_empresa_auditora);
       const nombreEmpresa = empresa ? empresa.nombre : 'Empresa auditora';
@@ -654,15 +642,13 @@ router.post('/mensajes', authenticate, authorize([1]), async (req, res) => {
   }
 });
 
-// ==========================================
-// 7. REPORTES Y EVIDENCIAS
-// ==========================================
+// Reportes y evidencias
 
 router.get('/auditorias/:id/reporte-final', authenticate, authorize([1]), async (req, res) => {
   const idAuditoria = Number(req.params.id);
   const reportes = await readJson('reportes.json');
   
-  // (Aquí se podría validar id_empresa_auditora si se carga la auditoría)
+  // Se puede validar id_empresa_auditora aqui
   const reporte = reportes.find(r => r.id_auditoria === idAuditoria && r.tipo === 'FINAL');
   if(!reporte) return res.status(404).json({ message: 'No existe reporte final' });
   
@@ -676,11 +662,11 @@ router.get('/auditorias/:idAuditoria/evidencias', authenticate, authorize([1]), 
 });
 
 // GET /api/supervisor/empresas-clientes
-// Obtiene todas las empresas que son clientes (Tipo 2)
+// Lista empresas cliente (tipo 2)
 router.get('/empresas-clientes', authenticate, authorize([1]), async (req, res) => {
   try {
     const empresas = await readJson('empresas.json');
-    // Filtramos solo las que son clientes (tipo 2) y están activas
+    // Solo clientes activos
     const clientes = empresas.filter(e => e.id_tipo_empresa === 2 && e.activo);
     
     res.json(clientes.map(c => ({
@@ -693,13 +679,13 @@ router.get('/empresas-clientes', authenticate, authorize([1]), async (req, res) 
 });
 
 // GET /api/supervisor/usuarios-empresa/:idEmpresa
-// Obtiene los usuarios (contactos) de una empresa específica
+// Lista contactos de una empresa
 router.get('/usuarios-empresa/:idEmpresa', authenticate, authorize([1]), async (req, res) => {
   try {
     const idEmpresa = Number(req.params.idEmpresa);
     const usuarios = await readJson('usuarios.json');
     
-    // Filtramos usuarios de esa empresa con rol Cliente (3)
+    // Usuarios cliente activos de la empresa
     const contactos = usuarios.filter(u => u.id_empresa === idEmpresa && u.id_rol === 3 && u.activo);
     
     res.json(contactos.map(u => ({

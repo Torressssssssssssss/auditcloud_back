@@ -1,33 +1,32 @@
+// Servicio de correo: envia notificaciones por SMTP (Gmail).
 require('dotenv').config(); 
 const nodemailer = require('nodemailer');
 
-// Validar que las variables existen al iniciar
+// Validar variables de correo
 if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
   console.error('❌ ERROR FATAL: Faltan EMAIL_USER o EMAIL_PASS en el archivo .env');
 }
 
-// Configuración SMTP explícita para Gmail (Más estable que service: 'gmail')
+// Configuracion SMTP para Gmail
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
-  port: 465, // Puerto seguro SSL
-  secure: true, // true para 465, false para otros puertos
+  port: 465,
+  secure: true,
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS
   },
-  // Opciones de depuración para ver errores en consola
   debug: false, 
   logger: false 
 });
 
-// Verificar conexión al iniciar el servicio
+// Verificar conexion SMTP
 transporter.verify()
   .then(() => console.log('✅ Servidor de correos listo para enviar mensajes'))
   .catch((error) => console.error('❌ Error de conexión SMTP:', error));
 
 const enviarNotificacionFinalizacion = async (correoCliente, nombreCliente, nombreEmpresa, nombreReporte) => {
-  // ... (Tu código html anterior está bien, mantenlo)
-  // Solo asegúrate de usar el objeto transporter configurado arriba
+  // Pendiente implementar plantilla de finalizacion
 };
 
 const enviarAlertaNotificacion = async (correoDestino, nombreUsuario, titulo, mensaje) => {

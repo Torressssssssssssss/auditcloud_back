@@ -1,17 +1,14 @@
 [
   {
     "id_estado": 1,
-    "clave": "CREADA",
-    "nombre": "Auditoría creada"
+    "nombre": "CREADA"
   },
   {
     "id_estado": 2,
-    "clave": "EN_PROCESO",
-    "nombre": "En proceso"
+    "nombre": "EN_PROCESO"
   },
   {
     "id_estado": 3,
-    "clave": "FINALIZADA",
-    "nombre": "Finalizada"
+    "nombre": "FINALIZADA"
   }
 ]

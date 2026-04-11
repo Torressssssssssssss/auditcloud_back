@@ -1,12 +1,11 @@
+// Rutas de timeline: consulta el historial de auditorias por empresa.
 const express = require('express');
 const router = express.Router();
 const { readJson, writeJson, getNextId } = require('../utils/jsonDb');
 const { authenticate, authorize } = require('../utils/auth');
 
 // GET /api/timeline/empresa/:idEmpresa
-// Obtiene todas las auditorías de una empresa con sus respectivos timelines
-// GET /api/timeline/empresa/:idEmpresa
-// Obtiene todas las auditorías de una empresa con sus respectivos timelines
+// Timeline de auditorias por empresa
 router.get('/empresa/:idEmpresa', authenticate, async (req, res) => {
   try {
     const idEmpresa = Number(req.params.idEmpresa);
@@ -17,20 +16,19 @@ router.get('/empresa/:idEmpresa', authenticate, async (req, res) => {
     const comentarios = await readJson('comentarios.json');
     const usuarios = await readJson('usuarios.json');
 
-    // 1. Obtener IDs de usuarios que pertenecen a esa empresa
-    // Esto es vital para auditorías viejas que solo guardaron el id_cliente
+    // IDs de usuarios de la empresa (compatible con auditorias antiguas)
     const idsUsuariosDeEmpresa = usuarios
       .filter(u => u.id_empresa === idEmpresa)
       .map(u => u.id_usuario);
 
     console.log(`[Timeline] Usuarios encontrados de la empresa: ${idsUsuariosDeEmpresa.join(', ')}`);
 
-    // 2. Filtrar auditorías (Lógica Robusta OR)
+    // Filtrar auditorias por empresa o por usuario cliente
     const misAuditorias = auditorias.filter(a => {
-      // Caso A: La auditoría tiene el campo nuevo explícito
+      // Caso A: auditoria con id_empresa_cliente
       const esPorEmpresaDirecta = a.id_empresa_cliente === idEmpresa;
       
-      // Caso B: La auditoría tiene un usuario que pertenece a la empresa
+      // Caso B: auditoria por id_cliente
       const esPorUsuario = idsUsuariosDeEmpresa.includes(a.id_cliente);
 
       return esPorEmpresaDirecta || esPorUsuario;
@@ -38,15 +36,15 @@ router.get('/empresa/:idEmpresa', authenticate, async (req, res) => {
 
     console.log(`[Timeline] Auditorías encontradas: ${misAuditorias.length}`);
 
-    // 3. Construir la respuesta agrupada
+    // Construir respuesta
     const resultado = misAuditorias.map(audit => {
-      // Filtrar items para ESTA auditoría
+      // Items de esta auditoria
       const misEvidencias = evidencias.filter(e => e.id_auditoria === audit.id_auditoria);
       const misComentarios = comentarios.filter(c => c.id_auditoria === audit.id_auditoria);
       
       const items = [];
 
-      // Mapear Evidencias
+      // Mapear evidencias
       misEvidencias.forEach(e => {
         const autor = usuarios.find(u => u.id_usuario === e.id_auditor);
         items.push({
@@ -61,7 +59,7 @@ router.get('/empresa/:idEmpresa', authenticate, async (req, res) => {
         });
       });
 
-      // Mapear Comentarios
+      // Mapear comentarios
       misComentarios.forEach(c => {
         const autor = usuarios.find(u => u.id_usuario === c.id_usuario);
         items.push({
@@ -73,7 +71,7 @@ router.get('/empresa/:idEmpresa', authenticate, async (req, res) => {
         });
       });
 
-      // Ordenar items: Más reciente primero
+      // Ordenar items por fecha
       items.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
 
       return {
@@ -84,7 +82,7 @@ router.get('/empresa/:idEmpresa', authenticate, async (req, res) => {
       };
     });
 
-    // Ordenar las auditorías: La más reciente primero
+    // Ordenar auditorias por fecha
     resultado.sort((a, b) => new Date(b.fecha_creacion) - new Date(a.fecha_creacion));
 
     res.json(resultado);
@@ -104,25 +102,21 @@ router.get('/:idAuditoria', authenticate, async (req, res) => {
     const auditoria = auditorias.find(a => a.id_auditoria === idAuditoria);
     if (!auditoria) return res.status(404).json({ message: 'Auditoría no encontrada' });
 
-    // VALIDACIÓN DE SEGURIDAD
-    // Permitir si es el CLIENTE o si pertenece a la EMPRESA AUDITORA (Supervisor/Auditor)
+    // Seguridad: permitir cliente o empresa auditora
     const esCliente = auditoria.id_cliente === req.user.id_usuario;
-    const esMiEmpresa = auditoria.id_empresa_auditora === req.user.id_empresa; // Funciona para Rol 1 y 2
+    const esMiEmpresa = auditoria.id_empresa_auditora === req.user.id_empresa; // roles 1 y 2
 
     if (!esCliente && !esMiEmpresa) {
       return res.status(403).json({ message: 'Acceso denegado a esta bitácora' });
     }
 
-    // ... (RESTO DEL CÓDIGO DE OBTENCIÓN DE EVIDENCIAS Y COMENTARIOS IGUAL QUE ANTES) ...
-    // ... (Copia la lógica de mezcla y ordenamiento que hicimos previamente) ...
-    
-    // (Resumido para brevedad, asegúrate de mantener la lógica de mezcla aquí)
+    // Cargar evidencias, comentarios y usuarios
     const evidencias = await readJson('evidencias.json');
     const comentarios = await readJson('comentarios.json');
     const usuarios = await readJson('usuarios.json');
     const timeline = [];
     
-    // ... lógica de push a timeline ...
+    // Armar timeline y responder
     
     res.json(timeline);
 
@@ -132,7 +126,7 @@ router.get('/:idAuditoria', authenticate, async (req, res) => {
 });
 
 // POST /api/timeline/comentarios
-// Crear un comentario simple
+// Crear comentario
 router.post('/comentarios', authenticate, authorize([1, 2]), async (req, res) => {
   const { id_auditoria, mensaje } = req.body;
   
@@ -158,7 +152,7 @@ router.post('/comentarios', authenticate, authorize([1, 2]), async (req, res) =>
 });
 
 // POST /api/timeline/comentarios
-// Permite al Auditor agregar una actualización de texto simple
+// Crear comentario
 router.post('/comentarios', authenticate, authorize([1, 2]), async (req, res) => {
   const { id_auditoria, mensaje } = req.body;
   

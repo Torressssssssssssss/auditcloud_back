@@ -1,25 +1,24 @@
+// Inicializa Firebase Admin para usar Storage desde el backend.
 const admin = require('firebase-admin');
 require('dotenv').config();
 
-// Inicializar Firebase Admin
-// Opción 1: Usar archivo de credenciales (recomendado para producción)
+// Inicializar con JSON en variable de entorno
 if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
-  // Si tienes la clave como string JSON en variable de entorno
+  // Credenciales en variable de entorno
   const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
   admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
     storageBucket: process.env.FIREBASE_STORAGE_BUCKET || `${serviceAccount.project_id}.appspot.com`
   });
 } else if (process.env.FIREBASE_SERVICE_ACCOUNT_PATH) {
-  // Si tienes la ruta al archivo JSON de credenciales
+  // Credenciales por ruta de archivo
   const serviceAccount = require(process.env.FIREBASE_SERVICE_ACCOUNT_PATH);
   admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
     storageBucket: process.env.FIREBASE_STORAGE_BUCKET || `${serviceAccount.project_id}.appspot.com`
   });
 } else {
-  // Opción 2: Usar credenciales por defecto (para desarrollo local)
-  // Necesitas crear un archivo serviceAccountKey.json en la raíz del proyecto
+  // Fallback local con serviceAccountKey.json
   try {
     const serviceAccount = require('../serviceAccountKey.json');
     admin.initializeApp({
@@ -29,7 +28,7 @@ if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
   } catch (error) {
     console.error('❌ Error inicializando Firebase:', error.message);
     console.error('💡 Asegúrate de tener configuradas las credenciales de Firebase');
-    // No lanzar error para que el servidor pueda iniciar sin Firebase (modo desarrollo)
+    // Permitir arranque sin Firebase
   }
 }
 

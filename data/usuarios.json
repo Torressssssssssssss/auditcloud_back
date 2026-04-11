@@ -4,52 +4,29 @@
     "id_empresa": 1,
     "nombre": "Supervisor Demo",
     "correo": "supervisor@auditora-demo.com",
-    "password_hash": "$2a$10$WI.Tp1o0MGxRNmNNllsAZO9CDN3SUy4MXXXjceLtoy2XKt1C0IjDm",
+    "password_hash": "123456",
     "id_rol": 1,
     "activo": true,
-    "creado_en": "2025-01-01T00:00:00.000Z"
+    "creado_en": "2026-04-01T00:00:00.000Z"
   },
   {
     "id_usuario": 2,
-    "id_empresa": 2,
-    "nombre": "Angel Torres",
-    "correo": "cubo002@outlook.com",
-    "password_hash": "$2a$10$5oV4fqt8d4iyZC2OxrVdeurVTIAbdlHzjVmtC8TTJUwkQX/eKr302",
-    "id_rol": 3,
+    "id_empresa": 1,
+    "nombre": "Auditor Demo",
+    "correo": "auditor@auditora-demo.com",
+    "password_hash": "123456",
+    "id_rol": 2,
     "activo": true,
-    "creado_en": "2025-12-05T21:48:49.620Z"
+    "creado_en": "2026-04-01T00:00:00.000Z"
   },
   {
     "id_usuario": 3,
-    "id_empresa": 1,
-    "nombre": "Gustavo Mojica",
-    "correo": "gus@auditor.com",
-    "password_hash": "$2a$10$r9HUn7sBRcZ1CQIUP4E.ruf0aulkN9ztuJlhFOE3pkG6cE7oRyYWy",
-    "id_rol": 2,
-    "activo": true,
-    "creado_en": "2025-12-05T23:50:58.585Z"
-  },
-  {
-    "id_usuario": 4,
-    "id_empresa": 3,
-    "nombre": "Rene De Anda",
-    "correo": "renerosendo8@gmail.com",
-    "password_hash": "$2a$10$C6wbeRaC16dAnKZIjhVUveSoHADkTHMUXW5l7vHEkXxJerKflZVBy",
+    "id_empresa": 2,
+    "nombre": "Cliente Demo",
+    "correo": "cliente@empresa-demo.com",
+    "password_hash": "123456",
     "id_rol": 3,
     "activo": true,
-    "creado_en": "2025-12-06T00:24:22.034Z"
-  },
-  {
-    "id_usuario": 5,
-    "id_empresa": 4,
-    "nombre": "Angel Torres",
-    "correo": "angel.tr.0705@gmail.com",
-    "password_hash": null,
-    "id_rol": 3,
-    "activo": true,
-    "google_id": "103318433595875255294",
-    "foto_url": null,
-    "creado_en": "2025-12-07T02:55:39.921Z",
-    "login_google": true
+    "creado_en": "2026-04-01T00:00:00.000Z"
   }
 ]

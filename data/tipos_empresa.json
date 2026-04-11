@@ -1,12 +1,10 @@
 [
   {
     "id_tipo_empresa": 1,
-    "clave": "AUDITORA",
-    "nombre": "Empresa auditora"
+    "nombre": "AUDITORA"
   },
   {
     "id_tipo_empresa": 2,
-    "clave": "CLIENTE",
-    "nombre": "Empresa cliente"
+    "nombre": "CLIENTE"
   }
 ]

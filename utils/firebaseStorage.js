@@ -1,30 +1,24 @@
+// Helper de Storage: sube archivos a Firebase y retorna URL/ruta.
 const admin = require('./firebase');
 const { Readable } = require('stream');
 
-/**
- * Sube un archivo a Firebase Storage
- * @param {Buffer} fileBuffer - Buffer del archivo
- * @param {string} fileName - Nombre del archivo (con extensión)
- * @param {string} folder - Carpeta donde se guardará (ej: 'evidencias', 'reportes')
- * @param {string} contentType - Tipo MIME del archivo (ej: 'image/jpeg', 'application/pdf')
- * @returns {Promise<{url: string, path: string}>} URL pública y ruta del archivo
- */
+// Sube archivo y devuelve URL publica + path
 async function uploadFileToFirebase(fileBuffer, fileName, folder = 'uploads', contentType = 'application/octet-stream') {
   try {
     const bucket = admin.storage().bucket();
     
-    // Generar nombre único para evitar conflictos
+    // Generar nombre unico
     const timestamp = Date.now();
     const random = Math.round(Math.random() * 1E9);
     const fileExtension = fileName.split('.').pop();
     const baseName = fileName.replace(/\.[^/.]+$/, '').replace(/[^a-zA-Z0-9]/g, '_');
     const uniqueFileName = `${timestamp}-${random}-${baseName}.${fileExtension}`;
     
-    // Ruta completa en Firebase Storage
+    // Path completo en Storage
     const filePath = `${folder}/${uniqueFileName}`;
     const file = bucket.file(filePath);
 
-    // Crear stream desde el buffer
+    // Crear stream de subida
     const stream = file.createWriteStream({
       metadata: {
         contentType: contentType,
@@ -33,15 +27,15 @@ async function uploadFileToFirebase(fileBuffer, fileName, folder = 'uploads', co
           uploadedAt: new Date().toISOString()
         }
       },
-      public: true, // Hacer el archivo público (opcional, puedes usar signed URLs si prefieres)
+      public: true,
     });
 
-    // Convertir buffer a stream
+    // Pasar buffer a stream
     const bufferStream = new Readable();
     bufferStream.push(fileBuffer);
     bufferStream.push(null);
 
-    // Subir el archivo
+    // Subir
     return new Promise((resolve, reject) => {
       bufferStream
         .pipe(stream)
@@ -51,10 +45,10 @@ async function uploadFileToFirebase(fileBuffer, fileName, folder = 'uploads', co
         })
         .on('finish', async () => {
           try {
-            // Hacer el archivo público (si no se configuró en createWriteStream)
+            // Asegurar acceso publico
             await file.makePublic();
             
-            // Obtener URL pública
+            // Construir URL publica
             const publicUrl = `https://storage.googleapis.com/${bucket.name}/${filePath}`;
             
             resolve({
@@ -74,11 +68,7 @@ async function uploadFileToFirebase(fileBuffer, fileName, folder = 'uploads', co
   }
 }
 
-/**
- * Elimina un archivo de Firebase Storage
- * @param {string} filePath - Ruta del archivo en Firebase Storage
- * @returns {Promise<void>}
- */
+// Elimina archivo en Storage
 async function deleteFileFromFirebase(filePath) {
   try {
     const bucket = admin.storage().bucket();
@@ -87,7 +77,7 @@ async function deleteFileFromFirebase(filePath) {
     await file.delete();
     console.log(`Archivo ${filePath} eliminado de Firebase Storage`);
   } catch (error) {
-    // Si el archivo no existe, no es un error crítico
+    // Ignorar si no existe
     if (error.code !== 404) {
       console.error('Error eliminando archivo de Firebase:', error);
       throw error;
@@ -95,12 +85,7 @@ async function deleteFileFromFirebase(filePath) {
   }
 }
 
-/**
- * Obtiene una URL firmada (signed URL) para acceso temporal a un archivo privado
- * @param {string} filePath - Ruta del archivo en Firebase Storage
- * @param {number} expiresIn - Tiempo de expiración en milisegundos (default: 1 hora)
- * @returns {Promise<string>} URL firmada
- */
+// Genera URL firmada temporal
 async function getSignedUrl(filePath, expiresIn = 3600000) {
   try {
     const bucket = admin.storage().bucket();
