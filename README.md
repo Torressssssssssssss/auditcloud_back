@@ -62,6 +62,25 @@ data/
 ```
 
 
+## Credenciales de Acceso (Demo)
+
+```txt
+SUPERVISOR
+correo   : supervisor@auditora-demo.com
+password : 123456
+
+AUDITOR
+correo   : auditor@auditora-demo.com
+password : 123456
+
+CLIENTE
+correo   : cliente@empresa-demo.com
+password : 123456
+```
+
+Nota: estas credenciales son solo para entorno local/demo.
+
+
 ## Rutas Base
 
 ```
@@ -89,5 +108,3 @@ node test-firebase.js
 - La persistencia es por archivos JSON (sin DB relacional/no relacional).
 - Las rutas protegidas usan `Authorization: Bearer <token>`.
 - Hay integraciones opcionales con PayPal, Firebase y SMTP.
-
-+
