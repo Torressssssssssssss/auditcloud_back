@@ -12,6 +12,8 @@ const clienteRoutes = require('./routes/cliente.routes');
 const auditorRoutes = require('./routes/auditor.routes');
 const paypalRoutes = require('./routes/paypal.routes');
 const timelineRoutes = require('./routes/timeline.routes');
+const mysqlRoutes = require('./routes/mysql.routes');
+const fragmentosRoutes = require('./routes/fragmentos.routes');
 const app = express();
 const PORT = 3000;
 
@@ -73,6 +75,10 @@ app.use('/uploads', async (req, res, next) => {
 });
 
 app.use('/api/timeline', timelineRoutes); 
+
+// Rutas MySQL (integración paralela)
+app.use('/api/mysql', mysqlRoutes);
+app.use('/api/fragmentos', fragmentosRoutes);
 
 // Salud
 app.get('/', (req, res) => {
