@@ -4,6 +4,9 @@ const { Readable } = require('stream');
 
 // Sube archivo y devuelve URL publica + path
 async function uploadFileToFirebase(fileBuffer, fileName, folder = 'uploads', contentType = 'application/octet-stream') {
+  if (!admin || !admin.firebaseEnabled) {
+    throw new Error('Firebase Storage no está configurado');
+  }
   try {
     const bucket = admin.storage().bucket();
     
@@ -70,6 +73,9 @@ async function uploadFileToFirebase(fileBuffer, fileName, folder = 'uploads', co
 
 // Elimina archivo en Storage
 async function deleteFileFromFirebase(filePath) {
+  if (!admin || !admin.firebaseEnabled) {
+    throw new Error('Firebase Storage no está configurado');
+  }
   try {
     const bucket = admin.storage().bucket();
     const file = bucket.file(filePath);
@@ -87,6 +93,9 @@ async function deleteFileFromFirebase(filePath) {
 
 // Genera URL firmada temporal
 async function getSignedUrl(filePath, expiresIn = 3600000) {
+  if (!admin || !admin.firebaseEnabled) {
+    throw new Error('Firebase Storage no está configurado');
+  }
   try {
     const bucket = admin.storage().bucket();
     const file = bucket.file(filePath);

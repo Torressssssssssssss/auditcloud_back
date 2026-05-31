@@ -2,34 +2,52 @@
 require('dotenv').config(); 
 const nodemailer = require('nodemailer');
 
-// Validar variables de correo
+let transporter = null;
+let emailEnabled = false;
+
 if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-  console.error('❌ ERROR FATAL: Faltan EMAIL_USER o EMAIL_PASS en el archivo .env');
+  console.warn('⚠️ Email Service deshabilitado: faltan EMAIL_USER o EMAIL_PASS');
+} else {
+  try {
+    transporter = nodemailer.createTransport({
+      host: 'smtp.gmail.com',
+      port: 465,
+      secure: true,
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+      },
+      debug: false,
+      logger: false
+    });
+
+    // Intentar verificar conexión, pero manejar fallos sin detener el backend
+    transporter.verify()
+      .then(() => {
+        emailEnabled = true;
+        console.log('✅ Servidor de correos listo para enviar mensajes');
+      })
+      .catch(() => {
+        // No mostrar stacktrace; marcar como deshabilitado
+        emailEnabled = false;
+        console.warn('⚠️ Email Service deshabilitado: no fue posible verificar el servidor SMTP');
+      });
+  } catch (err) {
+    transporter = null;
+    emailEnabled = false;
+    console.warn('⚠️ Email Service deshabilitado: error al configurar el transporte SMTP');
+  }
 }
-
-// Configuracion SMTP para Gmail
-const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 465,
-  secure: true,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  },
-  debug: false, 
-  logger: false 
-});
-
-// Verificar conexion SMTP
-transporter.verify()
-  .then(() => console.log('✅ Servidor de correos listo para enviar mensajes'))
-  .catch((error) => console.error('❌ Error de conexión SMTP:', error));
 
 const enviarNotificacionFinalizacion = async (correoCliente, nombreCliente, nombreEmpresa, nombreReporte) => {
   // Pendiente implementar plantilla de finalizacion
 };
 
 const enviarAlertaNotificacion = async (correoDestino, nombreUsuario, titulo, mensaje) => {
+  if (!emailEnabled || !transporter) {
+    return false;
+  }
+
   try {
     console.log(`[Email Service] Intentando enviar a: ${correoDestino}`);
 
@@ -64,7 +82,7 @@ const enviarAlertaNotificacion = async (correoDestino, nombreUsuario, titulo, me
     console.log('📧 Email enviado ID:', info.messageId);
     return true;
   } catch (error) {
-    console.error('❌ Error enviando alerta de correo:', error);
+    console.warn('❌ Error enviando alerta de correo: se maneja sin detener la app');
     return false;
   }
 };
