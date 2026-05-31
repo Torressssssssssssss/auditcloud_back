@@ -3,24 +3,60 @@
 const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken'); // Para decodificar el token de Google
+const { query } = require('../utils/db');
 const { readJson, writeJson, getNextId } = require('../utils/jsonDb');
 const { signToken, authenticate } = require('../utils/auth'); // Importamos las utilidades
+
+function buildLoginUser(usuario) {
+  return {
+    id_usuario: usuario.id_usuario,
+    id_empresa: usuario.id_empresa,
+    nombre: usuario.nombre,
+    correo: usuario.correo,
+    id_rol: usuario.id_rol,
+    rol: usuario.rol,
+    activo: usuario.activo,
+    google_id: usuario.google_id,
+    creado_en: usuario.creado_en
+  };
+}
 
 // POST /api/auth/login (Login Normal)
 router.post('/login', async (req, res) => {
   try {
     const { correo, password } = req.body;
-    const usuarios = await readJson('usuarios.json');
-    
-    const usuario = usuarios.find(u => u.correo === correo && u.activo);
-    const passwordValido = password === usuario?.password_hash;
-    
+    const usuarios = await query(
+      `SELECT
+        u.id_usuario,
+        u.id_empresa,
+        u.nombre,
+        u.correo,
+        u.password_hash,
+        u.id_rol,
+        u.activo,
+        u.google_id,
+        u.creado_en,
+        r.nombre AS rol
+      FROM usuarios u
+      INNER JOIN roles r ON r.id_rol = u.id_rol
+      WHERE u.correo = ?
+        AND u.activo = 1
+      LIMIT 1;`,
+      [correo]
+    );
+
+    const usuario = usuarios[0];
+    const passwordValido = usuario && String(password ?? '') === String(usuario.password_hash ?? '');
+
     if (!usuario || !passwordValido) {
       return res.status(401).json({ message: 'Credenciales inválidas' });
     }
 
     const token = signToken(usuario);
-    res.json({ token, usuario });
+    res.json({
+      token,
+      usuario: buildLoginUser(usuario)
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Error en el servidor' });
