@@ -1,10 +1,10 @@
-API backend de AuditCloud construida con Express y persistencia local en JSON.
+API backend de AuditCloud construida con Express, con login en MySQL y persistencia mixta durante la migración.
 
 
 ## Stack
 
 ```
-Node.js + Express + JWT + JSON files
+Node.js + Express + JWT + MySQL + JSON legacy
 PayPal + Firebase (opcional) + SMTP
 Puerto: 3000
 ```
@@ -28,6 +28,7 @@ curl http://localhost:3000/
 
 ```env
 JWT_SECRET=replace_with_a_strong_secret
+FRONTEND_URL=http://localhost:5173
 
 PAYPAL_CLIENT_ID=your_client_id
 PAYPAL_CLIENT_SECRET=your_client_secret
@@ -47,9 +48,11 @@ EMAIL_PASS=your_app_password
 
 Esta integración es **paralela**: el backend actual sigue funcionando con JSON (`/data` + `utils/jsonDb.js`) y se agregan rutas nuevas para probar MySQL sin romper las rutas existentes.
 
+El login de autenticación ya consulta directamente MySQL en la base `auditcloud_db`.
+
 ### Variables de entorno (MySQL)
 
-Usa un archivo `.env` (ignorado por git) basado en `.env.example`:
+Usa un archivo `.env` local (ignorado por git):
 
 ```env
 DB_HOST=192.168.1.243
@@ -80,6 +83,20 @@ npm run dev
 - `GET /api/mysql/usuarios` (primeros 50 usuarios con JOIN a `roles` y `empresas`)
 - `GET /api/mysql/auditorias` (primeras 50 auditorías con JOIN a empresa auditora, cliente y estado)
 - `GET /api/mysql/resumen` (conteos de tablas principales)
+
+### Login
+
+- `POST /api/auth/login`
+- Body esperado:
+
+```json
+{
+	"correo": "supervisor@auditcloud.com",
+	"password": "123456"
+}
+```
+
+La respuesta mantiene el formato `token` + `usuario`, y el usuario incluye `id_usuario`, `id_empresa`, `nombre`, `correo`, `id_rol` y `rol`.
 
 Ejemplos:
 
@@ -145,19 +162,21 @@ data/
 
 ```txt
 SUPERVISOR
-correo   : supervisor@auditora-demo.com
+correo   : supervisor@auditcloud.com
 password : 123456
 
 AUDITOR
-correo   : auditor@auditora-demo.com
+correo   : auditor@auditcloud.com
 password : 123456
 
 CLIENTE
-correo   : cliente@empresa-demo.com
+correo   : cliente@auditcloud.com
 password : 123456
 ```
 
 Nota: estas credenciales son solo para entorno local/demo.
+
+Nota adicional: el login usa MySQL; los usuarios demo ya existen en `auditcloud_db` y no deben recrearse desde el backend.
 
 
 ## Rutas Base
@@ -184,7 +203,7 @@ node test-firebase.js
 
 ## Notas Clave
 
-- La persistencia es por archivos JSON (sin DB relacional/no relacional).
+- La persistencia principal de autenticación es MySQL; varias rutas del sistema todavía usan JSON como soporte legado.
 - Las rutas protegidas usan `Authorization: Bearer <token>`.
 - Hay integraciones opcionales con PayPal, Firebase y SMTP.
 

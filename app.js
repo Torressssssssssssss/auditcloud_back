@@ -15,15 +15,42 @@ const timelineRoutes = require('./routes/timeline.routes');
 const mysqlRoutes = require('./routes/mysql.routes');
 const fragmentosRoutes = require('./routes/fragmentos.routes');
 const app = express();
-const PORT = 3000;
+const PORT = Number(process.env.PORT) || 3000;
+
+function normalizeOrigin(origin) {
+  return String(origin || '').trim().replace(/\/$/, '');
+}
+
+function getAllowedOrigins() {
+  const defaultOrigins = [
+    'http://localhost:5173',
+    'http://localhost:3000',
+    'http://localhost:4200',
+    'http://192.168.1.243:3000'
+  ];
+
+  const frontendUrl = process.env.FRONTEND_URL;
+  const envOrigins = frontendUrl
+    ? frontendUrl.split(',').map(normalizeOrigin).filter(Boolean)
+    : [];
+
+  return [...new Set([...envOrigins, ...defaultOrigins].map(normalizeOrigin).filter(Boolean))];
+}
 
 // Middleware base
 app.use(cors({
-  origin: [
-    'http://localhost:4200', 
-    'http://10.187.164.6',
-    'http://10.187.164.6:4200'
-  ],
+  origin(origin, callback) {
+    if (!origin) {
+      return callback(null, true);
+    }
+
+    const allowedOrigins = getAllowedOrigins();
+    if (allowedOrigins.includes(normalizeOrigin(origin))) {
+      return callback(null, true);
+    }
+
+    return callback(new Error(`Origen no permitido por CORS: ${origin}`));
+  },
   credentials: true
 }));
 app.use(express.json());
