@@ -187,3 +187,5 @@ node test-firebase.js
 - La persistencia es por archivos JSON (sin DB relacional/no relacional).
 - Las rutas protegidas usan `Authorization: Bearer <token>`.
 - Hay integraciones opcionales con PayPal, Firebase y SMTP.
+
+- Email y Firebase son opcionales en ambiente de desarrollo. Si no se configuran, el backend arranca sin esos servicios.
