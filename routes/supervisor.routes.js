@@ -4,9 +4,11 @@ const router = express.Router();
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const { query } = require('../utils/db');
 const { readJson, writeJson, getNextId, crearNotificacion } = require('../utils/jsonDb');
 const { authenticate, authorize } = require('../utils/auth');
 const { uploadFileToFirebase } = require('../utils/firebaseStorage');
+const { normalizeConversation, isCommercialConversation, isAuditConversation } = require('../utils/conversationContext');
 
 // Configuracion de carga de archivos
 const storage = multer.memoryStorage(); // Para Firebase
@@ -208,6 +210,95 @@ router.put('/empresa/:id', authenticate, authorize([1]), async (req, res) => {
 
 // Solicitudes de pago
 
+function empresaEsActiva(empresa = {}) {
+  return empresa.activo !== false && empresa.activa !== false;
+}
+
+async function validarDestinoSolicitudPago(idEmpresaDestino, idCliente) {
+  const empresaId = Number(idEmpresaDestino);
+  const clienteId = Number(idCliente);
+
+  try {
+    const [empresaRows, usuarioRows] = await Promise.all([
+      query(
+        `SELECT id_empresa, nombre, id_tipo_empresa, activo
+         FROM empresas
+         WHERE id_empresa = ?
+         LIMIT 1;`,
+        [empresaId]
+      ),
+      query(
+        `SELECT u.id_usuario, u.id_empresa, u.nombre, u.id_rol, u.activo, e.nombre AS nombre_empresa
+         FROM usuarios u
+         LEFT JOIN empresas e ON e.id_empresa = u.id_empresa
+         WHERE u.id_usuario = ?
+         LIMIT 1;`,
+        [clienteId]
+      )
+    ]);
+
+    const empresaMysql = empresaRows[0];
+    const usuarioMysql = usuarioRows[0];
+
+    if (empresaMysql && usuarioMysql) {
+      const empresaValida = Number(empresaMysql.activo) === 1 && Number(empresaMysql.id_tipo_empresa) === 2;
+      const usuarioValido = Number(usuarioMysql.activo) === 1 && Number(usuarioMysql.id_rol) === 3 && Number(usuarioMysql.id_empresa) === empresaId;
+
+      if (empresaValida && usuarioValido) {
+        return {
+          empresa: {
+            id_empresa: Number(empresaMysql.id_empresa),
+            nombre: empresaMysql.nombre || 'Empresa Cliente'
+          },
+          usuario: {
+            id_usuario: Number(usuarioMysql.id_usuario),
+            id_empresa: Number(usuarioMysql.id_empresa),
+            nombre: usuarioMysql.nombre || 'Usuario',
+            nombre_empresa: usuarioMysql.nombre_empresa || empresaMysql.nombre || 'Empresa Cliente'
+          },
+          origen: 'mysql'
+        };
+      }
+
+      if (!empresaValida) {
+        return { error: 'Empresa cliente no encontrada' };
+      }
+
+      return { error: 'Usuario cliente no encontrado o no pertenece a la empresa indicada' };
+    }
+  } catch (error) {
+    console.warn('Validación MySQL no disponible para solicitud de pago, usando JSON como respaldo:', error?.code || error?.message || error);
+  }
+
+  const empresasJson = await readJson('empresas.json');
+  const usuariosJson = await readJson('usuarios.json');
+
+  const empresaJson = empresasJson.find(e => Number(e.id_empresa) === empresaId && empresaEsActiva(e));
+  const usuarioJson = usuariosJson.find(u => Number(u.id_usuario) === clienteId && u.id_rol === 3 && empresaEsActiva(u) && Number(u.id_empresa) === empresaId);
+
+  if (!empresaJson) {
+    return { error: 'Empresa cliente no encontrada' };
+  }
+
+  if (!usuarioJson) {
+    return { error: 'Usuario cliente no encontrado o no pertenece a la empresa indicada' };
+  }
+
+  return {
+    empresa: {
+      id_empresa: Number(empresaJson.id_empresa),
+      nombre: empresaJson.nombre || 'Empresa Cliente'
+    },
+    usuario: {
+      id_usuario: Number(usuarioJson.id_usuario),
+      id_empresa: Number(usuarioJson.id_empresa),
+      nombre: usuarioJson.nombre || 'Usuario',
+      nombre_empresa: empresaJson.nombre || 'Empresa Cliente'
+    },
+    origen: 'json'
+  };
+}
+
 // POST /api/supervisor/solicitudes-pago
 router.post('/solicitudes-pago', authenticate, authorize([1]), async (req, res) => {
   try {
@@ -219,52 +310,65 @@ router.post('/solicitudes-pago', authenticate, authorize([1]), async (req, res) 
     }
 
     const solicitudes = await readJson('solicitudes_pago.json');
-    const empresas = await readJson('empresas.json');
-    const usuarios = await readJson('usuarios.json');
-
-    let nueva = null;
     const idSolicitud = await getNextId('solicitudes_pago.json', 'id_solicitud');
-    let id_usuario_destino = null;
-
-    // Caso A: empresa y usuario destino
-    if (id_empresa_destino && id_cliente) {
-      const empresaValida = empresas.some(e => e.id_empresa === Number(id_empresa_destino) && e.activo);
-      const clienteValido = usuarios.some(u => u.id_usuario === Number(id_cliente) && u.id_rol === 3 && u.activo);
-      
-      if (!empresaValida) return res.status(404).json({ message: 'Empresa cliente no encontrada' });
-      if (!clienteValido) return res.status(404).json({ message: 'Usuario cliente no encontrado' });
-      
-      id_usuario_destino = Number(id_cliente);
-    } 
-    // Caso B: solo empresa, usar usuario principal
-    else if (id_empresa_destino && !id_cliente) {
-      const empresaObjetivo = empresas.find(e => e.id_empresa === Number(id_empresa_destino) && e.activo);
-      if (!empresaObjetivo || empresaObjetivo.id_tipo_empresa !== 2) { 
-        return res.status(400).json({ message: 'Empresa cliente inválida' });
-      }
-
-      const usuarioPrincipal = usuarios.find(u => u.id_empresa === Number(id_empresa_destino) && u.id_rol === 3 && u.activo);
-      if (!usuarioPrincipal) {
-        return res.status(400).json({ message: 'La empresa no tiene usuarios administradores' });
-      }
-      
-      id_usuario_destino = usuarioPrincipal.id_usuario;
-    } else {
-      return res.status(400).json({ message: 'Faltan datos de la empresa o cliente destino' });
+    if (!id_empresa_destino || !id_cliente) {
+      return res.status(400).json({ message: 'id_empresa e id_cliente son obligatorios' });
     }
 
-    nueva = {
+    const destino = await validarDestinoSolicitudPago(id_empresa_destino, id_cliente);
+    if (destino.error) {
+      return res.status(404).json({ message: destino.error });
+    }
+
+    const creadoEn = new Date();
+    const creadoEnMysql = creadoEn.toISOString().slice(0, 19).replace('T', ' ');
+
+    const nueva = {
       id_solicitud: idSolicitud,
       id_empresa: Number(mi_id_empresa), // Supervisor es el dueño
       id_empresa_auditora: Number(mi_id_empresa),
-      id_empresa_cliente: Number(id_empresa_destino), // Cliente es el destino
-      id_cliente: id_usuario_destino,
+      id_empresa_cliente: Number(destino.usuario.id_empresa), // Cliente es el destino real
+      id_cliente: Number(destino.usuario.id_usuario),
       monto: Number(monto),
       concepto,
       id_estado: 1, // Pendiente
-      creado_en: new Date().toISOString(),
+      creado_en: creadoEn.toISOString(),
       creado_por_supervisor: req.user.id_usuario
     };
+
+    try {
+      await query(
+        `INSERT INTO solicitudes_pago (
+          id_solicitud,
+          id_empresa,
+          id_empresa_auditora,
+          id_empresa_cliente,
+          id_cliente,
+          monto,
+          concepto,
+          id_estado,
+          creado_en,
+          creado_por_supervisor,
+          creado_por_auditor,
+          pagada_en,
+          paypal_order_id
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL);`,
+        [
+          nueva.id_solicitud,
+          nueva.id_empresa,
+          nueva.id_empresa_auditora,
+          nueva.id_empresa_cliente,
+          nueva.id_cliente,
+          nueva.monto,
+          nueva.concepto,
+          nueva.id_estado,
+          creadoEnMysql,
+          nueva.creado_por_supervisor
+        ]
+      );
+    } catch (error) {
+      console.error('Error guardando solicitud en MySQL:', error?.code || error?.message || error);
+    }
 
     solicitudes.push(nueva);
     await writeJson('solicitudes_pago.json', solicitudes);
@@ -438,6 +542,7 @@ router.post('/auditorias/:idAuditoria/asignar', authenticate, authorize([1]), as
 
   const participantes = await readJson('auditoria_participantes.json');
   const auditorias = await readJson('auditorias.json');
+  const conversaciones = (await readJson('conversaciones.json')).map(normalizeConversation);
   
   const auditoria = auditorias.find(a => a.id_auditoria === idAuditoria);
   if (!auditoria || auditoria.id_empresa_auditora !== req.user.id_empresa) {
@@ -456,6 +561,39 @@ router.post('/auditorias/:idAuditoria/asignar', authenticate, authorize([1]), as
   
   participantes.push(nuevo);
   await writeJson('auditoria_participantes.json', participantes);
+
+  const idxConversacion = conversaciones.findIndex(c =>
+    isAuditConversation(c) &&
+    c.id_auditoria === idAuditoria &&
+    c.id_cliente === auditoria.id_cliente &&
+    c.id_empresa_auditora === auditoria.id_empresa_auditora &&
+    c.activo
+  );
+
+  if (idxConversacion === -1) {
+    const nuevaConversacion = {
+      id_conversacion: await getNextId('conversaciones.json', 'id_conversacion'),
+      id_cliente: auditoria.id_cliente,
+      id_empresa_auditora: auditoria.id_empresa_auditora,
+      id_auditoria: idAuditoria,
+      tipo_conversacion: 'AUDITORIA',
+      id_usuario_cliente: auditoria.id_cliente,
+      id_usuario_supervisor: req.user.id_usuario,
+      id_usuario_auditor: Number(id_auditor),
+      asunto: `Auditoría #${idAuditoria}`,
+      creado_en: new Date().toISOString(),
+      estado: 'ABIERTA',
+      activo: true
+    };
+
+    conversaciones.push(nuevaConversacion);
+    await writeJson('conversaciones.json', conversaciones);
+  } else {
+    conversaciones[idxConversacion].id_usuario_auditor = Number(id_auditor);
+    conversaciones[idxConversacion].id_auditor = Number(id_auditor);
+    conversaciones[idxConversacion].id_usuario_supervisor = conversaciones[idxConversacion].id_usuario_supervisor || req.user.id_usuario;
+    await writeJson('conversaciones.json', conversaciones);
+  }
   res.status(201).json({ message: 'Asignado correctamente', participante: nuevo });
 });
 
@@ -524,19 +662,76 @@ router.get('/clientes-con-auditorias', authenticate, authorize([1]), async (req,
 
 // Mensajeria y chat
 
+async function cargarClienteConEmpresa(idCliente) {
+  const usuarios = await readJson('usuarios.json');
+  const empresas = await readJson('empresas.json');
+
+  const usuarioJson = usuarios.find(u => u.id_usuario === Number(idCliente) && u.activo !== false);
+  const empresaJson = usuarioJson?.id_empresa
+    ? empresas.find(e => e.id_empresa === Number(usuarioJson.id_empresa) && (e.activo !== false && e.activa !== false))
+    : null;
+
+  if (usuarioJson && usuarioJson.id_empresa) {
+    return {
+      id_usuario: usuarioJson.id_usuario,
+      id_empresa: Number(usuarioJson.id_empresa),
+      nombre: usuarioJson.nombre || 'Usuario',
+      nombre_empresa: empresaJson?.nombre || 'Empresa Cliente'
+    };
+  }
+
+  try {
+    const rows = await query(
+      `SELECT
+        u.id_usuario,
+        u.id_empresa,
+        u.nombre,
+        e.nombre AS nombre_empresa
+      FROM usuarios u
+      LEFT JOIN empresas e ON e.id_empresa = u.id_empresa
+      WHERE u.id_usuario = ?
+      LIMIT 1;`,
+      [Number(idCliente)]
+    );
+
+    const usuarioMysql = rows[0];
+    if (usuarioMysql && usuarioMysql.id_empresa) {
+      return {
+        id_usuario: Number(usuarioMysql.id_usuario),
+        id_empresa: Number(usuarioMysql.id_empresa),
+        nombre: usuarioMysql.nombre || 'Usuario',
+        nombre_empresa: usuarioMysql.nombre_empresa || 'Empresa Cliente'
+      };
+    }
+  } catch (error) {
+    console.error('Error consultando MySQL para completar cliente de conversación:', error?.code || error?.message || error);
+  }
+
+  return {
+    id_usuario: Number(idCliente),
+    id_empresa: null,
+    nombre: usuarioJson?.nombre || 'Usuario',
+    nombre_empresa: empresaJson?.nombre || 'Empresa Cliente'
+  };
+}
+
 // GET /api/supervisor/conversaciones
 // Lista conversaciones de la empresa del supervisor
 router.get('/conversaciones', authenticate, authorize([1]), async (req, res) => {
   try {
     const idEmpresa = req.user.id_empresa;
     
-    const conversaciones = await readJson('conversaciones.json');
+    const conversaciones = (await readJson('conversaciones.json')).map(normalizeConversation);
     const mensajes = await readJson('mensajes.json');
     const usuarios = await readJson('usuarios.json');
     const empresas = await readJson('empresas.json');
 
     // Conversaciones de la empresa
-    const misConversaciones = conversaciones.filter(c => c.id_empresa_auditora === idEmpresa && c.activo);
+    const misConversaciones = conversaciones.filter(c =>
+      isCommercialConversation(c) &&
+      c.id_empresa_auditora === idEmpresa &&
+      c.activo
+    );
 
     const listaFinal = misConversaciones.map(conv => {
       // Ultimo mensaje
@@ -548,6 +743,11 @@ router.get('/conversaciones', authenticate, authorize([1]), async (req, res) => 
 
       return {
         ...conv,
+        id_empresa: conv.id_empresa_auditora,
+        id_supervisor: req.user.id_usuario,
+        id_auditor: conv.id_auditor || conv.id_usuario_auditor || null,
+        nombre_contacto: clienteUser?.nombre || 'Usuario',
+        rol_contacto: 'CLIENTE',
         cliente: {
           id_usuario: conv.id_cliente,
           nombre: clienteUser?.nombre || 'Usuario',
@@ -557,6 +757,17 @@ router.get('/conversaciones', authenticate, authorize([1]), async (req, res) => 
         ultimo_mensaje: ultimoMensaje
       };
     });
+
+    for (const item of listaFinal) {
+      if (!item.cliente.id_empresa) {
+        const clienteCompleto = await cargarClienteConEmpresa(item.cliente.id_usuario);
+        item.cliente = {
+          ...item.cliente,
+          ...clienteCompleto
+        };
+        item.nombre_contacto = clienteCompleto.nombre;
+      }
+    }
 
     listaFinal.sort((a, b) => {
       const fechaA = a.ultimo_mensaje ? new Date(a.ultimo_mensaje.creado_en) : new Date(a.creado_en);
@@ -575,10 +786,10 @@ router.get('/conversaciones', authenticate, authorize([1]), async (req, res) => 
 router.get('/mensajes/:idConversacion', authenticate, authorize([1]), async (req, res) => {
   const idConversacion = Number(req.params.idConversacion);
   const mensajes = await readJson('mensajes.json');
-  const conversaciones = await readJson('conversaciones.json');
+  const conversaciones = (await readJson('conversaciones.json')).map(normalizeConversation);
 
-  const conversacion = conversaciones.find(c => c.id_conversacion === idConversacion);
-  if (!conversacion || conversacion.id_empresa_auditora !== req.user.id_empresa) {
+  const conversacion = conversaciones.find(c => c.id_conversacion === idConversacion && c.activo);
+  if (!conversacion || !isCommercialConversation(conversacion) || conversacion.id_empresa_auditora !== req.user.id_empresa) {
     return res.status(403).json({ message: 'No tienes permiso' });
   }
   
@@ -597,13 +808,18 @@ router.post('/mensajes', authenticate, authorize([1]), async (req, res) => {
     if (!id_conversacion || !contenido) return res.status(400).json({ message: 'Faltan datos' });
 
     const mensajes = await readJson('mensajes.json');
-    const conversaciones = await readJson('conversaciones.json');
+    const conversaciones = (await readJson('conversaciones.json')).map(normalizeConversation);
     const usuarios = await readJson('usuarios.json');
     const empresas = await readJson('empresas.json');
 
-    const idxConv = conversaciones.findIndex(c => c.id_conversacion === Number(id_conversacion));
-    if (idxConv === -1 || conversaciones[idxConv].id_empresa_auditora !== req.user.id_empresa) {
+    const idxConv = conversaciones.findIndex(c => c.id_conversacion === Number(id_conversacion) && c.activo);
+    if (idxConv === -1 || !isCommercialConversation(conversaciones[idxConv]) || conversaciones[idxConv].id_empresa_auditora !== req.user.id_empresa) {
       return res.status(403).json({ message: 'Conversación no válida' });
+    }
+
+    if (!conversaciones[idxConv].id_supervisor) {
+      conversaciones[idxConv].id_supervisor = idUsuario;
+      conversaciones[idxConv].id_usuario_supervisor = idUsuario;
     }
 
     const idMensaje = await getNextId('mensajes.json', 'id_mensaje');

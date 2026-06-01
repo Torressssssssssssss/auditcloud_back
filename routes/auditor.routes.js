@@ -6,6 +6,7 @@ const path = require('path');
 const fs = require('fs');
 const { readJson, writeJson, getNextId, crearNotificacion } = require('../utils/jsonDb');
 const { authenticate, authorize } = require('../utils/auth');
+const { normalizeConversation, isAuditConversation } = require('../utils/conversationContext');
 
 // Configuracion de carga local
 
@@ -380,13 +381,19 @@ router.get('/conversaciones', authenticate, authorize([2]), async (req, res) => 
   try {
     const idEmpresaAuditora = req.user.id_empresa;
     
-    const conversaciones = await readJson('conversaciones.json');
+    const conversaciones = (await readJson('conversaciones.json')).map(normalizeConversation);
     const mensajes = await readJson('mensajes.json');
     const usuarios = await readJson('usuarios.json'); // nombres de cliente
     const empresas = await readJson('empresas.json'); // nombres de empresa cliente
+    const participantes = await readJson('auditoria_participantes.json');
 
     // Filtrar conversaciones de la empresa
-    const misConversaciones = conversaciones.filter(c => c.id_empresa_auditora === idEmpresaAuditora && c.activo);
+    const misConversaciones = conversaciones.filter(c =>
+      isAuditConversation(c) &&
+      c.id_empresa_auditora === idEmpresaAuditora &&
+      c.activo &&
+      (!c.id_auditoria || participantes.some(p => p.id_auditoria === c.id_auditoria && p.id_auditor === req.user.id_usuario))
+    );
 
     // Agregar ultimo mensaje y datos del cliente
     const listaFinal = misConversaciones.map(conv => {
@@ -400,6 +407,11 @@ router.get('/conversaciones', authenticate, authorize([2]), async (req, res) => 
 
       return {
         ...conv,
+        id_empresa: conv.id_empresa_auditora,
+        id_auditor: req.user.id_usuario,
+        id_supervisor: conv.id_supervisor || conv.id_usuario_supervisor || null,
+        nombre_contacto: clienteUser?.nombre || 'Usuario',
+        rol_contacto: 'CLIENTE',
         cliente: {
           id_usuario: conv.id_cliente,
           nombre: clienteUser?.nombre || 'Usuario',
@@ -427,12 +439,20 @@ router.get('/conversaciones', authenticate, authorize([2]), async (req, res) => 
 router.get('/mensajes/:idConversacion', authenticate, authorize([2]), async (req, res) => {
   const idConversacion = Number(req.params.idConversacion);
   const mensajes = await readJson('mensajes.json');
-  const conversaciones = await readJson('conversaciones.json');
+  const conversaciones = (await readJson('conversaciones.json')).map(normalizeConversation);
+  const participantes = await readJson('auditoria_participantes.json');
 
   // Validar acceso
-  const conversacion = conversaciones.find(c => c.id_conversacion === idConversacion);
-  if (!conversacion || conversacion.id_empresa_auditora !== req.user.id_empresa) {
+  const conversacion = conversaciones.find(c => c.id_conversacion === idConversacion && c.activo);
+  if (!conversacion || !isAuditConversation(conversacion) || conversacion.id_empresa_auditora !== req.user.id_empresa) {
     return res.status(403).json({ message: 'No tienes permiso para ver esta conversación' });
+  }
+
+  if (conversacion.id_auditoria) {
+    const tieneParticipacion = participantes.some(p => p.id_auditoria === conversacion.id_auditoria && p.id_auditor === req.user.id_usuario);
+    if (!tieneParticipacion) {
+      return res.status(403).json({ message: 'No tienes permiso para ver esta conversación' });
+    }
   }
   
   const historial = mensajes.filter(m => m.id_conversacion === idConversacion);
@@ -453,12 +473,14 @@ router.post('/mensajes', authenticate, authorize([2]), async (req, res) => {
     }
 
     const conversaciones = await readJson('conversaciones.json');
+    const conversacionesNormalizadas = conversaciones.map(normalizeConversation);
     const mensajes = await readJson('mensajes.json');
     const usuarios = await readJson('usuarios.json');
     const empresas = await readJson('empresas.json');
+    const participantes = await readJson('auditoria_participantes.json');
 
-    const conversacion = conversaciones.find(c => c.id_conversacion === Number(id_conversacion) && c.activo);
-    if (!conversacion) {
+    const conversacion = conversacionesNormalizadas.find(c => c.id_conversacion === Number(id_conversacion) && c.activo);
+    if (!conversacion || !isAuditConversation(conversacion)) {
       return res.status(404).json({ message: 'Conversación no encontrada' });
     }
 
@@ -471,6 +493,23 @@ router.post('/mensajes', authenticate, authorize([2]), async (req, res) => {
     const empresaAuditora = empresas.find(e => e.id_empresa === usuario.id_empresa);
     if (!empresaAuditora || empresaAuditora.id_empresa !== conversacion.id_empresa_auditora) {
       return res.status(403).json({ message: 'No tienes permisos para enviar mensajes en esta conversación' });
+    }
+
+    if (conversacion.id_auditoria) {
+      const tieneParticipacion = participantes.some(p => p.id_auditoria === conversacion.id_auditoria && p.id_auditor === idUsuario);
+      if (!tieneParticipacion) {
+        return res.status(403).json({ message: 'No tienes permisos para enviar mensajes en esta conversación' });
+      }
+    }
+
+    if (!conversacion.id_auditor) {
+      conversacion.id_auditor = idUsuario;
+      conversacion.id_usuario_auditor = idUsuario;
+      const idxConv = conversacionesNormalizadas.findIndex(c => c.id_conversacion === Number(id_conversacion));
+      if (idxConv !== -1) {
+        conversacionesNormalizadas[idxConv] = conversacion;
+        await writeJson('conversaciones.json', conversacionesNormalizadas);
+      }
     }
 
     // Crear mensaje
@@ -487,10 +526,10 @@ router.post('/mensajes', authenticate, authorize([2]), async (req, res) => {
     await writeJson('mensajes.json', mensajes);
 
     // Actualizar fecha de conversacion
-    const idxConv = conversaciones.findIndex(c => c.id_conversacion === Number(id_conversacion));
+    const idxConv = conversacionesNormalizadas.findIndex(c => c.id_conversacion === Number(id_conversacion));
     if (idxConv !== -1) {
-      conversaciones[idxConv].ultimo_mensaje_fecha = nuevoMensaje.creado_en;
-      await writeJson('conversaciones.json', conversaciones);
+      conversacionesNormalizadas[idxConv].ultimo_mensaje_fecha = nuevoMensaje.creado_en;
+      await writeJson('conversaciones.json', conversacionesNormalizadas);
     }
 
     // Notificar al cliente

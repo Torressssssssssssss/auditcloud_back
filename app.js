@@ -11,6 +11,7 @@ const supervisorRoutes = require('./routes/supervisor.routes');
 const clienteRoutes = require('./routes/cliente.routes');
 const auditorRoutes = require('./routes/auditor.routes');
 const paypalRoutes = require('./routes/paypal.routes');
+const mercadopagoRoutes = require('./routes/mercadopago.routes');
 const timelineRoutes = require('./routes/timeline.routes');
 const mysqlRoutes = require('./routes/mysql.routes');
 const fragmentosRoutes = require('./routes/fragmentos.routes');
@@ -61,6 +62,7 @@ app.use('/api/supervisor', supervisorRoutes);
 app.use('/api/cliente', clienteRoutes);
 app.use('/api/auditor', auditorRoutes);
 app.use('/api/paypal', paypalRoutes);
+app.use('/api/pagos/mercadopago', mercadopagoRoutes);
 
 // Servir uploads directos
 app.use('/uploads', async (req, res, next) => {

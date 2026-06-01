@@ -1,1 +1,26 @@
-[]
+[
+  {
+    "id_solicitud": 1,
+    "id_empresa": 1,
+    "id_empresa_auditora": 1,
+    "id_empresa_cliente": 101,
+    "id_cliente": 301,
+    "monto": 1,
+    "concepto": "A",
+    "id_estado": 1,
+    "creado_en": "2026-05-31T23:54:31.515Z",
+    "creado_por_supervisor": 1
+  },
+  {
+    "id_solicitud": 2,
+    "id_empresa": 1,
+    "id_empresa_auditora": 1,
+    "id_empresa_cliente": 101,
+    "id_cliente": 301,
+    "monto": 2,
+    "concepto": "A",
+    "id_estado": 1,
+    "creado_en": "2026-06-01T01:36:18.985Z",
+    "creado_por_supervisor": 1
+  }
+]
