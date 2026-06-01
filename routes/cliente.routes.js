@@ -3,8 +3,10 @@ const express = require('express');
 const router = express.Router();
 const path = require('path');
 const fs = require('fs');
+const { query } = require('../utils/db');
 const { readJson, writeJson, getNextId, crearNotificacion } = require('../utils/jsonDb');
 const { authenticate, authorize, signToken } = require('../utils/auth');
+const { normalizeConversation, isCommercialConversation, isAuditConversation } = require('../utils/conversationContext');
 
 // POST /api/cliente/registro
 // Registro de nuevo cliente (no requiere autenticación)
@@ -93,7 +95,7 @@ router.get('/conversaciones', authenticate, authorize([2]), async (req, res) => 
     const idAuditor = req.user.id_usuario;
     const idEmpresa = req.user.id_empresa;
 
-    const conversaciones = await readJson('conversaciones.json');
+    const conversaciones = (await readJson('conversaciones.json')).map(normalizeConversation);
     const mensajes = await readJson('mensajes.json');
     const usuarios = await readJson('usuarios.json');
     
@@ -113,9 +115,11 @@ router.get('/conversaciones', authenticate, authorize([2]), async (req, res) => 
 
     // Conversaciones de su empresa y clientes asignados
     const misConversaciones = conversaciones.filter(c => 
+      isAuditConversation(c) &&
       c.id_empresa_auditora === idEmpresa && 
       c.activo &&
-      misClientesIds.includes(c.id_cliente)
+      misClientesIds.includes(c.id_cliente) &&
+      (!c.id_auditoria || misAuditoriasIds.includes(c.id_auditoria))
     );
 
     // Enriquecer respuesta
@@ -127,10 +131,14 @@ router.get('/conversaciones', authenticate, authorize([2]), async (req, res) => 
 
       return {
         ...conv,
+        id_empresa: conv.id_empresa_auditora,
+        id_supervisor: conv.id_supervisor || conv.id_usuario_supervisor || null,
+        id_auditor: conv.id_auditor || conv.id_usuario_auditor || req.user.id_usuario,
+        nombre_contacto: clienteUser?.nombre || 'Cliente',
+        rol_contacto: 'CLIENTE',
         cliente: {
           id_usuario: conv.id_cliente,
-          nombre: clienteUser?.nombre || 'Cliente',
-          // No exponer datos sensibles
+          nombre: clienteUser?.nombre || 'Cliente'
         },
         ultimo_mensaje: ultimoMensaje
       };
@@ -155,6 +163,24 @@ router.get('/conversaciones', authenticate, authorize([2]), async (req, res) => 
 router.get('/mensajes/:idConversacion', authenticate, authorize([3]), async (req, res) => {
   const idConversacion = Number(req.params.idConversacion);
   const mensajes = await readJson('mensajes.json');
+  const conversaciones = (await readJson('conversaciones.json')).map(normalizeConversation);
+  const participantes = await readJson('auditoria_participantes.json');
+  const auditorias = await readJson('auditorias.json');
+  const usuarios = await readJson('usuarios.json');
+  
+  const conversacion = conversaciones.find(c => c.id_conversacion === idConversacion && c.activo);
+  if (!conversacion || conversacion.id_cliente !== req.user.id_usuario) {
+    return res.status(403).json({ message: 'No tienes permiso' });
+  }
+
+  if (isAuditConversation(conversacion) && conversacion.id_auditoria) {
+    const auditoria = auditorias.find(a => a.id_auditoria === conversacion.id_auditoria);
+    const asignacion = participantes.find(p => p.id_auditoria === auditoria?.id_auditoria);
+    const auditor = asignacion ? usuarios.find(u => u.id_usuario === asignacion.id_auditor) : null;
+    if (!asignacion || !auditor) {
+      return res.status(404).json({ message: 'Chat de auditoría no disponible todavía' });
+    }
+  }
   
   // Filtrar mensajes de la conversacion
   const historial = mensajes.filter(m => m.id_conversacion === idConversacion);
@@ -174,7 +200,7 @@ router.post('/mensajes', authenticate, authorize([3]), async (req, res) => {
 
     if (!contenido) return res.status(400).json({ message: 'Contenido obligatorio' });
 
-    const conversaciones = await readJson('conversaciones.json');
+    const conversaciones = (await readJson('conversaciones.json')).map(normalizeConversation);
     const mensajes = await readJson('mensajes.json');
 
     let conversacionId = id_conversacion;
@@ -185,8 +211,10 @@ router.post('/mensajes', authenticate, authorize([3]), async (req, res) => {
 
       // Evitar duplicados
       const existe = conversaciones.find(c => 
+        isCommercialConversation(c) &&
         c.id_cliente === idUsuario && 
-        c.id_empresa_auditora === Number(id_empresa_auditora)
+        c.id_empresa_auditora === Number(id_empresa_auditora) &&
+        c.activo
       );
 
       if (existe) {
@@ -198,13 +226,24 @@ router.post('/mensajes', authenticate, authorize([3]), async (req, res) => {
           id_conversacion: conversacionId,
           id_cliente: idUsuario,
           id_empresa_auditora: Number(id_empresa_auditora),
+          tipo_conversacion: 'COMERCIAL',
+          id_auditoria: null,
+          id_usuario_cliente: idUsuario,
+          id_usuario_supervisor: null,
+          id_usuario_auditor: null,
           asunto: 'Consulta General',
           creado_en: new Date().toISOString(),
+          estado: 'ABIERTA',
           activo: true
         };
         conversaciones.push(nueva);
         await writeJson('conversaciones.json', conversaciones);
       }
+    }
+
+    const conversacionActual = conversaciones.find(c => c.id_conversacion === Number(conversacionId) && c.activo);
+    if (!conversacionActual || conversacionActual.id_cliente !== idUsuario) {
+      return res.status(403).json({ message: 'No tienes permisos para enviar mensajes en esta conversación' });
     }
 
     // Crear mensaje
@@ -246,22 +285,56 @@ router.post('/conversaciones', authenticate, authorize([3]), async (req, res) =>
     return res.status(400).json({ message: 'id_cliente, id_empresa_auditora, asunto y primer_mensaje son obligatorios' });
   }
 
-  const conversaciones = await readJson('conversaciones.json');
+  const conversaciones = (await readJson('conversaciones.json')).map(normalizeConversation);
   const mensajes = await readJson('mensajes.json');
   const empresas = await readJson('empresas.json');
-  const usuarios = await readJson('usuarios.json');
-  const clienteValido = usuarios.some(u => u.id_usuario === Number(id_cliente) && u.id_rol === 3 && u.activo);
-  const empresaValida = empresas.some(e => e.id_empresa === Number(id_empresa_auditora) && e.activo);
-  if (!clienteValido) return res.status(404).json({ message: 'Cliente no encontrado o inactivo' });
+  const empresaValida = empresas.some(e => e.id_empresa === Number(id_empresa_auditora) && (e.activo ?? e.activa));
   if (!empresaValida) return res.status(404).json({ message: 'Empresa auditora no encontrada o inactiva' });
+
+  if (Number(id_cliente) !== req.user.id_usuario) {
+    return res.status(403).json({ message: 'No tienes permisos para crear una conversación para otro cliente' });
+  }
+
+  const existente = conversaciones.find(c => 
+    isCommercialConversation(c) &&
+    c.id_cliente === Number(id_cliente) && 
+    c.id_empresa_auditora === Number(id_empresa_auditora) &&
+    c.activo
+  );
+
+  if (existente) {
+    const idMensaje = await getNextId('mensajes.json', 'id_mensaje');
+    const mensajeInicial = {
+      id_mensaje: idMensaje,
+      id_conversacion: existente.id_conversacion,
+      emisor_tipo: 'CLIENTE',
+      emisor_id: Number(id_cliente),
+      contenido: primer_mensaje,
+      creado_en: new Date().toISOString()
+    };
+    mensajes.push(mensajeInicial);
+    await writeJson('mensajes.json', mensajes);
+
+    return res.status(201).json({
+      message: 'Conversación creada',
+      conversacion: existente,
+      primer_mensaje: mensajeInicial
+    });
+  }
 
   const idConversacion = await getNextId('conversaciones.json', 'id_conversacion');
   const nueva = {
     id_conversacion: idConversacion,
     id_cliente: Number(id_cliente),
     id_empresa_auditora: Number(id_empresa_auditora),
+    tipo_conversacion: 'COMERCIAL',
+    id_auditoria: null,
+    id_usuario_cliente: Number(id_cliente),
+    id_usuario_supervisor: null,
+    id_usuario_auditor: null,
     asunto,
     creado_en: new Date().toISOString(),
+    estado: 'ABIERTA',
     activo: true
   };
 
@@ -293,9 +366,12 @@ router.get('/conversaciones/:idCliente', authenticate, authorize([3]), async (re
   try {
     const idCliente = Number(req.params.idCliente);
     
-    const conversaciones = await readJson('conversaciones.json');
+    const conversaciones = (await readJson('conversaciones.json')).map(normalizeConversation);
     const mensajes = await readJson('mensajes.json');
     const empresas = await readJson('empresas.json');
+    const usuarios = await readJson('usuarios.json');
+    const auditorias = await readJson('auditorias.json');
+    const participantes = await readJson('auditoria_participantes.json');
 
     // Filtrar conversaciones de este cliente
     const misConversaciones = conversaciones.filter(c => c.id_cliente === idCliente && c.activo);
@@ -304,9 +380,20 @@ router.get('/conversaciones/:idCliente', authenticate, authorize([3]), async (re
       const msgsDeChat = mensajes.filter(m => m.id_conversacion === conv.id_conversacion);
       const ultimoMensaje = msgsDeChat.length > 0 ? msgsDeChat[msgsDeChat.length - 1] : null;
       const empresa = empresas.find(e => e.id_empresa === conv.id_empresa_auditora);
+      const auditoria = conv.id_auditoria ? auditorias.find(a => a.id_auditoria === conv.id_auditoria) : null;
+      const asignacion = auditoria ? participantes.find(p => p.id_auditoria === auditoria.id_auditoria) : null;
+      const auditor = asignacion ? usuarios.find(u => u.id_usuario === asignacion.id_auditor) : null;
+      const esAudit = isAuditConversation(conv);
 
       return {
         ...conv,
+        id_empresa: conv.id_empresa_auditora,
+        id_supervisor: conv.id_supervisor || conv.id_usuario_supervisor || null,
+        id_auditor: conv.id_auditor || conv.id_usuario_auditor || auditor?.id_usuario || null,
+        nombre_contacto: esAudit
+          ? auditor?.nombre || 'Auditor asignado'
+          : empresa?.contacto_nombre || empresa?.nombre || 'Supervisor',
+        rol_contacto: esAudit ? 'AUDITOR' : 'SUPERVISOR',
         empresa: {
           id_empresa: empresa?.id_empresa,
           nombre: empresa?.nombre
@@ -418,36 +505,68 @@ router.post('/solicitudes-pago', authenticate, authorize([2]), async (req, res) 
 });
 
 // GET /api/cliente/empresas-auditoras
-// Lista empresas auditoras disponibles (solo las que tienen módulos configurados)
+// Lista empresas auditoras activas desde MySQL.
 router.get('/empresas-auditoras', authenticate, authorize([3]), async (req, res) => {
   try {
-    const empresas = await readJson('empresas.json');
-    const empresaModulos = await readJson('empresa_modulos.json');
-
-    // Filtrar solo empresas auditoras activas
-    const empresasAuditoras = empresas.filter(
-      e => e.id_tipo_empresa === 1 && e.activo
+    const rows = await query(
+      `SELECT
+        e.id_empresa,
+        e.nombre,
+        e.tipo_auditoria,
+        e.rfc,
+        e.giro,
+        e.direccion,
+        e.ciudad,
+        e.estado,
+        e.pais,
+        e.contacto_nombre,
+        e.contacto_correo,
+        e.contacto_telefono,
+        e.activo,
+        em.id_modulo,
+        m.nombre AS modulo_nombre,
+        m.clave AS modulo_clave
+      FROM empresas e
+      LEFT JOIN empresa_modulos em ON em.id_empresa = e.id_empresa
+      LEFT JOIN modulos_ambientales m ON m.id_modulo = em.id_modulo
+      WHERE e.id_tipo_empresa = 1
+        AND e.activo = 1
+      ORDER BY e.id_empresa, em.id_modulo;`
     );
 
-    // Obtener módulos por empresa
-    const empresasConModulos = empresasAuditoras
-      .map(empresa => {
-        const modulos = empresaModulos
-          .filter(em => em.id_empresa === empresa.id_empresa)
-          .map(em => em.id_modulo);
+    const empresasMap = new Map();
 
-        return {
-          id_empresa: empresa.id_empresa,
-          nombre: empresa.nombre,
-          pais: empresa.pais || null,
-          estado: empresa.estado || null,
-          ciudad: empresa.ciudad || null,
-          modulos: modulos
-        };
-      })
-      .filter(emp => emp.modulos.length > 0); // Solo empresas con al menos un módulo
+    for (const row of rows) {
+      if (!empresasMap.has(row.id_empresa)) {
+        empresasMap.set(row.id_empresa, {
+          id_empresa: row.id_empresa,
+          nombre: row.nombre,
+          tipo_auditoria: row.tipo_auditoria,
+          rfc: row.rfc || null,
+          giro: row.giro || null,
+          direccion: row.direccion || null,
+          ciudad: row.ciudad || null,
+          estado: row.estado || null,
+          pais: row.pais || null,
+          contacto_nombre: row.contacto_nombre || null,
+          contacto_correo: row.contacto_correo || null,
+          contacto_telefono: row.contacto_telefono || null,
+          activo: row.activo,
+          modulos: []
+        });
+      }
 
-    res.json(empresasConModulos);
+      if (row.id_modulo !== null && row.id_modulo !== undefined) {
+        const empresa = empresasMap.get(row.id_empresa);
+        empresa.modulos.push({
+          id_modulo: row.id_modulo,
+          nombre: row.modulo_nombre,
+          clave: row.modulo_clave
+        });
+      }
+    }
+
+    res.json(Array.from(empresasMap.values()));
   } catch (error) {
     console.error('Error al obtener empresas auditoras:', error);
     res.status(500).json({ message: error.message || 'Error al obtener empresas auditoras' });
@@ -463,7 +582,7 @@ router.get('/empresas-auditoras/:id', authenticate, authorize([3]), async (req, 
     const empresaModulos = await readJson('empresa_modulos.json');
     const modulosAmbientales = await readJson('modulos_ambientales.json');
 
-    const empresa = empresas.find(e => e.id_empresa === idEmpresa && e.id_tipo_empresa === 1 && e.activo);
+    const empresa = empresas.find(e => e.id_empresa === idEmpresa && e.id_tipo_empresa === 1 && (e.activo ?? e.activa));
     if (!empresa) {
       return res.status(404).json({ message: 'Empresa auditora no encontrada' });
     }
@@ -565,7 +684,7 @@ router.post('/mensajes', authenticate, authorize([3]), async (req, res) => {
         return res.status(400).json({ message: 'id_empresa_auditora es obligatorio si no hay id_conversacion' });
       }
 
-      const empresaValida = empresas.find(e => e.id_empresa === Number(id_empresa_auditora) && e.activo);
+      const empresaValida = empresas.find(e => e.id_empresa === Number(id_empresa_auditora) && (e.activo ?? e.activa));
       if (!empresaValida) {
         return res.status(404).json({ message: 'Empresa auditora no encontrada o inactiva' });
       }

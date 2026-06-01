@@ -1,1 +1,17 @@
-[]
+[
+  {
+    "id_conversacion": 1,
+    "id_cliente": 301,
+    "id_empresa_auditora": 1,
+    "tipo_conversacion": "COMERCIAL",
+    "id_auditoria": null,
+    "id_usuario_cliente": 301,
+    "id_usuario_supervisor": null,
+    "id_usuario_auditor": null,
+    "asunto": "Consulta General",
+    "creado_en": "2026-05-31T23:07:11.332Z",
+    "estado": "ABIERTA",
+    "activo": true,
+    "ultimo_mensaje_fecha": "2026-05-31T23:07:11.334Z"
+  }
+]

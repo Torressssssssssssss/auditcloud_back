@@ -1,1 +1,10 @@
-[]
+[
+  {
+    "id_mensaje": 1,
+    "id_conversacion": 1,
+    "emisor_tipo": "CLIENTE",
+    "emisor_id": 301,
+    "contenido": "Hola, quiero información para una auditoría ambiental.",
+    "creado_en": "2026-05-31T23:07:11.334Z"
+  }
+]
