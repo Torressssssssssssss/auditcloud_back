@@ -12,6 +12,9 @@
     "creado_en": "2026-05-31T23:07:11.332Z",
     "estado": "ABIERTA",
     "activo": true,
-    "ultimo_mensaje_fecha": "2026-05-31T23:07:11.334Z"
+    "ultimo_mensaje_fecha": "2026-06-03T13:40:58.576Z",
+    "id_empresa": 1,
+    "id_supervisor": null,
+    "id_auditor": null
   }
 ]

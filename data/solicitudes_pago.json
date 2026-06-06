@@ -22,5 +22,17 @@
     "id_estado": 1,
     "creado_en": "2026-06-01T01:36:18.985Z",
     "creado_por_supervisor": 1
+  },
+  {
+    "id_solicitud": 3,
+    "id_empresa": 1,
+    "id_empresa_auditora": 1,
+    "id_empresa_cliente": 101,
+    "id_cliente": 301,
+    "monto": 1000,
+    "concepto": "Au",
+    "id_estado": 1,
+    "creado_en": "2026-06-03T14:06:36.747Z",
+    "creado_por_supervisor": 1
   }
 ]
