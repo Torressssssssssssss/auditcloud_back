@@ -39,5 +39,16 @@
     "activo": true,
     "google_id": "103318433595875255294",
     "creado_en": "2026-06-03T17:38:58.836Z"
+  },
+  {
+    "id_usuario": 5,
+    "id_empresa": 3,
+    "nombre": "WeroML",
+    "correo": "supercrack1021@gmail.com",
+    "password_hash": null,
+    "id_rol": 3,
+    "activo": true,
+    "google_id": "116438965805343819876",
+    "creado_en": "2026-06-10T04:17:38.820Z"
   }
 ]

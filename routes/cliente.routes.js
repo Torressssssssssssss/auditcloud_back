@@ -578,37 +578,66 @@ router.get('/empresas-auditoras', authenticate, authorize([3]), async (req, res)
 router.get('/empresas-auditoras/:id', authenticate, authorize([3]), async (req, res) => {
   try {
     const idEmpresa = Number(req.params.id);
-    const empresas = await readJson('empresas.json');
-    const empresaModulos = await readJson('empresa_modulos.json');
-    const modulosAmbientales = await readJson('modulos_ambientales.json');
 
-    const empresa = empresas.find(e => e.id_empresa === idEmpresa && e.id_tipo_empresa === 1 && (e.activo ?? e.activa));
-    if (!empresa) {
+    const rows = await query(
+      `SELECT
+        e.id_empresa,
+        e.nombre,
+        e.tipo_auditoria,
+        e.rfc,
+        e.giro,
+        e.direccion,
+        e.ciudad,
+        e.estado,
+        e.pais,
+        e.contacto_nombre,
+        e.contacto_correo,
+        e.contacto_telefono,
+        e.activo,
+        em.id_modulo,
+        m.nombre AS modulo_nombre,
+        m.clave AS modulo_clave
+      FROM empresas e
+      LEFT JOIN empresa_modulos em ON em.id_empresa = e.id_empresa
+      LEFT JOIN modulos_ambientales m ON m.id_modulo = em.id_modulo
+      WHERE e.id_empresa = ? AND e.id_tipo_empresa = 1 AND e.activo = 1;`,
+      [idEmpresa]
+    );
+
+    if (!rows || rows.length === 0) {
       return res.status(404).json({ message: 'Empresa auditora no encontrada' });
     }
 
-    // Obtener módulos de la empresa
-    const modulosIds = empresaModulos
-      .filter(em => em.id_empresa === idEmpresa)
-      .map(em => em.id_modulo);
+    const row = rows[0];
+    const modulosIds = [];
+    const modulosDetalle = [];
 
-    const modulos = modulosIds.map(id => {
-      const modulo = modulosAmbientales.find(m => m.id_modulo === id);
-      return modulo ? { id_modulo: modulo.id_modulo, nombre: modulo.nombre, clave: modulo.clave } : null;
-    }).filter(m => m !== null);
+    for (const r of rows) {
+      if (r.id_modulo !== null && r.id_modulo !== undefined) {
+        if (!modulosIds.includes(r.id_modulo)) {
+          modulosIds.push(r.id_modulo);
+          modulosDetalle.push({
+            id_modulo: r.id_modulo,
+            nombre: r.modulo_nombre,
+            clave: r.modulo_clave
+          });
+        }
+      }
+    }
 
     res.json({
-      id_empresa: empresa.id_empresa,
-      nombre: empresa.nombre,
-      rfc: empresa.rfc || null,
-      direccion: empresa.direccion || null,
-      telefono: empresa.contacto_telefono || null,
-      pais: empresa.pais || null,
-      estado: empresa.estado || null,
-      ciudad: empresa.ciudad || null,
+      id_empresa: row.id_empresa,
+      nombre: row.nombre,
+      tipo_auditoria: row.tipo_auditoria,
+      rfc: row.rfc || null,
+      direccion: row.direccion || null,
+      telefono: row.contacto_telefono || null,
+      pais: row.pais || null,
+      estado: row.estado || null,
+      ciudad: row.ciudad || null,
       modulos: modulosIds,
-      modulos_detalle: modulos,
-      descripcion: empresa.giro || null
+      modulos_detalle: modulosDetalle,
+      descripcion: row.giro || null
     });
   } catch (error) {
     console.error('Error al obtener detalle de empresa:', error);
