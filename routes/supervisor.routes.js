@@ -9,6 +9,18 @@ const { readJson, writeJson, getNextId, crearNotificacion } = require('../utils/
 const { authenticate, authorize } = require('../utils/auth');
 const { uploadFileToFirebase } = require('../utils/firebaseStorage');
 const { normalizeConversation, isCommercialConversation, isAuditConversation } = require('../utils/conversationContext');
+const {
+  isEstadoAuditoriaValido,
+  updateAuditoriaEstadoMysql,
+  syncAuditoriaEstadoJson
+} = require('../utils/auditoriaState.service');
+const {
+  assignAuditorMysql,
+  addAuditoriaModuloMysql,
+  syncAuditoriaParticipanteJson,
+  syncAuditoriaModuloJson
+} = require('../utils/auditoriaPostCreation.service');
+const { updateAuditoria } = require('../utils/elasticsearchAuditorias.service');
 
 // Configuracion de carga de archivos
 const storage = multer.memoryStorage(); // Para Firebase
@@ -499,38 +511,49 @@ router.get('/auditorias/:idEmpresa', authenticate, authorize([1]), async (req, r
 
 // Actualizar estado de auditoria
 router.put('/auditorias/:idAuditoria/estado', authenticate, authorize([1]), async (req, res) => {
-  const idAuditoria = Number(req.params.idAuditoria);
-  const { id_estado } = req.body;
-  
-  if (!id_estado) return res.status(400).json({ message: 'Falta id_estado' });
-
-  const auditorias = await readJson('auditorias.json');
-  const idx = auditorias.findIndex(a => a.id_auditoria === idAuditoria);
-  
-  if (idx === -1) return res.status(404).json({ message: 'Auditoría no encontrada' });
-  
-  if (auditorias[idx].id_empresa_auditora !== req.user.id_empresa) {
-    return res.status(403).json({ message: 'No tienes permiso' });
-  }
-
-  auditorias[idx].id_estado = Number(id_estado);
-  auditorias[idx].estado_actualizado_en = new Date().toISOString();
-  await writeJson('auditorias.json', auditorias);
-
-  // Notificar al cliente
   try {
-    if (auditorias[idx].id_cliente) {
-      await crearNotificacion({
-        id_cliente: auditorias[idx].id_cliente,
-        id_auditoria: idAuditoria,
-        tipo: 'estado_cambiado',
-        titulo: 'Estado actualizado',
-        mensaje: `Tu auditoría #${idAuditoria} cambió de estado.`
-      });
-    }
-  } catch (e) { console.error(e); }
+    const idAuditoria = Number(req.params.idAuditoria);
+    const idEstado = Number(req.body.id_estado);
 
-  res.json({ message: 'Estado actualizado', auditoria: auditorias[idx] });
+    if (!isEstadoAuditoriaValido(idEstado)) {
+      return res.status(400).json({ message: 'id_estado debe ser 1, 2 o 3' });
+    }
+
+    const auditoriaMysql = await updateAuditoriaEstadoMysql(idAuditoria, idEstado, {
+      idEmpresaAuditora: req.user.id_empresa
+    });
+    await updateAuditoria(idAuditoria);
+
+    // Compatibilidad temporal: MySQL ya fue actualizado; ahora se refleja en JSON.
+    const auditoriaJson = await syncAuditoriaEstadoJson(auditoriaMysql);
+
+    try {
+      if (auditoriaJson.id_cliente) {
+        await crearNotificacion({
+          id_cliente: auditoriaJson.id_cliente,
+          id_auditoria: idAuditoria,
+          tipo: 'estado_cambiado',
+          titulo: 'Estado actualizado',
+          mensaje: `Auditoria #${idAuditoria} cambio de estado.`
+        });
+      }
+    } catch (e) { console.error(e); }
+
+    res.json({ message: 'Estado actualizado', auditoria: auditoriaJson });
+  } catch (error) {
+    if (error.code === 'AUDITORIA_ESTADO_INVALIDO') {
+      return res.status(400).json({ message: 'id_estado debe ser 1, 2 o 3' });
+    }
+    if (error.code === 'AUDITORIA_NOT_FOUND') {
+      return res.status(404).json({ message: 'Auditoria no encontrada' });
+    }
+    if (error.code === 'AUDITORIA_FORBIDDEN') {
+      return res.status(403).json({ message: 'No tienes permiso' });
+    }
+
+    console.error('Error actualizando estado de auditoria:', error);
+    res.status(500).json({ message: 'Error interno' });
+  }
 });
 
 // Asignar auditor
@@ -540,61 +563,66 @@ router.post('/auditorias/:idAuditoria/asignar', authenticate, authorize([1]), as
 
   if (!id_auditor) return res.status(400).json({ message: 'Falta id_auditor' });
 
-  const participantes = await readJson('auditoria_participantes.json');
-  const auditorias = await readJson('auditorias.json');
-  const conversaciones = (await readJson('conversaciones.json')).map(normalizeConversation);
-  
-  const auditoria = auditorias.find(a => a.id_auditoria === idAuditoria);
-  if (!auditoria || auditoria.id_empresa_auditora !== req.user.id_empresa) {
-    return res.status(403).json({ message: 'Auditoría inválida o sin permisos' });
-  }
+  try {
+    const resultadoMysql = await assignAuditorMysql({
+      idAuditoria,
+      idAuditor: Number(id_auditor),
+      idEmpresaAuditora: req.user.id_empresa
+    });
+    await updateAuditoria(idAuditoria);
 
-  const yaAsignado = participantes.some(p => p.id_auditoria === idAuditoria && p.id_auditor === Number(id_auditor));
-  if (yaAsignado) return res.status(400).json({ message: 'Auditor ya asignado' });
+    const nuevoParticipante = await syncAuditoriaParticipanteJson(resultadoMysql.asignacion);
+    const auditoria = resultadoMysql.auditoria;
+    const conversaciones = (await readJson('conversaciones.json')).map(normalizeConversation);
 
-  const nuevo = {
-    id_participante: await getNextId('auditoria_participantes.json', 'id_participante'),
-    id_auditoria: idAuditoria,
-    id_auditor: Number(id_auditor),
-    asignado_en: new Date().toISOString()
-  };
-  
-  participantes.push(nuevo);
-  await writeJson('auditoria_participantes.json', participantes);
+    const idxConversacion = conversaciones.findIndex(c =>
+      isAuditConversation(c) &&
+      c.id_auditoria === idAuditoria &&
+      c.id_cliente === auditoria.id_cliente &&
+      c.id_empresa_auditora === auditoria.id_empresa_auditora &&
+      c.activo
+    );
 
-  const idxConversacion = conversaciones.findIndex(c =>
-    isAuditConversation(c) &&
-    c.id_auditoria === idAuditoria &&
-    c.id_cliente === auditoria.id_cliente &&
-    c.id_empresa_auditora === auditoria.id_empresa_auditora &&
-    c.activo
-  );
+    if (idxConversacion === -1) {
+      conversaciones.push({
+        id_conversacion: await getNextId('conversaciones.json', 'id_conversacion'),
+        id_cliente: auditoria.id_cliente,
+        id_empresa_auditora: auditoria.id_empresa_auditora,
+        id_auditoria: idAuditoria,
+        tipo_conversacion: 'AUDITORIA',
+        id_usuario_cliente: auditoria.id_cliente,
+        id_usuario_supervisor: req.user.id_usuario,
+        id_usuario_auditor: Number(id_auditor),
+        asunto: `Auditoria #${idAuditoria}`,
+        creado_en: new Date().toISOString(),
+        estado: 'ABIERTA',
+        activo: true
+      });
+    } else {
+      conversaciones[idxConversacion].id_usuario_auditor = Number(id_auditor);
+      conversaciones[idxConversacion].id_auditor = Number(id_auditor);
+      conversaciones[idxConversacion].id_usuario_supervisor = conversaciones[idxConversacion].id_usuario_supervisor || req.user.id_usuario;
+    }
 
-  if (idxConversacion === -1) {
-    const nuevaConversacion = {
-      id_conversacion: await getNextId('conversaciones.json', 'id_conversacion'),
-      id_cliente: auditoria.id_cliente,
-      id_empresa_auditora: auditoria.id_empresa_auditora,
-      id_auditoria: idAuditoria,
-      tipo_conversacion: 'AUDITORIA',
-      id_usuario_cliente: auditoria.id_cliente,
-      id_usuario_supervisor: req.user.id_usuario,
-      id_usuario_auditor: Number(id_auditor),
-      asunto: `Auditoría #${idAuditoria}`,
-      creado_en: new Date().toISOString(),
-      estado: 'ABIERTA',
-      activo: true
-    };
-
-    conversaciones.push(nuevaConversacion);
     await writeJson('conversaciones.json', conversaciones);
-  } else {
-    conversaciones[idxConversacion].id_usuario_auditor = Number(id_auditor);
-    conversaciones[idxConversacion].id_auditor = Number(id_auditor);
-    conversaciones[idxConversacion].id_usuario_supervisor = conversaciones[idxConversacion].id_usuario_supervisor || req.user.id_usuario;
-    await writeJson('conversaciones.json', conversaciones);
+    res.status(201).json({ message: 'Asignado correctamente', participante: nuevoParticipante });
+  } catch (error) {
+    if (error.code === 'AUDITORIA_NOT_FOUND') {
+      return res.status(404).json({ message: 'Auditoria no encontrada' });
+    }
+    if (error.code === 'AUDITORIA_FORBIDDEN') {
+      return res.status(403).json({ message: 'No tienes permiso' });
+    }
+    if (error.code === 'AUDITORIA_PARTICIPANTE_DUPLICADO') {
+      return res.status(400).json({ message: 'Auditor ya asignado' });
+    }
+    if (error.code === 'AUDITORIA_AUDITOR_INVALIDO') {
+      return res.status(400).json({ message: error.message });
+    }
+
+    console.error('Error asignando auditor en MySQL:', error);
+    res.status(500).json({ message: 'Error interno' });
   }
-  res.status(201).json({ message: 'Asignado correctamente', participante: nuevo });
 });
 
 // Agregar modulo a auditoria
@@ -602,18 +630,36 @@ router.post('/auditorias/:idAuditoria/modulos', authenticate, authorize([1]), as
   const idAuditoria = Number(req.params.idAuditoria);
   const { id_modulo } = req.body;
 
-  const am = await readJson('auditoria_modulos.json');
-  
-  const nuevo = {
-    id_auditoria_modulo: await getNextId('auditoria_modulos.json', 'id_auditoria_modulo'),
-    id_auditoria: idAuditoria,
-    id_modulo: Number(id_modulo),
-    registrado_en: new Date().toISOString()
-  };
-  
-  am.push(nuevo);
-  await writeJson('auditoria_modulos.json', am);
-  res.status(201).json({ message: 'Módulo agregado', item: nuevo });
+  if (!id_modulo) return res.status(400).json({ message: 'Falta id_modulo' });
+
+  try {
+    const itemMysql = await addAuditoriaModuloMysql({
+      idAuditoria,
+      idModulo: Number(id_modulo),
+      idEmpresaAuditora: req.user.id_empresa
+    });
+    await updateAuditoria(idAuditoria);
+
+    const itemJson = await syncAuditoriaModuloJson(itemMysql);
+
+    res.status(201).json({ message: 'Modulo agregado', item: itemJson });
+  } catch (error) {
+    if (error.code === 'AUDITORIA_NOT_FOUND') {
+      return res.status(404).json({ message: 'Auditoria no encontrada' });
+    }
+    if (error.code === 'AUDITORIA_FORBIDDEN') {
+      return res.status(403).json({ message: 'No tienes permiso' });
+    }
+    if (error.code === 'AUDITORIA_MODULO_INVALIDO') {
+      return res.status(400).json({ message: 'Modulo ambiental no encontrado' });
+    }
+    if (error.code === 'AUDITORIA_MODULO_DUPLICADO') {
+      return res.status(400).json({ message: 'Modulo ya agregado a la auditoria' });
+    }
+
+    console.error('Error agregando modulo en MySQL:', error);
+    res.status(500).json({ message: 'Error interno' });
+  }
 });
 
 // Obtener participantes

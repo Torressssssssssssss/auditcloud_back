@@ -15,6 +15,7 @@ const mercadopagoRoutes = require('./routes/mercadopago.routes');
 const timelineRoutes = require('./routes/timeline.routes');
 const mysqlRoutes = require('./routes/mysql.routes');
 const fragmentosRoutes = require('./routes/fragmentos.routes');
+const elasticRoutes = require('./routes/elastic.routes');
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
 
@@ -108,6 +109,7 @@ app.use('/api/timeline', timelineRoutes);
 // Rutas MySQL (integración paralela)
 app.use('/api/mysql', mysqlRoutes);
 app.use('/api/fragmentos', fragmentosRoutes);
+app.use('/api/elastic', elasticRoutes);
 
 // Salud
 app.get('/', (req, res) => {

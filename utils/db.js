@@ -63,7 +63,16 @@ async function query(sql, params = []) {
   return rows;
 }
 
+async function closePool() {
+  if (!pool) return;
+
+  const currentPool = pool;
+  pool = null;
+  await currentPool.end();
+}
+
 module.exports = {
   getPool,
-  query
+  query,
+  closePool
 };

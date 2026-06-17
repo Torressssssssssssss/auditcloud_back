@@ -3,8 +3,10 @@ const express = require('express');
 const router = express.Router();
 
 const { query } = require('../utils/db');
-const { readJson, writeJson } = require('../utils/jsonDb');
+const { readJson } = require('../utils/jsonDb');
 const { authenticate, authorize } = require('../utils/auth');
+const { ensureAuditoriaAfterPayment, syncLegacyJsonAfterPayment } = require('../utils/auditoriaPayment.service');
+const { syncAuditoria } = require('../utils/elasticsearchAuditorias.service');
 
 const MERCADOPAGO_ACCESS_TOKEN = process.env.MERCADOPAGO_ACCESS_TOKEN;
 const MERCADOPAGO_API = process.env.MERCADOPAGO_API || 'https://api.mercadopago.com';
@@ -63,13 +65,6 @@ function esSolicitudPendiente(solicitud = {}) {
 
 async function obtenerSolicitudPago(idSolicitud) {
   const idBuscado = Number(idSolicitud);
-  const solicitudes = await readJson('solicitudes_pago.json');
-  const solicitudJson = solicitudes.find(s => Number(s.id_solicitud) === idBuscado);
-
-  if (solicitudJson) {
-    return { fuente: 'json', solicitud: normalizarSolicitud(solicitudJson) };
-  }
-
   try {
     const rows = await query(
       `SELECT
@@ -100,33 +95,14 @@ async function obtenerSolicitudPago(idSolicitud) {
     }
   }
 
-  return null;
-}
-
-async function guardarSolicitudPagada(solicitudActualizada) {
   const solicitudes = await readJson('solicitudes_pago.json');
-  const idx = solicitudes.findIndex(s => Number(s.id_solicitud) === Number(solicitudActualizada.id_solicitud));
-  if (idx !== -1) {
-    solicitudes[idx] = {
-      ...solicitudes[idx],
-      ...solicitudActualizada
-    };
-    await writeJson('solicitudes_pago.json', solicitudes);
+  const solicitudJson = solicitudes.find(s => Number(s.id_solicitud) === idBuscado);
+
+  if (solicitudJson) {
+    return { fuente: 'json', solicitud: normalizarSolicitud(solicitudJson) };
   }
 
-  try {
-    await query(
-      `UPDATE solicitudes_pago
-       SET id_estado = 2,
-           pagada_en = ?
-       WHERE id_solicitud = ?;`,
-      [solicitudActualizada.pagada_en, Number(solicitudActualizada.id_solicitud)]
-    );
-  } catch (error) {
-    if (error?.code !== 'DB_NOT_CONFIGURED') {
-      console.warn('No fue posible actualizar la solicitud en MySQL:', error?.code || error?.message || error);
-    }
-  }
+  return null;
 }
 
 async function validarPermisoCliente(solicitud, req) {
@@ -259,9 +235,22 @@ router.post('/confirmar', authenticate, authorize([3]), async (req, res) => {
     const solicitud = resultado.solicitud;
 
     if (Number(solicitud.id_estado) === 2) {
+      const auditoriaResultado = await ensureAuditoriaAfterPayment(solicitud.id_solicitud, {
+        pagadaEn: solicitud.pagada_en || new Date()
+      });
+      await syncAuditoria(auditoriaResultado.auditoria.id_auditoria);
+
+      await syncLegacyJsonAfterPayment({
+        ...auditoriaResultado,
+        extraSolicitud: {
+          mercadopago_payment_id: paymentData?.id || payment_id || solicitud.mercadopago_payment_id || null
+        }
+      });
+
       return res.json({
         status: 'approved',
-        solicitud,
+        solicitud: auditoriaResultado.solicitud,
+        auditoria: auditoriaResultado.auditoria,
         message: 'La solicitud ya estaba pagada'
       });
     }
@@ -286,11 +275,26 @@ router.post('/confirmar', authenticate, authorize([3]), async (req, res) => {
       mercadopago_payment_id: paymentData?.id || null
     };
 
-    await guardarSolicitudPagada(solicitudPagada);
+    const auditoriaResultado = await ensureAuditoriaAfterPayment(solicitudPagada.id_solicitud, {
+      pagadaEn: solicitudPagada.pagada_en
+    });
+
+    await syncAuditoria(auditoriaResultado.auditoria.id_auditoria);
+
+    await syncLegacyJsonAfterPayment({
+      ...auditoriaResultado,
+      extraSolicitud: {
+        mercadopago_payment_id: solicitudPagada.mercadopago_payment_id
+      }
+    });
 
     return res.json({
       status: 'approved',
-      solicitud: solicitudPagada,
+      solicitud: {
+        ...auditoriaResultado.solicitud,
+        mercadopago_payment_id: solicitudPagada.mercadopago_payment_id
+      },
+      auditoria: auditoriaResultado.auditoria,
       payment_id: paymentData?.id || payment_id || null
     });
   } catch (error) {

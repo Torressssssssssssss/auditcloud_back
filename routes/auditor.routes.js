@@ -7,6 +7,13 @@ const fs = require('fs');
 const { readJson, writeJson, getNextId, crearNotificacion } = require('../utils/jsonDb');
 const { authenticate, authorize } = require('../utils/auth');
 const { normalizeConversation, isAuditConversation } = require('../utils/conversationContext');
+const {
+  createReporteFinalAndFinalizeMysql,
+  updateAuditoriaObjetivoMysql,
+  syncReporteFinalJson,
+  syncAuditoriaObjetivoJson
+} = require('../utils/auditoriaPostCreation.service');
+const { updateAuditoria } = require('../utils/elasticsearchAuditorias.service');
 
 // Configuracion de carga local
 
@@ -141,28 +148,19 @@ router.patch('/auditorias/:id/objetivo', authenticate, authorize([2]), async (re
   const { objetivo } = req.body;
 
   try {
-    const auditorias = await readJson('auditorias.json');
-    const index = auditorias.findIndex(a => a.id_auditoria === idAuditoria);
+    const auditoriaMysql = await updateAuditoriaObjetivoMysql(idAuditoria, objetivo);
+    await updateAuditoria(idAuditoria);
 
-    if (index === -1) {
-      return res.status(404).json({ message: 'Auditoría no encontrada' });
+    const auditoriaJson = await syncAuditoriaObjetivoJson(auditoriaMysql);
+
+    res.json(auditoriaJson);
+  } catch (error) {
+    if (error.code === 'AUDITORIA_NOT_FOUND') {
+      return res.status(404).json({ message: 'Auditoria no encontrada' });
     }
 
-    // Actualizar objetivo
-    const auditoriaActual = auditorias[index];
-    
-    // Guardar objetivo
-    auditoriaActual.objetivo = objetivo;
-
-    // Persistir cambios
-    auditorias[index] = auditoriaActual;
-    await writeJson('auditorias.json', auditorias);
-
-    res.json(auditoriaActual);
-
-  } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Error al actualizar la auditoría' });
+    res.status(500).json({ message: 'Error al actualizar la auditoria' });
   }
 });
 
@@ -558,63 +556,6 @@ router.post('/mensajes', authenticate, authorize([2]), async (req, res) => {
 
 // Rutas de reportes de auditor
 
-router.post('/reportes', authenticate, authorize([2]), upload.single('archivo'), async (req, res) => {
-  try {
-    const { id_auditoria, nombre } = req.body;
-
-    // Validaciones
-    if (!req.file) {
-      return res.status(400).json({ message: 'Debes subir el archivo PDF.' });
-    }
-    if (!id_auditoria) {
-      return res.status(400).json({ message: 'Selecciona una auditoría.' });
-    }
-
-    const reportes = await readJson('reportes.json');
-    const auditorias = await readJson('auditorias.json');
-
-    // Verificar auditoria
-    const idxAudit = auditorias.findIndex(a => a.id_auditoria === Number(id_auditoria));
-    if (idxAudit === -1) {
-      return res.status(404).json({ message: 'Auditoría no encontrada.' });
-    }
-
-    // Guardar reporte
-    const idReporte = await getNextId('reportes.json', 'id_reporte');
-    const fileUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
-
-    const nuevoReporte = {
-      id_reporte: idReporte,
-      id_auditoria: Number(id_auditoria),
-      nombre: nombre || 'Reporte Final',
-      tipo: 'FINAL',
-      url: fileUrl,
-      nombre_archivo: req.file.originalname,
-      creado_por: req.user.id_usuario,
-      fecha_creacion: new Date().toISOString()
-    };
-
-    reportes.push(nuevoReporte);
-    await writeJson('reportes.json', reportes);
-
-    // Cambiar estado a finalizada (3)
-    if (auditorias[idxAudit].id_estado !== 3) {
-      auditorias[idxAudit].id_estado = 3;
-      auditorias[idxAudit].estado_actualizado_en = new Date().toISOString();
-      await writeJson('auditorias.json', auditorias);
-    }
-
-    res.status(201).json({ 
-      message: 'Reporte subido y auditoría finalizada.', 
-      reporte: nuevoReporte 
-    });
-
-  } catch (error) {
-    console.error('Error subiendo reporte:', error);
-    res.status(500).json({ message: 'Error interno.' });
-  }
-});
-
 // POST /api/auditor/reportes
 // Sube PDF final y finaliza auditoria
 router.post('/reportes', authenticate, authorize([2]), upload.single('archivo'), async (req, res) => {
@@ -624,51 +565,32 @@ router.post('/reportes', authenticate, authorize([2]), upload.single('archivo'),
     if (!req.file) {
       return res.status(400).json({ message: 'Debes subir el archivo PDF del reporte.' });
     }
-    if (!id_auditoria || !nombre) {
-      return res.status(400).json({ message: 'id_auditoria y nombre del reporte son obligatorios.' });
+    if (!id_auditoria) {
+      return res.status(400).json({ message: 'Selecciona una auditoria.' });
     }
 
-    const reportes = await readJson('reportes.json');
-    const auditorias = await readJson('auditorias.json');
-
-    // Verificar auditoria
-    const idxAudit = auditorias.findIndex(a => a.id_auditoria === Number(id_auditoria));
-    if (idxAudit === -1) {
-      return res.status(404).json({ message: 'Auditoría no encontrada.' });
-    }
-
-    // Guardar reporte
-    const idReporte = await getNextId('reportes.json', 'id_reporte');
     const fileUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
-
-    const nuevoReporte = {
-      id_reporte: idReporte,
-      id_auditoria: Number(id_auditoria),
-      nombre: nombre,
-      tipo: 'FINAL', // reporte final
+    const resultadoMysql = await createReporteFinalAndFinalizeMysql({
+      idAuditoria: Number(id_auditoria),
+      nombre: nombre || 'Reporte Final',
       observaciones: observaciones || '',
       url: fileUrl,
-      nombre_archivo: req.file.originalname,
-      creado_por: req.user.id_usuario,
-      fecha_creacion: new Date().toISOString()
-    };
+      nombreArchivo: req.file.originalname,
+      creadoPor: req.user.id_usuario
+    });
+    await updateAuditoria(Number(id_auditoria));
 
-    reportes.push(nuevoReporte);
-    await writeJson('reportes.json', reportes);
+    const { reporte } = await syncReporteFinalJson(resultadoMysql);
 
-    // Actualizar estado a finalizada (3) si aplica
-    if (auditorias[idxAudit].id_estado !== 3) {
-      auditorias[idxAudit].id_estado = 3; 
-      auditorias[idxAudit].estado_actualizado_en = new Date().toISOString();
-      await writeJson('auditorias.json', auditorias);
+    res.status(201).json({
+      message: 'Reporte subido y auditoria finalizada correctamente.',
+      reporte
+    });
+  } catch (error) {
+    if (error.code === 'AUDITORIA_NOT_FOUND') {
+      return res.status(404).json({ message: 'Auditoria no encontrada.' });
     }
 
-    res.status(201).json({ 
-      message: 'Reporte subido y auditoría finalizada correctamente.', 
-      reporte: nuevoReporte 
-    });
-
-  } catch (error) {
     console.error('Error al subir reporte:', error);
     res.status(500).json({ message: 'Error interno al procesar el reporte.' });
   }
