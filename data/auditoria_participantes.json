@@ -1,1 +1,194 @@
-[]
+[
+  {
+    "id_participante": 1,
+    "id_auditoria": 1,
+    "id_auditor": 101,
+    "asignado_en": "2026-06-16T00:26:17.914Z"
+  },
+  {
+    "id_participante": 2,
+    "id_auditoria": 1,
+    "id_auditor": 102,
+    "asignado_en": "2026-06-16T01:52:59.083Z"
+  },
+  {
+    "id_participante": 501,
+    "id_auditoria": 501,
+    "id_auditor": 101,
+    "asignado_en": "2026-01-09T14:00:00.000Z"
+  },
+  {
+    "id_participante": 502,
+    "id_auditoria": 502,
+    "id_auditor": 101,
+    "asignado_en": "2026-01-13T14:00:00.000Z"
+  },
+  {
+    "id_participante": 503,
+    "id_auditoria": 503,
+    "id_auditor": 101,
+    "asignado_en": "2026-01-17T14:00:00.000Z"
+  },
+  {
+    "id_participante": 504,
+    "id_auditoria": 504,
+    "id_auditor": 101,
+    "asignado_en": "2026-01-21T14:00:00.000Z"
+  },
+  {
+    "id_participante": 505,
+    "id_auditoria": 505,
+    "id_auditor": 101,
+    "asignado_en": "2026-01-25T14:00:00.000Z"
+  },
+  {
+    "id_participante": 506,
+    "id_auditoria": 506,
+    "id_auditor": 101,
+    "asignado_en": "2026-01-29T14:00:00.000Z"
+  },
+  {
+    "id_participante": 507,
+    "id_auditoria": 507,
+    "id_auditor": 101,
+    "asignado_en": "2026-02-02T14:00:00.000Z"
+  },
+  {
+    "id_participante": 508,
+    "id_auditoria": 508,
+    "id_auditor": 101,
+    "asignado_en": "2026-02-06T14:00:00.000Z"
+  },
+  {
+    "id_participante": 509,
+    "id_auditoria": 509,
+    "id_auditor": 101,
+    "asignado_en": "2026-02-10T14:00:00.000Z"
+  },
+  {
+    "id_participante": 510,
+    "id_auditoria": 510,
+    "id_auditor": 101,
+    "asignado_en": "2026-02-14T14:00:00.000Z"
+  },
+  {
+    "id_participante": 511,
+    "id_auditoria": 511,
+    "id_auditor": 101,
+    "asignado_en": "2026-02-18T14:00:00.000Z"
+  },
+  {
+    "id_participante": 512,
+    "id_auditoria": 512,
+    "id_auditor": 101,
+    "asignado_en": "2026-02-22T14:00:00.000Z"
+  },
+  {
+    "id_participante": 513,
+    "id_auditoria": 513,
+    "id_auditor": 101,
+    "asignado_en": "2026-02-26T14:00:00.000Z"
+  },
+  {
+    "id_participante": 514,
+    "id_auditoria": 514,
+    "id_auditor": 101,
+    "asignado_en": "2026-03-02T14:00:00.000Z"
+  },
+  {
+    "id_participante": 515,
+    "id_auditoria": 515,
+    "id_auditor": 101,
+    "asignado_en": "2026-03-06T14:00:00.000Z"
+  },
+  {
+    "id_participante": 516,
+    "id_auditoria": 516,
+    "id_auditor": 101,
+    "asignado_en": "2026-03-10T14:00:00.000Z"
+  },
+  {
+    "id_participante": 517,
+    "id_auditoria": 517,
+    "id_auditor": 101,
+    "asignado_en": "2026-03-14T14:00:00.000Z"
+  },
+  {
+    "id_participante": 518,
+    "id_auditoria": 518,
+    "id_auditor": 101,
+    "asignado_en": "2026-03-18T14:00:00.000Z"
+  },
+  {
+    "id_participante": 519,
+    "id_auditoria": 519,
+    "id_auditor": 101,
+    "asignado_en": "2026-03-22T14:00:00.000Z"
+  },
+  {
+    "id_participante": 520,
+    "id_auditoria": 520,
+    "id_auditor": 101,
+    "asignado_en": "2026-03-26T14:00:00.000Z"
+  },
+  {
+    "id_participante": 521,
+    "id_auditoria": 521,
+    "id_auditor": 101,
+    "asignado_en": "2026-03-30T14:00:00.000Z"
+  },
+  {
+    "id_participante": 522,
+    "id_auditoria": 522,
+    "id_auditor": 101,
+    "asignado_en": "2026-04-03T14:00:00.000Z"
+  },
+  {
+    "id_participante": 523,
+    "id_auditoria": 523,
+    "id_auditor": 101,
+    "asignado_en": "2026-04-07T14:00:00.000Z"
+  },
+  {
+    "id_participante": 524,
+    "id_auditoria": 524,
+    "id_auditor": 101,
+    "asignado_en": "2026-04-11T14:00:00.000Z"
+  },
+  {
+    "id_participante": 525,
+    "id_auditoria": 525,
+    "id_auditor": 101,
+    "asignado_en": "2026-04-15T14:00:00.000Z"
+  },
+  {
+    "id_participante": 526,
+    "id_auditoria": 526,
+    "id_auditor": 101,
+    "asignado_en": "2026-04-19T14:00:00.000Z"
+  },
+  {
+    "id_participante": 527,
+    "id_auditoria": 527,
+    "id_auditor": 101,
+    "asignado_en": "2026-04-23T14:00:00.000Z"
+  },
+  {
+    "id_participante": 528,
+    "id_auditoria": 528,
+    "id_auditor": 101,
+    "asignado_en": "2026-04-27T14:00:00.000Z"
+  },
+  {
+    "id_participante": 529,
+    "id_auditoria": 529,
+    "id_auditor": 101,
+    "asignado_en": "2026-05-01T14:00:00.000Z"
+  },
+  {
+    "id_participante": 530,
+    "id_auditoria": 530,
+    "id_auditor": 101,
+    "asignado_en": "2026-05-05T14:00:00.000Z"
+  }
+]

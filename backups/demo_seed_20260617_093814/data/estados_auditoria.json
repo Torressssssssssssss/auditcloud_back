@@ -1,0 +1,14 @@
+[
+  {
+    "id_estado": 1,
+    "nombre": "CREADA"
+  },
+  {
+    "id_estado": 2,
+    "nombre": "EN_PROCESO"
+  },
+  {
+    "id_estado": 3,
+    "nombre": "FINALIZADA"
+  }
+]

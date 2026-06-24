@@ -1,0 +1,14 @@
+[
+  {
+    "id_modulo": 1,
+    "nombre": "AGUA"
+  },
+  {
+    "id_modulo": 2,
+    "nombre": "RESIDUOS"
+  },
+  {
+    "id_modulo": 3,
+    "nombre": "ENERGIA"
+  }
+]

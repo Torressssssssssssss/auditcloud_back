@@ -14,5 +14,1549 @@
     "emisor_id": 301,
     "contenido": "holl",
     "creado_en": "2026-06-03T13:40:58.576Z"
+  },
+  {
+    "id_mensaje": 3,
+    "id_conversacion": 1,
+    "emisor_tipo": "SUPERVISOR",
+    "emisor_id": 1,
+    "contenido": "klkl",
+    "creado_en": "2026-06-16T01:30:18.218Z"
+  },
+  {
+    "id_mensaje": 4,
+    "id_conversacion": 1,
+    "emisor_tipo": "CLIENTE",
+    "emisor_id": 301,
+    "contenido": "Hola",
+    "creado_en": "2026-06-17T00:54:04.730Z"
+  },
+  {
+    "id_mensaje": 5,
+    "id_conversacion": 1,
+    "emisor_tipo": "CLIENTE",
+    "emisor_id": 301,
+    "contenido": "Quisiera información acerca de una auditoría",
+    "creado_en": "2026-06-17T00:54:12.650Z"
+  },
+  {
+    "id_mensaje": 6,
+    "id_conversacion": 1,
+    "emisor_tipo": "SUPERVISOR",
+    "emisor_id": 1,
+    "contenido": "En un momento se le generará su solicitud de pago para iniciar la auditoría",
+    "creado_en": "2026-06-17T00:55:22.864Z"
+  },
+  {
+    "id_mensaje": 501,
+    "id_conversacion": 251,
+    "emisor_tipo": "CLIENTE",
+    "emisor_id": 1001,
+    "contenido": "DEMO - Buen dia, compartimos la informacion inicial para preparar la auditoria.",
+    "creado_en": "2026-01-13T10:00:00.000Z"
+  },
+  {
+    "id_mensaje": 502,
+    "id_conversacion": 251,
+    "emisor_tipo": "SUPERVISOR",
+    "emisor_id": 1,
+    "contenido": "DEMO - Gracias. La solicitud quedo registrada y asignaremos seguimiento.",
+    "creado_en": "2026-01-19T11:00:00.000Z"
+  },
+  {
+    "id_mensaje": 503,
+    "id_conversacion": 251,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Ya revise el alcance y agregue las evidencias iniciales al expediente.",
+    "creado_en": "2026-01-25T12:00:00.000Z"
+  },
+  {
+    "id_mensaje": 504,
+    "id_conversacion": 252,
+    "emisor_tipo": "CLIENTE",
+    "emisor_id": 1002,
+    "contenido": "DEMO - Buen dia, compartimos la informacion inicial para preparar la auditoria.",
+    "creado_en": "2026-01-17T10:00:00.000Z"
+  },
+  {
+    "id_mensaje": 505,
+    "id_conversacion": 252,
+    "emisor_tipo": "SUPERVISOR",
+    "emisor_id": 1,
+    "contenido": "DEMO - Gracias. La solicitud quedo registrada y asignaremos seguimiento.",
+    "creado_en": "2026-01-23T11:00:00.000Z"
+  },
+  {
+    "id_mensaje": 506,
+    "id_conversacion": 252,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Ya revise el alcance y agregue las evidencias iniciales al expediente.",
+    "creado_en": "2026-01-29T12:00:00.000Z"
+  },
+  {
+    "id_mensaje": 507,
+    "id_conversacion": 253,
+    "emisor_tipo": "CLIENTE",
+    "emisor_id": 1003,
+    "contenido": "DEMO - Buen dia, compartimos la informacion inicial para preparar la auditoria.",
+    "creado_en": "2026-01-21T10:00:00.000Z"
+  },
+  {
+    "id_mensaje": 508,
+    "id_conversacion": 253,
+    "emisor_tipo": "SUPERVISOR",
+    "emisor_id": 1,
+    "contenido": "DEMO - Gracias. La solicitud quedo registrada y asignaremos seguimiento.",
+    "creado_en": "2026-01-27T11:00:00.000Z"
+  },
+  {
+    "id_mensaje": 509,
+    "id_conversacion": 253,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Ya revise el alcance y agregue las evidencias iniciales al expediente.",
+    "creado_en": "2026-02-02T12:00:00.000Z"
+  },
+  {
+    "id_mensaje": 510,
+    "id_conversacion": 254,
+    "emisor_tipo": "CLIENTE",
+    "emisor_id": 1004,
+    "contenido": "DEMO - Buen dia, compartimos la informacion inicial para preparar la auditoria.",
+    "creado_en": "2026-01-25T10:00:00.000Z"
+  },
+  {
+    "id_mensaje": 511,
+    "id_conversacion": 254,
+    "emisor_tipo": "SUPERVISOR",
+    "emisor_id": 1,
+    "contenido": "DEMO - Gracias. La solicitud quedo registrada y asignaremos seguimiento.",
+    "creado_en": "2026-01-31T11:00:00.000Z"
+  },
+  {
+    "id_mensaje": 512,
+    "id_conversacion": 254,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Ya revise el alcance y agregue las evidencias iniciales al expediente.",
+    "creado_en": "2026-02-06T12:00:00.000Z"
+  },
+  {
+    "id_mensaje": 513,
+    "id_conversacion": 255,
+    "emisor_tipo": "CLIENTE",
+    "emisor_id": 1005,
+    "contenido": "DEMO - Buen dia, compartimos la informacion inicial para preparar la auditoria.",
+    "creado_en": "2026-01-29T10:00:00.000Z"
+  },
+  {
+    "id_mensaje": 514,
+    "id_conversacion": 255,
+    "emisor_tipo": "SUPERVISOR",
+    "emisor_id": 1,
+    "contenido": "DEMO - Gracias. La solicitud quedo registrada y asignaremos seguimiento.",
+    "creado_en": "2026-02-04T11:00:00.000Z"
+  },
+  {
+    "id_mensaje": 515,
+    "id_conversacion": 255,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Ya revise el alcance y agregue las evidencias iniciales al expediente.",
+    "creado_en": "2026-02-10T12:00:00.000Z"
+  },
+  {
+    "id_mensaje": 516,
+    "id_conversacion": 256,
+    "emisor_tipo": "CLIENTE",
+    "emisor_id": 1006,
+    "contenido": "DEMO - Buen dia, compartimos la informacion inicial para preparar la auditoria.",
+    "creado_en": "2026-02-02T10:00:00.000Z"
+  },
+  {
+    "id_mensaje": 517,
+    "id_conversacion": 256,
+    "emisor_tipo": "SUPERVISOR",
+    "emisor_id": 1,
+    "contenido": "DEMO - Gracias. La solicitud quedo registrada y asignaremos seguimiento.",
+    "creado_en": "2026-02-08T11:00:00.000Z"
+  },
+  {
+    "id_mensaje": 518,
+    "id_conversacion": 256,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Ya revise el alcance y agregue las evidencias iniciales al expediente.",
+    "creado_en": "2026-02-14T12:00:00.000Z"
+  },
+  {
+    "id_mensaje": 519,
+    "id_conversacion": 257,
+    "emisor_tipo": "CLIENTE",
+    "emisor_id": 1007,
+    "contenido": "DEMO - Buen dia, compartimos la informacion inicial para preparar la auditoria.",
+    "creado_en": "2026-02-06T10:00:00.000Z"
+  },
+  {
+    "id_mensaje": 520,
+    "id_conversacion": 257,
+    "emisor_tipo": "SUPERVISOR",
+    "emisor_id": 1,
+    "contenido": "DEMO - Gracias. La solicitud quedo registrada y asignaremos seguimiento.",
+    "creado_en": "2026-02-12T11:00:00.000Z"
+  },
+  {
+    "id_mensaje": 521,
+    "id_conversacion": 257,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Ya revise el alcance y agregue las evidencias iniciales al expediente.",
+    "creado_en": "2026-02-18T12:00:00.000Z"
+  },
+  {
+    "id_mensaje": 522,
+    "id_conversacion": 258,
+    "emisor_tipo": "CLIENTE",
+    "emisor_id": 1008,
+    "contenido": "DEMO - Buen dia, compartimos la informacion inicial para preparar la auditoria.",
+    "creado_en": "2026-02-10T10:00:00.000Z"
+  },
+  {
+    "id_mensaje": 523,
+    "id_conversacion": 258,
+    "emisor_tipo": "SUPERVISOR",
+    "emisor_id": 1,
+    "contenido": "DEMO - Gracias. La solicitud quedo registrada y asignaremos seguimiento.",
+    "creado_en": "2026-02-16T11:00:00.000Z"
+  },
+  {
+    "id_mensaje": 524,
+    "id_conversacion": 258,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Ya revise el alcance y agregue las evidencias iniciales al expediente.",
+    "creado_en": "2026-02-22T12:00:00.000Z"
+  },
+  {
+    "id_mensaje": 525,
+    "id_conversacion": 259,
+    "emisor_tipo": "CLIENTE",
+    "emisor_id": 1009,
+    "contenido": "DEMO - Buen dia, compartimos la informacion inicial para preparar la auditoria.",
+    "creado_en": "2026-02-14T10:00:00.000Z"
+  },
+  {
+    "id_mensaje": 526,
+    "id_conversacion": 259,
+    "emisor_tipo": "SUPERVISOR",
+    "emisor_id": 1,
+    "contenido": "DEMO - Gracias. La solicitud quedo registrada y asignaremos seguimiento.",
+    "creado_en": "2026-02-20T11:00:00.000Z"
+  },
+  {
+    "id_mensaje": 527,
+    "id_conversacion": 259,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Ya revise el alcance y agregue las evidencias iniciales al expediente.",
+    "creado_en": "2026-02-26T12:00:00.000Z"
+  },
+  {
+    "id_mensaje": 528,
+    "id_conversacion": 260,
+    "emisor_tipo": "CLIENTE",
+    "emisor_id": 1010,
+    "contenido": "DEMO - Buen dia, compartimos la informacion inicial para preparar la auditoria.",
+    "creado_en": "2026-02-18T10:00:00.000Z"
+  },
+  {
+    "id_mensaje": 529,
+    "id_conversacion": 260,
+    "emisor_tipo": "SUPERVISOR",
+    "emisor_id": 1,
+    "contenido": "DEMO - Gracias. La solicitud quedo registrada y asignaremos seguimiento.",
+    "creado_en": "2026-02-24T11:00:00.000Z"
+  },
+  {
+    "id_mensaje": 530,
+    "id_conversacion": 260,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Ya revise el alcance y agregue las evidencias iniciales al expediente.",
+    "creado_en": "2026-03-02T12:00:00.000Z"
+  },
+  {
+    "id_mensaje": 531,
+    "id_conversacion": 261,
+    "emisor_tipo": "CLIENTE",
+    "emisor_id": 1011,
+    "contenido": "DEMO - Buen dia, compartimos la informacion inicial para preparar la auditoria.",
+    "creado_en": "2026-02-22T10:00:00.000Z"
+  },
+  {
+    "id_mensaje": 532,
+    "id_conversacion": 261,
+    "emisor_tipo": "SUPERVISOR",
+    "emisor_id": 1,
+    "contenido": "DEMO - Gracias. La solicitud quedo registrada y asignaremos seguimiento.",
+    "creado_en": "2026-02-28T11:00:00.000Z"
+  },
+  {
+    "id_mensaje": 533,
+    "id_conversacion": 261,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Ya revise el alcance y agregue las evidencias iniciales al expediente.",
+    "creado_en": "2026-03-06T12:00:00.000Z"
+  },
+  {
+    "id_mensaje": 534,
+    "id_conversacion": 262,
+    "emisor_tipo": "CLIENTE",
+    "emisor_id": 1012,
+    "contenido": "DEMO - Buen dia, compartimos la informacion inicial para preparar la auditoria.",
+    "creado_en": "2026-02-26T10:00:00.000Z"
+  },
+  {
+    "id_mensaje": 535,
+    "id_conversacion": 262,
+    "emisor_tipo": "SUPERVISOR",
+    "emisor_id": 1,
+    "contenido": "DEMO - Gracias. La solicitud quedo registrada y asignaremos seguimiento.",
+    "creado_en": "2026-03-04T11:00:00.000Z"
+  },
+  {
+    "id_mensaje": 536,
+    "id_conversacion": 262,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Ya revise el alcance y agregue las evidencias iniciales al expediente.",
+    "creado_en": "2026-03-10T12:00:00.000Z"
+  },
+  {
+    "id_mensaje": 537,
+    "id_conversacion": 263,
+    "emisor_tipo": "CLIENTE",
+    "emisor_id": 1013,
+    "contenido": "DEMO - Buen dia, compartimos la informacion inicial para preparar la auditoria.",
+    "creado_en": "2026-03-02T10:00:00.000Z"
+  },
+  {
+    "id_mensaje": 538,
+    "id_conversacion": 263,
+    "emisor_tipo": "SUPERVISOR",
+    "emisor_id": 1,
+    "contenido": "DEMO - Gracias. La solicitud quedo registrada y asignaremos seguimiento.",
+    "creado_en": "2026-03-08T11:00:00.000Z"
+  },
+  {
+    "id_mensaje": 539,
+    "id_conversacion": 263,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Ya revise el alcance y agregue las evidencias iniciales al expediente.",
+    "creado_en": "2026-03-14T12:00:00.000Z"
+  },
+  {
+    "id_mensaje": 540,
+    "id_conversacion": 264,
+    "emisor_tipo": "CLIENTE",
+    "emisor_id": 1014,
+    "contenido": "DEMO - Buen dia, compartimos la informacion inicial para preparar la auditoria.",
+    "creado_en": "2026-03-06T10:00:00.000Z"
+  },
+  {
+    "id_mensaje": 541,
+    "id_conversacion": 264,
+    "emisor_tipo": "SUPERVISOR",
+    "emisor_id": 1,
+    "contenido": "DEMO - Gracias. La solicitud quedo registrada y asignaremos seguimiento.",
+    "creado_en": "2026-03-12T11:00:00.000Z"
+  },
+  {
+    "id_mensaje": 542,
+    "id_conversacion": 264,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Ya revise el alcance y agregue las evidencias iniciales al expediente.",
+    "creado_en": "2026-03-18T12:00:00.000Z"
+  },
+  {
+    "id_mensaje": 543,
+    "id_conversacion": 265,
+    "emisor_tipo": "CLIENTE",
+    "emisor_id": 1015,
+    "contenido": "DEMO - Buen dia, compartimos la informacion inicial para preparar la auditoria.",
+    "creado_en": "2026-03-10T10:00:00.000Z"
+  },
+  {
+    "id_mensaje": 544,
+    "id_conversacion": 265,
+    "emisor_tipo": "SUPERVISOR",
+    "emisor_id": 1,
+    "contenido": "DEMO - Gracias. La solicitud quedo registrada y asignaremos seguimiento.",
+    "creado_en": "2026-03-16T11:00:00.000Z"
+  },
+  {
+    "id_mensaje": 545,
+    "id_conversacion": 265,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Ya revise el alcance y agregue las evidencias iniciales al expediente.",
+    "creado_en": "2026-03-22T12:00:00.000Z"
+  },
+  {
+    "id_mensaje": 546,
+    "id_conversacion": 266,
+    "emisor_tipo": "CLIENTE",
+    "emisor_id": 1016,
+    "contenido": "DEMO - Buen dia, compartimos la informacion inicial para preparar la auditoria.",
+    "creado_en": "2026-03-14T10:00:00.000Z"
+  },
+  {
+    "id_mensaje": 547,
+    "id_conversacion": 266,
+    "emisor_tipo": "SUPERVISOR",
+    "emisor_id": 1,
+    "contenido": "DEMO - Gracias. La solicitud quedo registrada y asignaremos seguimiento.",
+    "creado_en": "2026-03-20T11:00:00.000Z"
+  },
+  {
+    "id_mensaje": 548,
+    "id_conversacion": 266,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Ya revise el alcance y agregue las evidencias iniciales al expediente.",
+    "creado_en": "2026-03-26T12:00:00.000Z"
+  },
+  {
+    "id_mensaje": 549,
+    "id_conversacion": 267,
+    "emisor_tipo": "CLIENTE",
+    "emisor_id": 1017,
+    "contenido": "DEMO - Buen dia, compartimos la informacion inicial para preparar la auditoria.",
+    "creado_en": "2026-03-18T10:00:00.000Z"
+  },
+  {
+    "id_mensaje": 550,
+    "id_conversacion": 267,
+    "emisor_tipo": "SUPERVISOR",
+    "emisor_id": 1,
+    "contenido": "DEMO - Gracias. La solicitud quedo registrada y asignaremos seguimiento.",
+    "creado_en": "2026-03-24T11:00:00.000Z"
+  },
+  {
+    "id_mensaje": 551,
+    "id_conversacion": 267,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Ya revise el alcance y agregue las evidencias iniciales al expediente.",
+    "creado_en": "2026-03-30T12:00:00.000Z"
+  },
+  {
+    "id_mensaje": 552,
+    "id_conversacion": 268,
+    "emisor_tipo": "CLIENTE",
+    "emisor_id": 1018,
+    "contenido": "DEMO - Buen dia, compartimos la informacion inicial para preparar la auditoria.",
+    "creado_en": "2026-03-22T10:00:00.000Z"
+  },
+  {
+    "id_mensaje": 553,
+    "id_conversacion": 268,
+    "emisor_tipo": "SUPERVISOR",
+    "emisor_id": 1,
+    "contenido": "DEMO - Gracias. La solicitud quedo registrada y asignaremos seguimiento.",
+    "creado_en": "2026-03-28T11:00:00.000Z"
+  },
+  {
+    "id_mensaje": 554,
+    "id_conversacion": 268,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Ya revise el alcance y agregue las evidencias iniciales al expediente.",
+    "creado_en": "2026-04-03T12:00:00.000Z"
+  },
+  {
+    "id_mensaje": 555,
+    "id_conversacion": 269,
+    "emisor_tipo": "CLIENTE",
+    "emisor_id": 1019,
+    "contenido": "DEMO - Buen dia, compartimos la informacion inicial para preparar la auditoria.",
+    "creado_en": "2026-03-26T10:00:00.000Z"
+  },
+  {
+    "id_mensaje": 556,
+    "id_conversacion": 269,
+    "emisor_tipo": "SUPERVISOR",
+    "emisor_id": 1,
+    "contenido": "DEMO - Gracias. La solicitud quedo registrada y asignaremos seguimiento.",
+    "creado_en": "2026-04-01T11:00:00.000Z"
+  },
+  {
+    "id_mensaje": 557,
+    "id_conversacion": 269,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Ya revise el alcance y agregue las evidencias iniciales al expediente.",
+    "creado_en": "2026-04-07T12:00:00.000Z"
+  },
+  {
+    "id_mensaje": 558,
+    "id_conversacion": 269,
+    "emisor_tipo": "SUPERVISOR",
+    "emisor_id": 1,
+    "contenido": "DEMO - El reporte final quedo disponible para revision.",
+    "creado_en": "2026-04-13T13:00:00.000Z"
+  },
+  {
+    "id_mensaje": 559,
+    "id_conversacion": 270,
+    "emisor_tipo": "CLIENTE",
+    "emisor_id": 1020,
+    "contenido": "DEMO - Buen dia, compartimos la informacion inicial para preparar la auditoria.",
+    "creado_en": "2026-03-30T10:00:00.000Z"
+  },
+  {
+    "id_mensaje": 560,
+    "id_conversacion": 270,
+    "emisor_tipo": "SUPERVISOR",
+    "emisor_id": 1,
+    "contenido": "DEMO - Gracias. La solicitud quedo registrada y asignaremos seguimiento.",
+    "creado_en": "2026-04-05T11:00:00.000Z"
+  },
+  {
+    "id_mensaje": 561,
+    "id_conversacion": 270,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Ya revise el alcance y agregue las evidencias iniciales al expediente.",
+    "creado_en": "2026-04-11T12:00:00.000Z"
+  },
+  {
+    "id_mensaje": 562,
+    "id_conversacion": 270,
+    "emisor_tipo": "SUPERVISOR",
+    "emisor_id": 1,
+    "contenido": "DEMO - El reporte final quedo disponible para revision.",
+    "creado_en": "2026-04-17T13:00:00.000Z"
+  },
+  {
+    "id_mensaje": 563,
+    "id_conversacion": 271,
+    "emisor_tipo": "CLIENTE",
+    "emisor_id": 1001,
+    "contenido": "DEMO - Buen dia, compartimos la informacion inicial para preparar la auditoria.",
+    "creado_en": "2026-04-03T10:00:00.000Z"
+  },
+  {
+    "id_mensaje": 564,
+    "id_conversacion": 271,
+    "emisor_tipo": "SUPERVISOR",
+    "emisor_id": 1,
+    "contenido": "DEMO - Gracias. La solicitud quedo registrada y asignaremos seguimiento.",
+    "creado_en": "2026-04-09T11:00:00.000Z"
+  },
+  {
+    "id_mensaje": 565,
+    "id_conversacion": 271,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Ya revise el alcance y agregue las evidencias iniciales al expediente.",
+    "creado_en": "2026-04-15T12:00:00.000Z"
+  },
+  {
+    "id_mensaje": 566,
+    "id_conversacion": 271,
+    "emisor_tipo": "SUPERVISOR",
+    "emisor_id": 1,
+    "contenido": "DEMO - El reporte final quedo disponible para revision.",
+    "creado_en": "2026-04-21T13:00:00.000Z"
+  },
+  {
+    "id_mensaje": 567,
+    "id_conversacion": 272,
+    "emisor_tipo": "CLIENTE",
+    "emisor_id": 1002,
+    "contenido": "DEMO - Buen dia, compartimos la informacion inicial para preparar la auditoria.",
+    "creado_en": "2026-04-07T10:00:00.000Z"
+  },
+  {
+    "id_mensaje": 568,
+    "id_conversacion": 272,
+    "emisor_tipo": "SUPERVISOR",
+    "emisor_id": 1,
+    "contenido": "DEMO - Gracias. La solicitud quedo registrada y asignaremos seguimiento.",
+    "creado_en": "2026-04-13T11:00:00.000Z"
+  },
+  {
+    "id_mensaje": 569,
+    "id_conversacion": 272,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Ya revise el alcance y agregue las evidencias iniciales al expediente.",
+    "creado_en": "2026-04-19T12:00:00.000Z"
+  },
+  {
+    "id_mensaje": 570,
+    "id_conversacion": 272,
+    "emisor_tipo": "SUPERVISOR",
+    "emisor_id": 1,
+    "contenido": "DEMO - El reporte final quedo disponible para revision.",
+    "creado_en": "2026-04-25T13:00:00.000Z"
+  },
+  {
+    "id_mensaje": 571,
+    "id_conversacion": 273,
+    "emisor_tipo": "CLIENTE",
+    "emisor_id": 1003,
+    "contenido": "DEMO - Buen dia, compartimos la informacion inicial para preparar la auditoria.",
+    "creado_en": "2026-04-11T10:00:00.000Z"
+  },
+  {
+    "id_mensaje": 572,
+    "id_conversacion": 273,
+    "emisor_tipo": "SUPERVISOR",
+    "emisor_id": 1,
+    "contenido": "DEMO - Gracias. La solicitud quedo registrada y asignaremos seguimiento.",
+    "creado_en": "2026-04-17T11:00:00.000Z"
+  },
+  {
+    "id_mensaje": 573,
+    "id_conversacion": 273,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Ya revise el alcance y agregue las evidencias iniciales al expediente.",
+    "creado_en": "2026-04-23T12:00:00.000Z"
+  },
+  {
+    "id_mensaje": 574,
+    "id_conversacion": 273,
+    "emisor_tipo": "SUPERVISOR",
+    "emisor_id": 1,
+    "contenido": "DEMO - El reporte final quedo disponible para revision.",
+    "creado_en": "2026-04-29T13:00:00.000Z"
+  },
+  {
+    "id_mensaje": 575,
+    "id_conversacion": 274,
+    "emisor_tipo": "CLIENTE",
+    "emisor_id": 1004,
+    "contenido": "DEMO - Buen dia, compartimos la informacion inicial para preparar la auditoria.",
+    "creado_en": "2026-04-15T10:00:00.000Z"
+  },
+  {
+    "id_mensaje": 576,
+    "id_conversacion": 274,
+    "emisor_tipo": "SUPERVISOR",
+    "emisor_id": 1,
+    "contenido": "DEMO - Gracias. La solicitud quedo registrada y asignaremos seguimiento.",
+    "creado_en": "2026-04-21T11:00:00.000Z"
+  },
+  {
+    "id_mensaje": 577,
+    "id_conversacion": 274,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Ya revise el alcance y agregue las evidencias iniciales al expediente.",
+    "creado_en": "2026-04-27T12:00:00.000Z"
+  },
+  {
+    "id_mensaje": 578,
+    "id_conversacion": 274,
+    "emisor_tipo": "SUPERVISOR",
+    "emisor_id": 1,
+    "contenido": "DEMO - El reporte final quedo disponible para revision.",
+    "creado_en": "2026-05-03T13:00:00.000Z"
+  },
+  {
+    "id_mensaje": 579,
+    "id_conversacion": 275,
+    "emisor_tipo": "CLIENTE",
+    "emisor_id": 1005,
+    "contenido": "DEMO - Buen dia, compartimos la informacion inicial para preparar la auditoria.",
+    "creado_en": "2026-04-19T10:00:00.000Z"
+  },
+  {
+    "id_mensaje": 580,
+    "id_conversacion": 275,
+    "emisor_tipo": "SUPERVISOR",
+    "emisor_id": 1,
+    "contenido": "DEMO - Gracias. La solicitud quedo registrada y asignaremos seguimiento.",
+    "creado_en": "2026-04-25T11:00:00.000Z"
+  },
+  {
+    "id_mensaje": 581,
+    "id_conversacion": 275,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Ya revise el alcance y agregue las evidencias iniciales al expediente.",
+    "creado_en": "2026-05-01T12:00:00.000Z"
+  },
+  {
+    "id_mensaje": 582,
+    "id_conversacion": 275,
+    "emisor_tipo": "SUPERVISOR",
+    "emisor_id": 1,
+    "contenido": "DEMO - El reporte final quedo disponible para revision.",
+    "creado_en": "2026-05-07T13:00:00.000Z"
+  },
+  {
+    "id_mensaje": 583,
+    "id_conversacion": 276,
+    "emisor_tipo": "CLIENTE",
+    "emisor_id": 1006,
+    "contenido": "DEMO - Buen dia, compartimos la informacion inicial para preparar la auditoria.",
+    "creado_en": "2026-04-23T10:00:00.000Z"
+  },
+  {
+    "id_mensaje": 584,
+    "id_conversacion": 276,
+    "emisor_tipo": "SUPERVISOR",
+    "emisor_id": 1,
+    "contenido": "DEMO - Gracias. La solicitud quedo registrada y asignaremos seguimiento.",
+    "creado_en": "2026-04-29T11:00:00.000Z"
+  },
+  {
+    "id_mensaje": 585,
+    "id_conversacion": 276,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Ya revise el alcance y agregue las evidencias iniciales al expediente.",
+    "creado_en": "2026-05-05T12:00:00.000Z"
+  },
+  {
+    "id_mensaje": 586,
+    "id_conversacion": 276,
+    "emisor_tipo": "SUPERVISOR",
+    "emisor_id": 1,
+    "contenido": "DEMO - El reporte final quedo disponible para revision.",
+    "creado_en": "2026-05-11T13:00:00.000Z"
+  },
+  {
+    "id_mensaje": 587,
+    "id_conversacion": 277,
+    "emisor_tipo": "CLIENTE",
+    "emisor_id": 1007,
+    "contenido": "DEMO - Buen dia, compartimos la informacion inicial para preparar la auditoria.",
+    "creado_en": "2026-04-27T10:00:00.000Z"
+  },
+  {
+    "id_mensaje": 588,
+    "id_conversacion": 277,
+    "emisor_tipo": "SUPERVISOR",
+    "emisor_id": 1,
+    "contenido": "DEMO - Gracias. La solicitud quedo registrada y asignaremos seguimiento.",
+    "creado_en": "2026-05-03T11:00:00.000Z"
+  },
+  {
+    "id_mensaje": 589,
+    "id_conversacion": 277,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Ya revise el alcance y agregue las evidencias iniciales al expediente.",
+    "creado_en": "2026-05-09T12:00:00.000Z"
+  },
+  {
+    "id_mensaje": 590,
+    "id_conversacion": 278,
+    "emisor_tipo": "CLIENTE",
+    "emisor_id": 1008,
+    "contenido": "DEMO - Buen dia, compartimos la informacion inicial para preparar la auditoria.",
+    "creado_en": "2026-05-01T10:00:00.000Z"
+  },
+  {
+    "id_mensaje": 591,
+    "id_conversacion": 278,
+    "emisor_tipo": "SUPERVISOR",
+    "emisor_id": 1,
+    "contenido": "DEMO - Gracias. La solicitud quedo registrada y asignaremos seguimiento.",
+    "creado_en": "2026-05-07T11:00:00.000Z"
+  },
+  {
+    "id_mensaje": 592,
+    "id_conversacion": 278,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Ya revise el alcance y agregue las evidencias iniciales al expediente.",
+    "creado_en": "2026-05-13T12:00:00.000Z"
+  },
+  {
+    "id_mensaje": 593,
+    "id_conversacion": 279,
+    "emisor_tipo": "CLIENTE",
+    "emisor_id": 1009,
+    "contenido": "DEMO - Buen dia, compartimos la informacion inicial para preparar la auditoria.",
+    "creado_en": "2026-05-05T10:00:00.000Z"
+  },
+  {
+    "id_mensaje": 594,
+    "id_conversacion": 279,
+    "emisor_tipo": "SUPERVISOR",
+    "emisor_id": 1,
+    "contenido": "DEMO - Gracias. La solicitud quedo registrada y asignaremos seguimiento.",
+    "creado_en": "2026-05-11T11:00:00.000Z"
+  },
+  {
+    "id_mensaje": 595,
+    "id_conversacion": 279,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Ya revise el alcance y agregue las evidencias iniciales al expediente.",
+    "creado_en": "2026-05-17T12:00:00.000Z"
+  },
+  {
+    "id_mensaje": 596,
+    "id_conversacion": 280,
+    "emisor_tipo": "CLIENTE",
+    "emisor_id": 1010,
+    "contenido": "DEMO - Buen dia, compartimos la informacion inicial para preparar la auditoria.",
+    "creado_en": "2026-05-09T10:00:00.000Z"
+  },
+  {
+    "id_mensaje": 597,
+    "id_conversacion": 280,
+    "emisor_tipo": "SUPERVISOR",
+    "emisor_id": 1,
+    "contenido": "DEMO - Gracias. La solicitud quedo registrada y asignaremos seguimiento.",
+    "creado_en": "2026-05-15T11:00:00.000Z"
+  },
+  {
+    "id_mensaje": 598,
+    "id_conversacion": 280,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Ya revise el alcance y agregue las evidencias iniciales al expediente.",
+    "creado_en": "2026-05-21T12:00:00.000Z"
+  },
+  {
+    "id_mensaje": 599,
+    "id_conversacion": 280,
+    "emisor_tipo": "SUPERVISOR",
+    "emisor_id": 1,
+    "contenido": "DEMO - El reporte final quedo disponible para revision.",
+    "creado_en": "2026-05-27T13:00:00.000Z"
+  },
+  {
+    "id_mensaje": 600,
+    "id_conversacion": 281,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Inicio bitacora tecnica y solicitud de evidencias por modulo.",
+    "creado_en": "2026-01-15T13:00:00.000Z"
+  },
+  {
+    "id_mensaje": 601,
+    "id_conversacion": 281,
+    "emisor_tipo": "CLIENTE",
+    "emisor_id": 1001,
+    "contenido": "DEMO - Se cargaron documentos solicitados para revision del auditor.",
+    "creado_en": "2026-01-22T14:00:00.000Z"
+  },
+  {
+    "id_mensaje": 602,
+    "id_conversacion": 281,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Seguimiento en curso con evidencias documentales.",
+    "creado_en": "2026-01-29T15:00:00.000Z"
+  },
+  {
+    "id_mensaje": 603,
+    "id_conversacion": 282,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Inicio bitacora tecnica y solicitud de evidencias por modulo.",
+    "creado_en": "2026-01-19T13:00:00.000Z"
+  },
+  {
+    "id_mensaje": 604,
+    "id_conversacion": 282,
+    "emisor_tipo": "CLIENTE",
+    "emisor_id": 1002,
+    "contenido": "DEMO - Se cargaron documentos solicitados para revision del auditor.",
+    "creado_en": "2026-01-26T14:00:00.000Z"
+  },
+  {
+    "id_mensaje": 605,
+    "id_conversacion": 282,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Seguimiento en curso con evidencias documentales.",
+    "creado_en": "2026-02-02T15:00:00.000Z"
+  },
+  {
+    "id_mensaje": 606,
+    "id_conversacion": 283,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Inicio bitacora tecnica y solicitud de evidencias por modulo.",
+    "creado_en": "2026-01-23T13:00:00.000Z"
+  },
+  {
+    "id_mensaje": 607,
+    "id_conversacion": 283,
+    "emisor_tipo": "CLIENTE",
+    "emisor_id": 1003,
+    "contenido": "DEMO - Se cargaron documentos solicitados para revision del auditor.",
+    "creado_en": "2026-01-30T14:00:00.000Z"
+  },
+  {
+    "id_mensaje": 608,
+    "id_conversacion": 283,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Seguimiento en curso con evidencias documentales.",
+    "creado_en": "2026-02-06T15:00:00.000Z"
+  },
+  {
+    "id_mensaje": 609,
+    "id_conversacion": 284,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Inicio bitacora tecnica y solicitud de evidencias por modulo.",
+    "creado_en": "2026-01-27T13:00:00.000Z"
+  },
+  {
+    "id_mensaje": 610,
+    "id_conversacion": 284,
+    "emisor_tipo": "CLIENTE",
+    "emisor_id": 1004,
+    "contenido": "DEMO - Se cargaron documentos solicitados para revision del auditor.",
+    "creado_en": "2026-02-03T14:00:00.000Z"
+  },
+  {
+    "id_mensaje": 611,
+    "id_conversacion": 284,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Seguimiento en curso con evidencias documentales.",
+    "creado_en": "2026-02-10T15:00:00.000Z"
+  },
+  {
+    "id_mensaje": 612,
+    "id_conversacion": 285,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Inicio bitacora tecnica y solicitud de evidencias por modulo.",
+    "creado_en": "2026-01-31T13:00:00.000Z"
+  },
+  {
+    "id_mensaje": 613,
+    "id_conversacion": 285,
+    "emisor_tipo": "CLIENTE",
+    "emisor_id": 1005,
+    "contenido": "DEMO - Se cargaron documentos solicitados para revision del auditor.",
+    "creado_en": "2026-02-07T14:00:00.000Z"
+  },
+  {
+    "id_mensaje": 614,
+    "id_conversacion": 285,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Seguimiento en curso con evidencias documentales.",
+    "creado_en": "2026-02-14T15:00:00.000Z"
+  },
+  {
+    "id_mensaje": 615,
+    "id_conversacion": 286,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Inicio bitacora tecnica y solicitud de evidencias por modulo.",
+    "creado_en": "2026-02-04T13:00:00.000Z"
+  },
+  {
+    "id_mensaje": 616,
+    "id_conversacion": 286,
+    "emisor_tipo": "CLIENTE",
+    "emisor_id": 1006,
+    "contenido": "DEMO - Se cargaron documentos solicitados para revision del auditor.",
+    "creado_en": "2026-02-11T14:00:00.000Z"
+  },
+  {
+    "id_mensaje": 617,
+    "id_conversacion": 286,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Seguimiento en curso con evidencias documentales.",
+    "creado_en": "2026-02-18T15:00:00.000Z"
+  },
+  {
+    "id_mensaje": 618,
+    "id_conversacion": 287,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Inicio bitacora tecnica y solicitud de evidencias por modulo.",
+    "creado_en": "2026-02-08T13:00:00.000Z"
+  },
+  {
+    "id_mensaje": 619,
+    "id_conversacion": 287,
+    "emisor_tipo": "CLIENTE",
+    "emisor_id": 1007,
+    "contenido": "DEMO - Se cargaron documentos solicitados para revision del auditor.",
+    "creado_en": "2026-02-15T14:00:00.000Z"
+  },
+  {
+    "id_mensaje": 620,
+    "id_conversacion": 287,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Seguimiento en curso con evidencias documentales.",
+    "creado_en": "2026-02-22T15:00:00.000Z"
+  },
+  {
+    "id_mensaje": 621,
+    "id_conversacion": 288,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Inicio bitacora tecnica y solicitud de evidencias por modulo.",
+    "creado_en": "2026-02-12T13:00:00.000Z"
+  },
+  {
+    "id_mensaje": 622,
+    "id_conversacion": 288,
+    "emisor_tipo": "CLIENTE",
+    "emisor_id": 1008,
+    "contenido": "DEMO - Se cargaron documentos solicitados para revision del auditor.",
+    "creado_en": "2026-02-19T14:00:00.000Z"
+  },
+  {
+    "id_mensaje": 623,
+    "id_conversacion": 288,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Seguimiento en curso con evidencias documentales.",
+    "creado_en": "2026-02-26T15:00:00.000Z"
+  },
+  {
+    "id_mensaje": 624,
+    "id_conversacion": 289,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Inicio bitacora tecnica y solicitud de evidencias por modulo.",
+    "creado_en": "2026-02-16T13:00:00.000Z"
+  },
+  {
+    "id_mensaje": 625,
+    "id_conversacion": 289,
+    "emisor_tipo": "CLIENTE",
+    "emisor_id": 1009,
+    "contenido": "DEMO - Se cargaron documentos solicitados para revision del auditor.",
+    "creado_en": "2026-02-23T14:00:00.000Z"
+  },
+  {
+    "id_mensaje": 626,
+    "id_conversacion": 289,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Seguimiento en curso con evidencias documentales.",
+    "creado_en": "2026-03-02T15:00:00.000Z"
+  },
+  {
+    "id_mensaje": 627,
+    "id_conversacion": 290,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Inicio bitacora tecnica y solicitud de evidencias por modulo.",
+    "creado_en": "2026-02-20T13:00:00.000Z"
+  },
+  {
+    "id_mensaje": 628,
+    "id_conversacion": 290,
+    "emisor_tipo": "CLIENTE",
+    "emisor_id": 1010,
+    "contenido": "DEMO - Se cargaron documentos solicitados para revision del auditor.",
+    "creado_en": "2026-02-27T14:00:00.000Z"
+  },
+  {
+    "id_mensaje": 629,
+    "id_conversacion": 290,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Seguimiento en curso con evidencias documentales.",
+    "creado_en": "2026-03-06T15:00:00.000Z"
+  },
+  {
+    "id_mensaje": 630,
+    "id_conversacion": 291,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Inicio bitacora tecnica y solicitud de evidencias por modulo.",
+    "creado_en": "2026-02-24T13:00:00.000Z"
+  },
+  {
+    "id_mensaje": 631,
+    "id_conversacion": 291,
+    "emisor_tipo": "CLIENTE",
+    "emisor_id": 1011,
+    "contenido": "DEMO - Se cargaron documentos solicitados para revision del auditor.",
+    "creado_en": "2026-03-03T14:00:00.000Z"
+  },
+  {
+    "id_mensaje": 632,
+    "id_conversacion": 291,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Seguimiento en curso con evidencias documentales.",
+    "creado_en": "2026-03-10T15:00:00.000Z"
+  },
+  {
+    "id_mensaje": 633,
+    "id_conversacion": 292,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Inicio bitacora tecnica y solicitud de evidencias por modulo.",
+    "creado_en": "2026-02-28T13:00:00.000Z"
+  },
+  {
+    "id_mensaje": 634,
+    "id_conversacion": 292,
+    "emisor_tipo": "CLIENTE",
+    "emisor_id": 1012,
+    "contenido": "DEMO - Se cargaron documentos solicitados para revision del auditor.",
+    "creado_en": "2026-03-07T14:00:00.000Z"
+  },
+  {
+    "id_mensaje": 635,
+    "id_conversacion": 292,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Seguimiento en curso con evidencias documentales.",
+    "creado_en": "2026-03-14T15:00:00.000Z"
+  },
+  {
+    "id_mensaje": 636,
+    "id_conversacion": 293,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Inicio bitacora tecnica y solicitud de evidencias por modulo.",
+    "creado_en": "2026-03-04T13:00:00.000Z"
+  },
+  {
+    "id_mensaje": 637,
+    "id_conversacion": 293,
+    "emisor_tipo": "CLIENTE",
+    "emisor_id": 1013,
+    "contenido": "DEMO - Se cargaron documentos solicitados para revision del auditor.",
+    "creado_en": "2026-03-11T14:00:00.000Z"
+  },
+  {
+    "id_mensaje": 638,
+    "id_conversacion": 293,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Seguimiento en curso con evidencias documentales.",
+    "creado_en": "2026-03-18T15:00:00.000Z"
+  },
+  {
+    "id_mensaje": 639,
+    "id_conversacion": 294,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Inicio bitacora tecnica y solicitud de evidencias por modulo.",
+    "creado_en": "2026-03-08T13:00:00.000Z"
+  },
+  {
+    "id_mensaje": 640,
+    "id_conversacion": 294,
+    "emisor_tipo": "CLIENTE",
+    "emisor_id": 1014,
+    "contenido": "DEMO - Se cargaron documentos solicitados para revision del auditor.",
+    "creado_en": "2026-03-15T14:00:00.000Z"
+  },
+  {
+    "id_mensaje": 641,
+    "id_conversacion": 294,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Seguimiento en curso con evidencias documentales.",
+    "creado_en": "2026-03-22T15:00:00.000Z"
+  },
+  {
+    "id_mensaje": 642,
+    "id_conversacion": 295,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Inicio bitacora tecnica y solicitud de evidencias por modulo.",
+    "creado_en": "2026-03-12T13:00:00.000Z"
+  },
+  {
+    "id_mensaje": 643,
+    "id_conversacion": 295,
+    "emisor_tipo": "CLIENTE",
+    "emisor_id": 1015,
+    "contenido": "DEMO - Se cargaron documentos solicitados para revision del auditor.",
+    "creado_en": "2026-03-19T14:00:00.000Z"
+  },
+  {
+    "id_mensaje": 644,
+    "id_conversacion": 295,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Seguimiento en curso con evidencias documentales.",
+    "creado_en": "2026-03-26T15:00:00.000Z"
+  },
+  {
+    "id_mensaje": 645,
+    "id_conversacion": 296,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Inicio bitacora tecnica y solicitud de evidencias por modulo.",
+    "creado_en": "2026-03-16T13:00:00.000Z"
+  },
+  {
+    "id_mensaje": 646,
+    "id_conversacion": 296,
+    "emisor_tipo": "CLIENTE",
+    "emisor_id": 1016,
+    "contenido": "DEMO - Se cargaron documentos solicitados para revision del auditor.",
+    "creado_en": "2026-03-23T14:00:00.000Z"
+  },
+  {
+    "id_mensaje": 647,
+    "id_conversacion": 296,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Seguimiento en curso con evidencias documentales.",
+    "creado_en": "2026-03-30T15:00:00.000Z"
+  },
+  {
+    "id_mensaje": 648,
+    "id_conversacion": 297,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Inicio bitacora tecnica y solicitud de evidencias por modulo.",
+    "creado_en": "2026-03-20T13:00:00.000Z"
+  },
+  {
+    "id_mensaje": 649,
+    "id_conversacion": 297,
+    "emisor_tipo": "CLIENTE",
+    "emisor_id": 1017,
+    "contenido": "DEMO - Se cargaron documentos solicitados para revision del auditor.",
+    "creado_en": "2026-03-27T14:00:00.000Z"
+  },
+  {
+    "id_mensaje": 650,
+    "id_conversacion": 297,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Seguimiento en curso con evidencias documentales.",
+    "creado_en": "2026-04-03T15:00:00.000Z"
+  },
+  {
+    "id_mensaje": 651,
+    "id_conversacion": 298,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Inicio bitacora tecnica y solicitud de evidencias por modulo.",
+    "creado_en": "2026-03-24T13:00:00.000Z"
+  },
+  {
+    "id_mensaje": 652,
+    "id_conversacion": 298,
+    "emisor_tipo": "CLIENTE",
+    "emisor_id": 1018,
+    "contenido": "DEMO - Se cargaron documentos solicitados para revision del auditor.",
+    "creado_en": "2026-03-31T14:00:00.000Z"
+  },
+  {
+    "id_mensaje": 653,
+    "id_conversacion": 298,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Seguimiento en curso con evidencias documentales.",
+    "creado_en": "2026-04-07T15:00:00.000Z"
+  },
+  {
+    "id_mensaje": 654,
+    "id_conversacion": 299,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Inicio bitacora tecnica y solicitud de evidencias por modulo.",
+    "creado_en": "2026-03-28T13:00:00.000Z"
+  },
+  {
+    "id_mensaje": 655,
+    "id_conversacion": 299,
+    "emisor_tipo": "CLIENTE",
+    "emisor_id": 1019,
+    "contenido": "DEMO - Se cargaron documentos solicitados para revision del auditor.",
+    "creado_en": "2026-04-04T14:00:00.000Z"
+  },
+  {
+    "id_mensaje": 656,
+    "id_conversacion": 299,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Hallazgos cerrados y reporte final preparado.",
+    "creado_en": "2026-04-11T15:00:00.000Z"
+  },
+  {
+    "id_mensaje": 657,
+    "id_conversacion": 300,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Inicio bitacora tecnica y solicitud de evidencias por modulo.",
+    "creado_en": "2026-04-01T13:00:00.000Z"
+  },
+  {
+    "id_mensaje": 658,
+    "id_conversacion": 300,
+    "emisor_tipo": "CLIENTE",
+    "emisor_id": 1020,
+    "contenido": "DEMO - Se cargaron documentos solicitados para revision del auditor.",
+    "creado_en": "2026-04-08T14:00:00.000Z"
+  },
+  {
+    "id_mensaje": 659,
+    "id_conversacion": 300,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Hallazgos cerrados y reporte final preparado.",
+    "creado_en": "2026-04-15T15:00:00.000Z"
+  },
+  {
+    "id_mensaje": 660,
+    "id_conversacion": 301,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Inicio bitacora tecnica y solicitud de evidencias por modulo.",
+    "creado_en": "2026-04-05T13:00:00.000Z"
+  },
+  {
+    "id_mensaje": 661,
+    "id_conversacion": 301,
+    "emisor_tipo": "CLIENTE",
+    "emisor_id": 1001,
+    "contenido": "DEMO - Se cargaron documentos solicitados para revision del auditor.",
+    "creado_en": "2026-04-12T14:00:00.000Z"
+  },
+  {
+    "id_mensaje": 662,
+    "id_conversacion": 301,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Hallazgos cerrados y reporte final preparado.",
+    "creado_en": "2026-04-19T15:00:00.000Z"
+  },
+  {
+    "id_mensaje": 663,
+    "id_conversacion": 302,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Inicio bitacora tecnica y solicitud de evidencias por modulo.",
+    "creado_en": "2026-04-09T13:00:00.000Z"
+  },
+  {
+    "id_mensaje": 664,
+    "id_conversacion": 302,
+    "emisor_tipo": "CLIENTE",
+    "emisor_id": 1002,
+    "contenido": "DEMO - Se cargaron documentos solicitados para revision del auditor.",
+    "creado_en": "2026-04-16T14:00:00.000Z"
+  },
+  {
+    "id_mensaje": 665,
+    "id_conversacion": 302,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Hallazgos cerrados y reporte final preparado.",
+    "creado_en": "2026-04-23T15:00:00.000Z"
+  },
+  {
+    "id_mensaje": 666,
+    "id_conversacion": 303,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Inicio bitacora tecnica y solicitud de evidencias por modulo.",
+    "creado_en": "2026-04-13T13:00:00.000Z"
+  },
+  {
+    "id_mensaje": 667,
+    "id_conversacion": 303,
+    "emisor_tipo": "CLIENTE",
+    "emisor_id": 1003,
+    "contenido": "DEMO - Se cargaron documentos solicitados para revision del auditor.",
+    "creado_en": "2026-04-20T14:00:00.000Z"
+  },
+  {
+    "id_mensaje": 668,
+    "id_conversacion": 303,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Hallazgos cerrados y reporte final preparado.",
+    "creado_en": "2026-04-27T15:00:00.000Z"
+  },
+  {
+    "id_mensaje": 669,
+    "id_conversacion": 304,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Inicio bitacora tecnica y solicitud de evidencias por modulo.",
+    "creado_en": "2026-04-17T13:00:00.000Z"
+  },
+  {
+    "id_mensaje": 670,
+    "id_conversacion": 304,
+    "emisor_tipo": "CLIENTE",
+    "emisor_id": 1004,
+    "contenido": "DEMO - Se cargaron documentos solicitados para revision del auditor.",
+    "creado_en": "2026-04-24T14:00:00.000Z"
+  },
+  {
+    "id_mensaje": 671,
+    "id_conversacion": 304,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Hallazgos cerrados y reporte final preparado.",
+    "creado_en": "2026-05-01T15:00:00.000Z"
+  },
+  {
+    "id_mensaje": 672,
+    "id_conversacion": 305,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Inicio bitacora tecnica y solicitud de evidencias por modulo.",
+    "creado_en": "2026-04-21T13:00:00.000Z"
+  },
+  {
+    "id_mensaje": 673,
+    "id_conversacion": 305,
+    "emisor_tipo": "CLIENTE",
+    "emisor_id": 1005,
+    "contenido": "DEMO - Se cargaron documentos solicitados para revision del auditor.",
+    "creado_en": "2026-04-28T14:00:00.000Z"
+  },
+  {
+    "id_mensaje": 674,
+    "id_conversacion": 305,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Hallazgos cerrados y reporte final preparado.",
+    "creado_en": "2026-05-05T15:00:00.000Z"
+  },
+  {
+    "id_mensaje": 675,
+    "id_conversacion": 306,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Inicio bitacora tecnica y solicitud de evidencias por modulo.",
+    "creado_en": "2026-04-25T13:00:00.000Z"
+  },
+  {
+    "id_mensaje": 676,
+    "id_conversacion": 306,
+    "emisor_tipo": "CLIENTE",
+    "emisor_id": 1006,
+    "contenido": "DEMO - Se cargaron documentos solicitados para revision del auditor.",
+    "creado_en": "2026-05-02T14:00:00.000Z"
+  },
+  {
+    "id_mensaje": 677,
+    "id_conversacion": 306,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Hallazgos cerrados y reporte final preparado.",
+    "creado_en": "2026-05-09T15:00:00.000Z"
+  },
+  {
+    "id_mensaje": 678,
+    "id_conversacion": 307,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Inicio bitacora tecnica y solicitud de evidencias por modulo.",
+    "creado_en": "2026-04-29T13:00:00.000Z"
+  },
+  {
+    "id_mensaje": 679,
+    "id_conversacion": 307,
+    "emisor_tipo": "CLIENTE",
+    "emisor_id": 1007,
+    "contenido": "DEMO - Se cargaron documentos solicitados para revision del auditor.",
+    "creado_en": "2026-05-06T14:00:00.000Z"
+  },
+  {
+    "id_mensaje": 680,
+    "id_conversacion": 307,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Seguimiento en curso con evidencias documentales.",
+    "creado_en": "2026-05-13T15:00:00.000Z"
+  },
+  {
+    "id_mensaje": 681,
+    "id_conversacion": 308,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Inicio bitacora tecnica y solicitud de evidencias por modulo.",
+    "creado_en": "2026-05-03T13:00:00.000Z"
+  },
+  {
+    "id_mensaje": 682,
+    "id_conversacion": 308,
+    "emisor_tipo": "CLIENTE",
+    "emisor_id": 1008,
+    "contenido": "DEMO - Se cargaron documentos solicitados para revision del auditor.",
+    "creado_en": "2026-05-10T14:00:00.000Z"
+  },
+  {
+    "id_mensaje": 683,
+    "id_conversacion": 308,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Seguimiento en curso con evidencias documentales.",
+    "creado_en": "2026-05-17T15:00:00.000Z"
+  },
+  {
+    "id_mensaje": 684,
+    "id_conversacion": 309,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Inicio bitacora tecnica y solicitud de evidencias por modulo.",
+    "creado_en": "2026-05-07T13:00:00.000Z"
+  },
+  {
+    "id_mensaje": 685,
+    "id_conversacion": 309,
+    "emisor_tipo": "CLIENTE",
+    "emisor_id": 1009,
+    "contenido": "DEMO - Se cargaron documentos solicitados para revision del auditor.",
+    "creado_en": "2026-05-14T14:00:00.000Z"
+  },
+  {
+    "id_mensaje": 686,
+    "id_conversacion": 309,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Seguimiento en curso con evidencias documentales.",
+    "creado_en": "2026-05-21T15:00:00.000Z"
+  },
+  {
+    "id_mensaje": 687,
+    "id_conversacion": 310,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Inicio bitacora tecnica y solicitud de evidencias por modulo.",
+    "creado_en": "2026-05-11T13:00:00.000Z"
+  },
+  {
+    "id_mensaje": 688,
+    "id_conversacion": 310,
+    "emisor_tipo": "CLIENTE",
+    "emisor_id": 1010,
+    "contenido": "DEMO - Se cargaron documentos solicitados para revision del auditor.",
+    "creado_en": "2026-05-18T14:00:00.000Z"
+  },
+  {
+    "id_mensaje": 689,
+    "id_conversacion": 310,
+    "emisor_tipo": "AUDITOR",
+    "emisor_id": 101,
+    "contenido": "DEMO - Hallazgos cerrados y reporte final preparado.",
+    "creado_en": "2026-05-25T15:00:00.000Z"
   }
 ]

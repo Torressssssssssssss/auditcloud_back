@@ -9,6 +9,7 @@ const { readJson, writeJson, getNextId, crearNotificacion } = require('../utils/
 const { authenticate, authorize } = require('../utils/auth');
 const { uploadFileToFirebase } = require('../utils/firebaseStorage');
 const { normalizeConversation, isCommercialConversation, isAuditConversation } = require('../utils/conversationContext');
+const { indexAuditoria, updateAuditoria } = require('../services/elasticsearchAuditorias.service');
 
 // Configuracion de carga de archivos
 const storage = multer.memoryStorage(); // Para Firebase
@@ -35,12 +36,33 @@ router.get('/auditores/:idEmpresa', authenticate, authorize([1]), async (req, re
   const idEmpresa = Number(req.params.idEmpresa);
   const page = Number(req.query.page || 1);
   const limit = Number(req.query.limit || 20);
-  const usuarios = await readJson('usuarios.json');
 
   if (req.user.id_empresa !== idEmpresa) {
       return res.status(403).json({ message: 'No tienes permiso para ver auditores de otra empresa.' });
   }
 
+  try {
+    const rows = await query(
+      `SELECT id_usuario, id_empresa, nombre, correo, id_rol, activo, creado_en
+       FROM usuarios
+       WHERE id_empresa = ?
+         AND id_rol = 2
+         AND activo = 1
+       ORDER BY nombre ASC;`,
+      [idEmpresa]
+    );
+
+    if (rows.length > 0) {
+      const start = (page - 1) * limit;
+      return res.json({ total: rows.length, page, limit, data: rows.slice(start, start + limit) });
+    }
+  } catch (error) {
+    if (error?.code !== 'DB_NOT_CONFIGURED') {
+      console.warn('No fue posible listar auditores desde MySQL, usando JSON:', error?.code || error?.message || error);
+    }
+  }
+
+  const usuarios = await readJson('usuarios.json');
   const all = usuarios.filter(
     u => u.id_empresa === idEmpresa && u.id_rol === 2 && u.activo
   );
@@ -427,6 +449,510 @@ router.get('/solicitudes-pago', authenticate, authorize([1]), async (req, res) =
   }
 });
 
+function estaActivo(item = {}) {
+  return item.activo !== false && item.activa !== false;
+}
+
+function estadoOperativoCartera(solicitud, auditoria, asignacion) {
+  if (auditoria?.id_estado === 3) {
+    return 'Finalizada';
+  }
+
+  if (auditoria?.id_estado === 2) {
+    return 'Auditoría activa';
+  }
+
+  if (asignacion) {
+    return 'Auditor asignado';
+  }
+
+  return 'Pendiente de asignar auditor';
+}
+
+async function cargarAuditorAsignable(idAuditor, idEmpresaAuditora) {
+  const auditorId = Number(idAuditor);
+  const empresaId = Number(idEmpresaAuditora);
+
+  try {
+    const rows = await query(
+      `SELECT id_usuario, id_empresa, nombre, correo, id_rol, activo
+       FROM usuarios
+       WHERE id_usuario = ?
+         AND id_empresa = ?
+         AND id_rol = 2
+         AND activo = 1
+       LIMIT 1;`,
+      [auditorId, empresaId]
+    );
+    if (rows[0]) return rows[0];
+  } catch (error) {
+    if (error?.code !== 'DB_NOT_CONFIGURED') {
+      console.warn('No fue posible validar auditor en MySQL, usando JSON:', error?.code || error?.message || error);
+    }
+  }
+
+  const usuarios = await readJson('usuarios.json');
+  return usuarios.find(u =>
+    Number(u.id_usuario) === auditorId &&
+    Number(u.id_empresa) === empresaId &&
+    Number(u.id_rol) === 2 &&
+    u.activo !== false
+  ) || null;
+}
+
+async function cargarClienteEmpresaCartera(idCliente, usuarios, empresas) {
+  const usuarioId = Number(idCliente);
+  const usuarioJson = usuarios.find(u => Number(u.id_usuario) === usuarioId);
+  const empresaJson = usuarioJson?.id_empresa
+    ? empresas.find(e => Number(e.id_empresa) === Number(usuarioJson.id_empresa))
+    : null;
+
+  if (usuarioJson) {
+    return { usuarioCliente: usuarioJson, empresaCliente: empresaJson || null };
+  }
+
+  try {
+    const rows = await query(
+      `SELECT
+        u.id_usuario,
+        u.id_empresa,
+        u.nombre,
+        u.correo,
+        e.nombre AS nombre_empresa,
+        e.ciudad,
+        e.pais,
+        e.contacto_nombre,
+        e.activo
+       FROM usuarios u
+       LEFT JOIN empresas e ON e.id_empresa = u.id_empresa
+       WHERE u.id_usuario = ?
+       LIMIT 1;`,
+      [usuarioId]
+    );
+    const row = rows[0];
+    if (row) {
+      return {
+        usuarioCliente: {
+          id_usuario: Number(row.id_usuario),
+          id_empresa: row.id_empresa ? Number(row.id_empresa) : null,
+          nombre: row.nombre,
+          correo: row.correo,
+          activo: true
+        },
+        empresaCliente: row.id_empresa ? {
+          id_empresa: Number(row.id_empresa),
+          nombre: row.nombre_empresa || 'Empresa Cliente',
+          ciudad: row.ciudad || null,
+          pais: row.pais || 'México',
+          contacto_nombre: row.contacto_nombre || row.nombre,
+          activo: row.activo !== 0
+        } : null
+      };
+    }
+  } catch (error) {
+    if (error?.code !== 'DB_NOT_CONFIGURED') {
+      console.warn('No fue posible cargar cliente de cartera desde MySQL:', error?.code || error?.message || error);
+    }
+  }
+
+  return { usuarioCliente: null, empresaCliente: null };
+}
+
+async function cargarUsuarioPorId(idUsuario) {
+  const usuarioId = Number(idUsuario);
+  const usuarios = await readJson('usuarios.json');
+  const usuarioJson = usuarios.find(u => Number(u.id_usuario) === usuarioId);
+  if (usuarioJson) return usuarioJson;
+
+  try {
+    const rows = await query(
+      `SELECT id_usuario, id_empresa, nombre, correo, id_rol, activo
+       FROM usuarios
+       WHERE id_usuario = ?
+       LIMIT 1;`,
+      [usuarioId]
+    );
+    return rows[0] || null;
+  } catch (error) {
+    return null;
+  }
+}
+
+function construirRegistroCartera({ solicitud, empresaCliente, usuarioCliente, auditoria, asignacion, auditor }) {
+  return {
+    id_empresa: empresaCliente?.id_empresa || solicitud.id_empresa_cliente,
+    nombre: empresaCliente?.nombre || 'Empresa Cliente',
+    ciudad: empresaCliente?.ciudad || null,
+    pais: empresaCliente?.pais || 'México',
+    contacto: usuarioCliente?.nombre || empresaCliente?.contacto_nombre || 'Cliente',
+    activo: empresaCliente ? estaActivo(empresaCliente) : true,
+    id_cliente: solicitud.id_cliente,
+    id_solicitud: solicitud.id_solicitud,
+    id_solicitud_pago: solicitud.id_solicitud,
+    concepto: solicitud.concepto,
+    monto: solicitud.monto,
+    id_estado_pago: solicitud.id_estado,
+    pagada_en: solicitud.pagada_en || null,
+    id_auditoria: auditoria?.id_auditoria || null,
+    id_estado_auditoria: auditoria?.id_estado || null,
+    total_auditorias: auditoria ? 1 : 0,
+    estado_operativo: estadoOperativoCartera(solicitud, auditoria, asignacion),
+    pendiente_asignar_auditor: Number(solicitud.id_estado) === 2 && !asignacion,
+    auditor_asignado: auditor ? {
+      id_usuario: auditor.id_usuario,
+      nombre: auditor.nombre,
+      correo: auditor.correo
+    } : null
+  };
+}
+
+// GET /api/supervisor/clientes-cartera
+// Empresas con pagos aprobados y su siguiente paso operativo.
+router.get('/clientes-cartera', authenticate, authorize([1]), async (req, res) => {
+  try {
+    const idEmpresaAuditora = Number(req.user.id_empresa);
+    const solicitudes = await readJson('solicitudes_pago.json');
+    const auditorias = await readJson('auditorias.json');
+    const participantes = await readJson('auditoria_participantes.json');
+    const usuarios = await readJson('usuarios.json');
+    const empresas = await readJson('empresas.json');
+
+    const pagadas = solicitudes.filter(s => {
+      const ownerId = s.id_empresa_auditora ? Number(s.id_empresa_auditora) : Number(s.id_empresa);
+      return ownerId === idEmpresaAuditora && Number(s.id_estado) === 2;
+    });
+
+    const registros = await Promise.all(pagadas.map(async (solicitud) => {
+      const auditoria = auditorias.find(a =>
+        Number(a.id_empresa_auditora) === idEmpresaAuditora &&
+        Number(a.id_solicitud_pago) === Number(solicitud.id_solicitud)
+      );
+      const asignacion = auditoria
+        ? participantes.find(p => Number(p.id_auditoria) === Number(auditoria.id_auditoria))
+        : null;
+      const auditor = asignacion
+        ? await cargarUsuarioPorId(asignacion.id_auditor)
+        : null;
+      const datosCliente = await cargarClienteEmpresaCartera(solicitud.id_cliente, usuarios, empresas);
+      const usuarioCliente = datosCliente.usuarioCliente;
+      const idEmpresaCliente = solicitud.id_empresa_cliente || usuarioCliente?.id_empresa;
+      const empresaCliente = datosCliente.empresaCliente || empresas.find(e => Number(e.id_empresa) === Number(idEmpresaCliente));
+
+      return construirRegistroCartera({ solicitud, empresaCliente, usuarioCliente, auditoria, asignacion, auditor });
+    }));
+
+    registros.sort((a, b) => new Date(b.pagada_en || 0) - new Date(a.pagada_en || 0));
+    res.json(registros);
+  } catch (error) {
+    console.error('Error cargando cartera de clientes:', error);
+    res.status(500).json({ message: 'Error cargando cartera de clientes' });
+  }
+});
+
+// POST /api/supervisor/solicitudes-pago/:idSolicitud/asignar-auditor
+// Crea/reusa una auditoría para una solicitud pagada y asigna auditor una sola vez.
+router.post('/solicitudes-pago/:idSolicitud/asignar-auditor', authenticate, authorize([1]), async (req, res) => {
+  try {
+    const idSolicitud = Number(req.params.idSolicitud);
+    const idAuditor = Number(req.body.id_auditor);
+    const idEmpresaAuditora = Number(req.user.id_empresa);
+
+    if (!Number.isInteger(idSolicitud) || idSolicitud <= 0) {
+      return res.status(400).json({ message: 'Solicitud inválida' });
+    }
+
+    if (!Number.isInteger(idAuditor) || idAuditor <= 0) {
+      return res.status(400).json({ message: 'id_auditor es obligatorio' });
+    }
+
+    const solicitudes = await readJson('solicitudes_pago.json');
+    const auditorias = await readJson('auditorias.json');
+    const participantes = await readJson('auditoria_participantes.json');
+    const usuarios = await readJson('usuarios.json');
+    const conversaciones = (await readJson('conversaciones.json')).map(normalizeConversation);
+
+    const solicitud = solicitudes.find(s => Number(s.id_solicitud) === idSolicitud);
+    const ownerId = solicitud?.id_empresa_auditora ? Number(solicitud.id_empresa_auditora) : Number(solicitud?.id_empresa);
+    if (!solicitud || ownerId !== idEmpresaAuditora) {
+      return res.status(404).json({ message: 'Solicitud de pago no encontrada' });
+    }
+
+    if (Number(solicitud.id_estado) !== 2) {
+      return res.status(400).json({ message: 'La solicitud debe estar pagada antes de asignar auditor' });
+    }
+
+    const auditor = await cargarAuditorAsignable(idAuditor, idEmpresaAuditora);
+    if (!auditor) {
+      return res.status(404).json({ message: 'Auditor no encontrado para esta empresa auditora' });
+    }
+
+    const idCliente = Number(solicitud.id_cliente);
+    if (!Number.isInteger(idCliente) || idCliente <= 0) {
+      return res.status(400).json({ message: 'La solicitud no tiene cliente relacionado' });
+    }
+
+    let auditoria = auditorias.find(a =>
+      Number(a.id_empresa_auditora) === idEmpresaAuditora &&
+      Number(a.id_solicitud_pago) === idSolicitud
+    );
+
+    if (!auditoria) {
+      auditoria = {
+        id_auditoria: await getNextId('auditorias.json', 'id_auditoria'),
+        id_empresa_auditora: idEmpresaAuditora,
+        id_cliente: idCliente,
+        id_empresa_cliente: solicitud.id_empresa_cliente || null,
+        id_solicitud_pago: idSolicitud,
+        id_estado: 1,
+        objetivo: solicitud.concepto || 'Auditoría derivada de solicitud de pago',
+        monto: solicitud.monto,
+        creada_en: new Date().toISOString(),
+        creado_por_supervisor: req.user.id_usuario
+      };
+      auditorias.push(auditoria);
+      await writeJson('auditorias.json', auditorias);
+      // Elasticsearch es copia para visualizacion; si falla, no revierte la operacion principal.
+      await indexAuditoria(auditoria);
+    }
+
+    const actuales = participantes.filter(p => Number(p.id_auditoria) === Number(auditoria.id_auditoria));
+    if (actuales.length > 0) {
+      if (actuales.length === 1 && Number(actuales[0].id_auditor) === idAuditor) {
+        return res.status(400).json({ message: 'Este auditor ya está asignado.' });
+      }
+      return res.status(409).json({ message: 'La auditoría ya tiene un auditor asignado. Usa Cambiar auditor.' });
+    }
+
+    const resultadoAsignacion = await guardarAsignacionUnicaAuditor({
+      idAuditoria: auditoria.id_auditoria,
+      idAuditor,
+      req,
+      reemplazar: false
+    });
+
+    res.status(200).json({
+      message: 'Auditor asignado correctamente',
+      auditoria,
+      participante: resultadoAsignacion.participante
+    });
+  } catch (error) {
+    console.error('Error asignando auditor desde solicitud:', error);
+    res.status(500).json({ message: 'Error asignando auditor' });
+  }
+});
+
+async function cargarClienteAuditoriaSupervisor(idCliente, usuarios, empresas) {
+  const usuarioJson = usuarios.find(u => Number(u.id_usuario) === Number(idCliente));
+  const empresaJson = usuarioJson?.id_empresa
+    ? empresas.find(e => Number(e.id_empresa) === Number(usuarioJson.id_empresa))
+    : null;
+
+  if (usuarioJson) {
+    return {
+      usuario: usuarioJson,
+      empresa: empresaJson || null,
+      cliente: {
+        id_usuario: usuarioJson.id_usuario,
+        nombre: usuarioJson.nombre,
+        correo: usuarioJson.correo,
+        nombre_empresa: empresaJson?.nombre || usuarioJson.nombre_empresa || null
+      }
+    };
+  }
+
+  try {
+    const rows = await query(
+      `SELECT u.id_usuario, u.nombre, u.correo, u.id_empresa, e.nombre AS nombre_empresa
+       FROM usuarios u
+       LEFT JOIN empresas e ON e.id_empresa = u.id_empresa
+       WHERE u.id_usuario = ?
+       LIMIT 1;`,
+      [Number(idCliente)]
+    );
+    const row = rows[0];
+    if (row) {
+      return {
+        usuario: row,
+        empresa: row.id_empresa ? { id_empresa: Number(row.id_empresa), nombre: row.nombre_empresa } : null,
+        cliente: {
+          id_usuario: Number(row.id_usuario),
+          nombre: row.nombre,
+          correo: row.correo,
+          nombre_empresa: row.nombre_empresa || null
+        }
+      };
+    }
+  } catch (error) {
+    if (error?.code !== 'DB_NOT_CONFIGURED') {
+      console.warn('No fue posible enriquecer cliente desde MySQL:', error?.code || error?.message || error);
+    }
+  }
+
+  return {
+    usuario: null,
+    empresa: null,
+    cliente: { id_usuario: Number(idCliente), nombre: null, correo: null, nombre_empresa: null }
+  };
+}
+
+function normalizarTextoModulo(valor) {
+  return String(valor || '')
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/s+/g, ' ');
+}
+
+async function resolverIdModulo(input) {
+  const modulosAmbientales = await readJson('modulos_ambientales.json');
+  const valorNumerico = Number(input);
+  if (Number.isInteger(valorNumerico) && valorNumerico > 0) {
+    const existe = modulosAmbientales.some(m => Number(m.id_modulo) === valorNumerico);
+    return existe ? valorNumerico : null;
+  }
+
+  const normalizado = normalizarTextoModulo(input);
+  const modulo = modulosAmbientales.find(m =>
+    normalizarTextoModulo(m.nombre) === normalizado ||
+    normalizarTextoModulo(m.clave) === normalizado
+  );
+  return modulo ? Number(modulo.id_modulo) : null;
+}
+
+function modulosUnicosPorAuditoria(auditoriaModulos, idAuditoria) {
+  const vistos = new Set();
+  return auditoriaModulos
+    .filter(am => Number(am.id_auditoria) === Number(idAuditoria))
+    .map(am => Number(am.id_modulo))
+    .filter(idModulo => {
+      if (vistos.has(idModulo)) return false;
+      vistos.add(idModulo);
+      return true;
+    });
+}
+
+function actualizarConversacionAuditor(conversaciones, auditoria, idAuditor, idSupervisor) {
+  const idxConversacion = conversaciones.findIndex(c =>
+    isAuditConversation(c) &&
+    Number(c.id_auditoria) === Number(auditoria.id_auditoria) &&
+    Number(c.id_cliente) === Number(auditoria.id_cliente) &&
+    Number(c.id_empresa_auditora) === Number(auditoria.id_empresa_auditora) &&
+    c.activo
+  );
+
+  if (idxConversacion === -1) {
+    conversaciones.push({
+      id_conversacion: null,
+      id_cliente: auditoria.id_cliente,
+      id_empresa_auditora: auditoria.id_empresa_auditora,
+      id_auditoria: auditoria.id_auditoria,
+      tipo_conversacion: 'AUDITORIA',
+      id_usuario_cliente: auditoria.id_cliente,
+      id_usuario_supervisor: idSupervisor,
+      id_usuario_auditor: Number(idAuditor),
+      asunto: `Auditoría #${auditoria.id_auditoria}`,
+      creado_en: new Date().toISOString(),
+      estado: 'ABIERTA',
+      activo: true
+    });
+    return 'created';
+  }
+
+  conversaciones[idxConversacion].id_usuario_auditor = Number(idAuditor);
+  conversaciones[idxConversacion].id_auditor = Number(idAuditor);
+  conversaciones[idxConversacion].id_usuario_supervisor = conversaciones[idxConversacion].id_usuario_supervisor || idSupervisor;
+  return 'updated';
+}
+
+function limpiarConversacionAuditor(conversaciones, idAuditoria) {
+  for (const conversacion of conversaciones) {
+    if (isAuditConversation(conversacion) && Number(conversacion.id_auditoria) === Number(idAuditoria)) {
+      conversacion.id_usuario_auditor = null;
+      conversacion.id_auditor = null;
+    }
+  }
+}
+
+async function guardarAsignacionUnicaAuditor({ idAuditoria, idAuditor, req, reemplazar = false }) {
+  const auditorias = await readJson('auditorias.json');
+  const participantes = await readJson('auditoria_participantes.json');
+  const conversaciones = (await readJson('conversaciones.json')).map(normalizeConversation);
+  const auditoria = auditorias.find(a => Number(a.id_auditoria) === Number(idAuditoria));
+
+  if (!auditoria || Number(auditoria.id_empresa_auditora) !== Number(req.user.id_empresa)) {
+    const error = new Error('Auditoría inválida o sin permisos');
+    error.statusCode = 403;
+    throw error;
+  }
+
+  const auditor = await cargarAuditorAsignable(idAuditor, req.user.id_empresa);
+  if (!auditor) {
+    const error = new Error('Auditor no encontrado para esta empresa auditora');
+    error.statusCode = 404;
+    throw error;
+  }
+
+  const actuales = participantes.filter(p => Number(p.id_auditoria) === Number(idAuditoria));
+  const yaMismo = actuales.length === 1 && Number(actuales[0].id_auditor) === Number(idAuditor);
+  if (yaMismo) {
+    const error = new Error('Este auditor ya está asignado.');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (actuales.length > 0 && !reemplazar) {
+    const error = new Error('La auditoría ya tiene un auditor asignado. Usa Cambiar auditor.');
+    error.statusCode = 409;
+    throw error;
+  }
+
+  const restantes = participantes.filter(p => Number(p.id_auditoria) !== Number(idAuditoria));
+  const nuevaAsignacion = {
+    id_participante: await getNextId('auditoria_participantes.json', 'id_participante'),
+    id_auditoria: Number(idAuditoria),
+    id_auditor: Number(idAuditor),
+    asignado_en: new Date().toISOString()
+  };
+  restantes.push(nuevaAsignacion);
+  await writeJson('auditoria_participantes.json', restantes);
+
+  const accionConversacion = actualizarConversacionAuditor(conversaciones, auditoria, idAuditor, req.user.id_usuario);
+  if (accionConversacion === 'created') {
+    const nueva = conversaciones[conversaciones.length - 1];
+    nueva.id_conversacion = await getNextId('conversaciones.json', 'id_conversacion');
+  }
+  await writeJson('conversaciones.json', conversaciones);
+
+  return { auditoria, participante: nuevaAsignacion, auditor };
+}
+
+async function quitarAsignacionAuditor({ idAuditoria, req }) {
+  const auditorias = await readJson('auditorias.json');
+  const participantes = await readJson('auditoria_participantes.json');
+  const conversaciones = (await readJson('conversaciones.json')).map(normalizeConversation);
+  const auditoria = auditorias.find(a => Number(a.id_auditoria) === Number(idAuditoria));
+
+  if (!auditoria || Number(auditoria.id_empresa_auditora) !== Number(req.user.id_empresa)) {
+    const error = new Error('Auditoría inválida o sin permisos');
+    error.statusCode = 403;
+    throw error;
+  }
+
+  const restantes = participantes.filter(p => Number(p.id_auditoria) !== Number(idAuditoria));
+  if (restantes.length === participantes.length) {
+    const error = new Error('La auditoría no tiene auditor asignado.');
+    error.statusCode = 404;
+    throw error;
+  }
+
+  await writeJson('auditoria_participantes.json', restantes);
+  limpiarConversacionAuditor(conversaciones, idAuditoria);
+  await writeJson('conversaciones.json', conversaciones);
+
+  return { auditoria };
+}
+
 // Gestion de auditorias
 
 // GET /api/supervisor/auditorias/:idEmpresa
@@ -454,35 +980,25 @@ router.get('/auditorias/:idEmpresa', authenticate, authorize([1]), async (req, r
       all = all.filter(a => a.id_estado === idEstado);
     }
 
-    const auditoriasEnriquecidas = all.map(auditoria => {
-      const cliente = usuarios.find(u => u.id_usuario === auditoria.id_cliente);
-      const empresaCliente = empresas.find(e => e.id_empresa === cliente?.id_empresa);
+    const auditoriasEnriquecidas = await Promise.all(all.map(async (auditoria) => {
+      const datosCliente = await cargarClienteAuditoriaSupervisor(auditoria.id_cliente, usuarios, empresas);
       const estado = estados.find(e => e.id_estado === auditoria.id_estado);
       
-      const modulos = auditoriaModulos
-        .filter(am => am.id_auditoria === auditoria.id_auditoria)
-        .map(am => am.id_modulo);
+      const modulos = modulosUnicosPorAuditoria(auditoriaModulos, auditoria.id_auditoria);
 
       return {
         ...auditoria,
         modulos,
         fecha_creacion: auditoria.creada_en || auditoria.creado_en,
         monto: auditoria.monto || null,
-        cliente: cliente ? {
-          id_usuario: cliente.id_usuario,
-          nombre: cliente.nombre,
-          correo: cliente.correo
-        } : null,
-        empresa_cliente: empresaCliente ? {
-          id_empresa: empresaCliente.id_empresa,
-          nombre: empresaCliente.nombre
-        } : null,
+        cliente: datosCliente.cliente,
+        empresa_cliente: datosCliente.empresa,
         estado: estado ? {
           id_estado: estado.id_estado,
           nombre: estado.nombre || estado.clave
         } : null
       };
-    });
+    }));
 
     const start = (page - 1) * limit;
     res.json({
@@ -516,6 +1032,8 @@ router.put('/auditorias/:idAuditoria/estado', authenticate, authorize([1]), asyn
   auditorias[idx].id_estado = Number(id_estado);
   auditorias[idx].estado_actualizado_en = new Date().toISOString();
   await writeJson('auditorias.json', auditorias);
+  // Mejora futura: patron Outbox/cola para reintentar sincronizacion con Elasticsearch.
+  await updateAuditoria(auditorias[idx]);
 
   // Notificar al cliente
   try {
@@ -535,98 +1053,107 @@ router.put('/auditorias/:idAuditoria/estado', authenticate, authorize([1]), asyn
 
 // Asignar auditor
 router.post('/auditorias/:idAuditoria/asignar', authenticate, authorize([1]), async (req, res) => {
-  const idAuditoria = Number(req.params.idAuditoria);
-  const { id_auditor } = req.body;
+  try {
+    const idAuditoria = Number(req.params.idAuditoria);
+    const { id_auditor } = req.body;
 
-  if (!id_auditor) return res.status(400).json({ message: 'Falta id_auditor' });
+    if (!Number.isInteger(idAuditoria) || idAuditoria <= 0) return res.status(400).json({ message: 'Auditoría inválida' });
+    if (!id_auditor) return res.status(400).json({ message: 'Falta id_auditor' });
 
-  const participantes = await readJson('auditoria_participantes.json');
-  const auditorias = await readJson('auditorias.json');
-  const conversaciones = (await readJson('conversaciones.json')).map(normalizeConversation);
-  
-  const auditoria = auditorias.find(a => a.id_auditoria === idAuditoria);
-  if (!auditoria || auditoria.id_empresa_auditora !== req.user.id_empresa) {
-    return res.status(403).json({ message: 'Auditoría inválida o sin permisos' });
+    const resultado = await guardarAsignacionUnicaAuditor({ idAuditoria, idAuditor: Number(id_auditor), req, reemplazar: false });
+    res.status(201).json({ message: 'Auditor asignado correctamente', ...resultado });
+  } catch (error) {
+    res.status(error.statusCode || 500).json({ message: error.message || 'Error al asignar auditor' });
   }
+});
 
-  const yaAsignado = participantes.some(p => p.id_auditoria === idAuditoria && p.id_auditor === Number(id_auditor));
-  if (yaAsignado) return res.status(400).json({ message: 'Auditor ya asignado' });
+// Cambiar auditor asignado
+router.put('/auditorias/:idAuditoria/asignar', authenticate, authorize([1]), async (req, res) => {
+  try {
+    const idAuditoria = Number(req.params.idAuditoria);
+    const { id_auditor } = req.body;
 
-  const nuevo = {
-    id_participante: await getNextId('auditoria_participantes.json', 'id_participante'),
-    id_auditoria: idAuditoria,
-    id_auditor: Number(id_auditor),
-    asignado_en: new Date().toISOString()
-  };
-  
-  participantes.push(nuevo);
-  await writeJson('auditoria_participantes.json', participantes);
+    if (!Number.isInteger(idAuditoria) || idAuditoria <= 0) return res.status(400).json({ message: 'Auditoría inválida' });
+    if (!id_auditor) return res.status(400).json({ message: 'Falta id_auditor' });
 
-  const idxConversacion = conversaciones.findIndex(c =>
-    isAuditConversation(c) &&
-    c.id_auditoria === idAuditoria &&
-    c.id_cliente === auditoria.id_cliente &&
-    c.id_empresa_auditora === auditoria.id_empresa_auditora &&
-    c.activo
-  );
-
-  if (idxConversacion === -1) {
-    const nuevaConversacion = {
-      id_conversacion: await getNextId('conversaciones.json', 'id_conversacion'),
-      id_cliente: auditoria.id_cliente,
-      id_empresa_auditora: auditoria.id_empresa_auditora,
-      id_auditoria: idAuditoria,
-      tipo_conversacion: 'AUDITORIA',
-      id_usuario_cliente: auditoria.id_cliente,
-      id_usuario_supervisor: req.user.id_usuario,
-      id_usuario_auditor: Number(id_auditor),
-      asunto: `Auditoría #${idAuditoria}`,
-      creado_en: new Date().toISOString(),
-      estado: 'ABIERTA',
-      activo: true
-    };
-
-    conversaciones.push(nuevaConversacion);
-    await writeJson('conversaciones.json', conversaciones);
-  } else {
-    conversaciones[idxConversacion].id_usuario_auditor = Number(id_auditor);
-    conversaciones[idxConversacion].id_auditor = Number(id_auditor);
-    conversaciones[idxConversacion].id_usuario_supervisor = conversaciones[idxConversacion].id_usuario_supervisor || req.user.id_usuario;
-    await writeJson('conversaciones.json', conversaciones);
+    const resultado = await guardarAsignacionUnicaAuditor({ idAuditoria, idAuditor: Number(id_auditor), req, reemplazar: true });
+    res.json({ message: 'Auditor cambiado correctamente', ...resultado });
+  } catch (error) {
+    res.status(error.statusCode || 500).json({ message: error.message || 'Error al cambiar auditor' });
   }
-  res.status(201).json({ message: 'Asignado correctamente', participante: nuevo });
+});
+
+// Quitar auditor asignado
+router.delete('/auditorias/:idAuditoria/asignar', authenticate, authorize([1]), async (req, res) => {
+  try {
+    const idAuditoria = Number(req.params.idAuditoria);
+    if (!Number.isInteger(idAuditoria) || idAuditoria <= 0) return res.status(400).json({ message: 'Auditoría inválida' });
+
+    const resultado = await quitarAsignacionAuditor({ idAuditoria, req });
+    res.json({ message: 'Auditor removido. La auditoría queda pendiente de asignar auditor.', ...resultado });
+  } catch (error) {
+    res.status(error.statusCode || 500).json({ message: error.message || 'Error al quitar auditor' });
+  }
 });
 
 // Agregar modulo a auditoria
 router.post('/auditorias/:idAuditoria/modulos', authenticate, authorize([1]), async (req, res) => {
-  const idAuditoria = Number(req.params.idAuditoria);
-  const { id_modulo } = req.body;
+  try {
+    const idAuditoria = Number(req.params.idAuditoria);
+    const moduloInput = req.body.id_modulo ?? req.body.modulo ?? req.body.nombre;
+    const idModulo = await resolverIdModulo(moduloInput);
 
-  const am = await readJson('auditoria_modulos.json');
-  
-  const nuevo = {
-    id_auditoria_modulo: await getNextId('auditoria_modulos.json', 'id_auditoria_modulo'),
-    id_auditoria: idAuditoria,
-    id_modulo: Number(id_modulo),
-    registrado_en: new Date().toISOString()
-  };
-  
-  am.push(nuevo);
-  await writeJson('auditoria_modulos.json', am);
-  res.status(201).json({ message: 'Módulo agregado', item: nuevo });
+    if (!Number.isInteger(idAuditoria) || idAuditoria <= 0) {
+      return res.status(400).json({ message: 'Auditoría inválida' });
+    }
+
+    if (!idModulo) {
+      return res.status(400).json({ message: 'Módulo no válido' });
+    }
+
+    const auditorias = await readJson('auditorias.json');
+    const auditoria = auditorias.find(a => Number(a.id_auditoria) === idAuditoria);
+    if (!auditoria || Number(auditoria.id_empresa_auditora) !== Number(req.user.id_empresa)) {
+      return res.status(403).json({ message: 'Auditoría inválida o sin permisos' });
+    }
+
+    const am = await readJson('auditoria_modulos.json');
+    const yaExiste = am.some(item =>
+      Number(item.id_auditoria) === idAuditoria &&
+      Number(item.id_modulo) === idModulo
+    );
+
+    if (yaExiste) {
+      return res.status(409).json({ message: 'Este módulo ya fue agregado.' });
+    }
+
+    const nuevo = {
+      id_auditoria_modulo: await getNextId('auditoria_modulos.json', 'id_auditoria_modulo'),
+      id_auditoria: idAuditoria,
+      id_modulo: idModulo,
+      registrado_en: new Date().toISOString()
+    };
+    
+    am.push(nuevo);
+    await writeJson('auditoria_modulos.json', am);
+    res.status(201).json({ message: 'Módulo agregado', item: nuevo });
+  } catch (error) {
+    console.error('Error agregando módulo:', error);
+    res.status(500).json({ message: 'Error al agregar módulo' });
+  }
 });
 
 // Obtener participantes
 router.get('/auditorias/:idAuditoria/participantes', authenticate, authorize([1]), async (req, res) => {
   const idAuditoria = Number(req.params.idAuditoria);
   const participantes = await readJson('auditoria_participantes.json');
-  const usuarios = await readJson('usuarios.json');
 
-  const asignaciones = participantes.filter(p => p.id_auditoria === idAuditoria);
-  const resultado = asignaciones.map(a => {
-    const u = usuarios.find(user => user.id_usuario === a.id_auditor);
-    return { ...u, asignado_en: a.asignado_en };
-  });
+  const vistos = new Set();
+  const asignaciones = participantes.filter(p => Number(p.id_auditoria) === idAuditoria && !vistos.has(Number(p.id_auditor)) && vistos.add(Number(p.id_auditor)));
+  const resultado = await Promise.all(asignaciones.map(async (a) => {
+    const u = await cargarUsuarioPorId(a.id_auditor);
+    return { ...(u || { id_usuario: a.id_auditor, nombre: 'Auditor' }), asignado_en: a.asignado_en };
+  }));
   res.json(resultado);
 });
 

@@ -1,0 +1,20 @@
+[
+  {
+    "id_auditoria_modulo": 1,
+    "id_auditoria": 1,
+    "id_modulo": 3,
+    "registrado_en": "2026-06-16T01:26:17.841Z"
+  },
+  {
+    "id_auditoria_modulo": 2,
+    "id_auditoria": 1,
+    "id_modulo": 3,
+    "registrado_en": "2026-06-16T01:52:45.912Z"
+  },
+  {
+    "id_auditoria_modulo": 3,
+    "id_auditoria": 1,
+    "id_modulo": 3,
+    "registrado_en": "2026-06-16T01:53:43.447Z"
+  }
+]

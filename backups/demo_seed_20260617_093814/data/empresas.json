@@ -1,0 +1,29 @@
+[
+  {
+    "id_empresa": 1,
+    "nombre": "Auditora Demo",
+    "id_tipo_empresa": 1,
+    "activa": true
+  },
+  {
+    "id_empresa": 2,
+    "nombre": "Empresa Demo",
+    "id_tipo_empresa": 2,
+    "activa": true
+  },
+  {
+    "id_empresa": 3,
+    "id_tipo_empresa": 2,
+    "nombre": "Empresa de Gus",
+    "rfc": null,
+    "giro": null,
+    "direccion": null,
+    "ciudad": "Aguascalientes",
+    "estado": "Aguascalientes",
+    "pais": "México",
+    "contacto_nombre": "WeroML",
+    "contacto_correo": "supercrack1021@gmail.com",
+    "contacto_telefono": null,
+    "activo": true
+  }
+]

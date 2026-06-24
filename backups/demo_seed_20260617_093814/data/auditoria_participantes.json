@@ -1,0 +1,14 @@
+[
+  {
+    "id_participante": 1,
+    "id_auditoria": 1,
+    "id_auditor": 101,
+    "asignado_en": "2026-06-16T00:26:17.914Z"
+  },
+  {
+    "id_participante": 2,
+    "id_auditoria": 1,
+    "id_auditor": 102,
+    "asignado_en": "2026-06-16T01:52:59.083Z"
+  }
+]

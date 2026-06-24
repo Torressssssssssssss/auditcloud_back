@@ -1,0 +1,50 @@
+[
+  {
+    "id_mensaje": 1,
+    "id_conversacion": 1,
+    "emisor_tipo": "CLIENTE",
+    "emisor_id": 301,
+    "contenido": "Hola, quiero información para una auditoría ambiental.",
+    "creado_en": "2026-05-31T23:07:11.334Z"
+  },
+  {
+    "id_mensaje": 2,
+    "id_conversacion": 1,
+    "emisor_tipo": "CLIENTE",
+    "emisor_id": 301,
+    "contenido": "holl",
+    "creado_en": "2026-06-03T13:40:58.576Z"
+  },
+  {
+    "id_mensaje": 3,
+    "id_conversacion": 1,
+    "emisor_tipo": "SUPERVISOR",
+    "emisor_id": 1,
+    "contenido": "klkl",
+    "creado_en": "2026-06-16T01:30:18.218Z"
+  },
+  {
+    "id_mensaje": 4,
+    "id_conversacion": 1,
+    "emisor_tipo": "CLIENTE",
+    "emisor_id": 301,
+    "contenido": "Hola",
+    "creado_en": "2026-06-17T00:54:04.730Z"
+  },
+  {
+    "id_mensaje": 5,
+    "id_conversacion": 1,
+    "emisor_tipo": "CLIENTE",
+    "emisor_id": 301,
+    "contenido": "Quisiera información acerca de una auditoría",
+    "creado_en": "2026-06-17T00:54:12.650Z"
+  },
+  {
+    "id_mensaje": 6,
+    "id_conversacion": 1,
+    "emisor_tipo": "SUPERVISOR",
+    "emisor_id": 1,
+    "contenido": "En un momento se le generará su solicitud de pago para iniciar la auditoría",
+    "creado_en": "2026-06-17T00:55:22.864Z"
+  }
+]

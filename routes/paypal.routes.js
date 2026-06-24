@@ -4,6 +4,7 @@ const router = express.Router();
 const fetch = require('node-fetch'); // Necesitas instalar: npm install node-fetch
 const { readJson, writeJson, getNextId } = require('../utils/jsonDb');
 const { authenticate } = require('../utils/auth');
+const { indexAuditoria } = require('../services/elasticsearchAuditorias.service');
 
 const { PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET, PAYPAL_API } = process.env;
 
@@ -123,6 +124,8 @@ router.post('/capture-order', authenticate, async (req, res) => {
         
         auditorias.push(nuevaAuditoria);
         await writeJson('auditorias.json', auditorias);
+        // Elasticsearch es copia para visualizacion; si falla, no revierte la operacion principal.
+        await indexAuditoria(nuevaAuditoria);
 
         return res.json({ status: 'COMPLETED', auditoria: nuevaAuditoria });
       }

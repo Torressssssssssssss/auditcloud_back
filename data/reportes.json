@@ -1,1 +1,111 @@
-[]
+[
+  {
+    "id_reporte": 1,
+    "id_auditoria": 1,
+    "nombre": "Reporte Final de Auditoría",
+    "tipo": "FINAL",
+    "url": "http://192.168.30.1:3000/uploads/1781659313813-ajr76g.pdf",
+    "nombre_archivo": "Evidencia Mendix.pdf",
+    "creado_por": 101,
+    "fecha_creacion": "2026-06-17T01:21:54.084Z"
+  },
+  {
+    "id_reporte": 501,
+    "id_auditoria": 519,
+    "nombre": "DEMO - Reporte final auditoria 19",
+    "tipo": "FINAL",
+    "observaciones": "DEMO - Reporte final generado para datos demo.",
+    "url": "/uploads/demo_auditoria_519_reporte_final.pdf",
+    "nombre_archivo": "demo_auditoria_519_reporte_final.pdf",
+    "creado_por": 101,
+    "fecha_creacion": "2026-05-08T18:00:00.000Z"
+  },
+  {
+    "id_reporte": 502,
+    "id_auditoria": 520,
+    "nombre": "DEMO - Reporte final auditoria 20",
+    "tipo": "FINAL",
+    "observaciones": "DEMO - Reporte final generado para datos demo.",
+    "url": "/uploads/demo_auditoria_520_reporte_final.pdf",
+    "nombre_archivo": "demo_auditoria_520_reporte_final.pdf",
+    "creado_por": 101,
+    "fecha_creacion": "2026-05-12T18:00:00.000Z"
+  },
+  {
+    "id_reporte": 503,
+    "id_auditoria": 521,
+    "nombre": "DEMO - Reporte final auditoria 21",
+    "tipo": "FINAL",
+    "observaciones": "DEMO - Reporte final generado para datos demo.",
+    "url": "/uploads/demo_auditoria_521_reporte_final.pdf",
+    "nombre_archivo": "demo_auditoria_521_reporte_final.pdf",
+    "creado_por": 101,
+    "fecha_creacion": "2026-05-16T18:00:00.000Z"
+  },
+  {
+    "id_reporte": 504,
+    "id_auditoria": 522,
+    "nombre": "DEMO - Reporte final auditoria 22",
+    "tipo": "FINAL",
+    "observaciones": "DEMO - Reporte final generado para datos demo.",
+    "url": "/uploads/demo_auditoria_522_reporte_final.pdf",
+    "nombre_archivo": "demo_auditoria_522_reporte_final.pdf",
+    "creado_por": 101,
+    "fecha_creacion": "2026-05-20T18:00:00.000Z"
+  },
+  {
+    "id_reporte": 505,
+    "id_auditoria": 523,
+    "nombre": "DEMO - Reporte final auditoria 23",
+    "tipo": "FINAL",
+    "observaciones": "DEMO - Reporte final generado para datos demo.",
+    "url": "/uploads/demo_auditoria_523_reporte_final.pdf",
+    "nombre_archivo": "demo_auditoria_523_reporte_final.pdf",
+    "creado_por": 101,
+    "fecha_creacion": "2026-05-24T18:00:00.000Z"
+  },
+  {
+    "id_reporte": 506,
+    "id_auditoria": 524,
+    "nombre": "DEMO - Reporte final auditoria 24",
+    "tipo": "FINAL",
+    "observaciones": "DEMO - Reporte final generado para datos demo.",
+    "url": "/uploads/demo_auditoria_524_reporte_final.pdf",
+    "nombre_archivo": "demo_auditoria_524_reporte_final.pdf",
+    "creado_por": 101,
+    "fecha_creacion": "2026-05-28T18:00:00.000Z"
+  },
+  {
+    "id_reporte": 507,
+    "id_auditoria": 525,
+    "nombre": "DEMO - Reporte final auditoria 25",
+    "tipo": "FINAL",
+    "observaciones": "DEMO - Reporte final generado para datos demo.",
+    "url": "/uploads/demo_auditoria_525_reporte_final.pdf",
+    "nombre_archivo": "demo_auditoria_525_reporte_final.pdf",
+    "creado_por": 101,
+    "fecha_creacion": "2026-06-01T18:00:00.000Z"
+  },
+  {
+    "id_reporte": 508,
+    "id_auditoria": 526,
+    "nombre": "DEMO - Reporte final auditoria 26",
+    "tipo": "FINAL",
+    "observaciones": "DEMO - Reporte final generado para datos demo.",
+    "url": "/uploads/demo_auditoria_526_reporte_final.pdf",
+    "nombre_archivo": "demo_auditoria_526_reporte_final.pdf",
+    "creado_por": 101,
+    "fecha_creacion": "2026-06-05T18:00:00.000Z"
+  },
+  {
+    "id_reporte": 509,
+    "id_auditoria": 530,
+    "nombre": "DEMO - Reporte final auditoria 30",
+    "tipo": "FINAL",
+    "observaciones": "DEMO - Reporte final generado para datos demo.",
+    "url": "/uploads/demo_auditoria_530_reporte_final.pdf",
+    "nombre_archivo": "demo_auditoria_530_reporte_final.pdf",
+    "creado_por": 101,
+    "fecha_creacion": "2026-06-16T18:00:00.000Z"
+  }
+]

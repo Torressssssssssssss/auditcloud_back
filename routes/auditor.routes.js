@@ -5,8 +5,10 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const { readJson, writeJson, getNextId, crearNotificacion } = require('../utils/jsonDb');
+const { query } = require('../utils/db');
 const { authenticate, authorize } = require('../utils/auth');
 const { normalizeConversation, isAuditConversation } = require('../utils/conversationContext');
+const { updateAuditoria } = require('../services/elasticsearchAuditorias.service');
 
 // Configuracion de carga local
 
@@ -44,6 +46,46 @@ const upload = multer({
   fileFilter: fileFilter
 });
 
+async function cargarClienteAuditoria(idCliente, usuarios, empresas) {
+  const usuarioJson = usuarios.find(u => Number(u.id_usuario) === Number(idCliente));
+  const empresaJson = usuarioJson?.id_empresa
+    ? empresas.find(e => Number(e.id_empresa) === Number(usuarioJson.id_empresa))
+    : null;
+
+  if (usuarioJson) {
+    return {
+      id_usuario: usuarioJson.id_usuario,
+      nombre: usuarioJson.nombre,
+      nombre_empresa: empresaJson?.nombre || usuarioJson.nombre_empresa || null
+    };
+  }
+
+  try {
+    const rows = await query(
+      `SELECT u.id_usuario, u.nombre, u.id_empresa, e.nombre AS nombre_empresa
+       FROM usuarios u
+       LEFT JOIN empresas e ON e.id_empresa = u.id_empresa
+       WHERE u.id_usuario = ?
+       LIMIT 1;`,
+      [Number(idCliente)]
+    );
+    const row = rows[0];
+    if (row) {
+      return {
+        id_usuario: Number(row.id_usuario),
+        nombre: row.nombre,
+        nombre_empresa: row.nombre_empresa || null
+      };
+    }
+  } catch (error) {
+    if (error?.code !== 'DB_NOT_CONFIGURED') {
+      console.warn('No fue posible enriquecer cliente desde MySQL:', error?.code || error?.message || error);
+    }
+  }
+
+  return { id_usuario: Number(idCliente), nombre: null, nombre_empresa: null };
+}
+
 // Rutas de auditorias
 
 // GET /api/auditor/auditorias-asignadas/:idAuditor
@@ -68,10 +110,8 @@ router.get('/auditorias-asignadas/:idAuditor', authenticate, authorize([2]), asy
 
   const rawAuditorias = auditorias.filter(a => idsAuditorias.includes(a.id_auditoria));
 
-  const resultado = rawAuditorias.map(auditoria => {
-    const cliente = usuarios.find(u => u.id_usuario === auditoria.id_cliente);
-    const empresaCliente = cliente ? empresas.find(e => e.id_empresa === cliente.id_empresa) : null;
-    
+  const resultado = await Promise.all(rawAuditorias.map(async (auditoria) => {
+    const cliente = await cargarClienteAuditoria(auditoria.id_cliente, usuarios, empresas);
     const modulos = auditoriaModulos
       .filter(am => am.id_auditoria === auditoria.id_auditoria)
       .map(am => am.id_modulo);
@@ -80,13 +120,9 @@ router.get('/auditorias-asignadas/:idAuditor', authenticate, authorize([2]), asy
       ...auditoria,
       modulos,
       fecha_creacion: auditoria.creada_en || auditoria.creado_en,
-      cliente: {
-        id_usuario: cliente?.id_usuario,
-        nombre: cliente?.nombre,
-        nombre_empresa: empresaCliente?.nombre
-      }
+      cliente
     };
-  });
+  }));
 
   res.json(resultado);
 });
@@ -115,8 +151,7 @@ router.get('/auditorias/:id', authenticate, authorize([2]), async (req, res) => 
   if (!auditoria) return res.status(404).json({ message: 'Auditoría no encontrada' });
 
   // Enriquecer datos
-  const cliente = usuarios.find(u => u.id_usuario === auditoria.id_cliente);
-  const empresaCliente = cliente ? empresas.find(e => e.id_empresa === cliente.id_empresa) : null;
+  const cliente = await cargarClienteAuditoria(auditoria.id_cliente, usuarios, empresas);
   
   const modulos = auditoriaModulos
       .filter(am => am.id_auditoria === auditoria.id_auditoria)
@@ -126,11 +161,7 @@ router.get('/auditorias/:id', authenticate, authorize([2]), async (req, res) => 
     ...auditoria,
     modulos,
     fecha_creacion: auditoria.creada_en || auditoria.creado_en,
-    cliente: {
-      id_usuario: cliente?.id_usuario,
-      nombre: cliente?.nombre,
-      nombre_empresa: empresaCliente?.nombre
-    }
+    cliente
   });
 });
 
@@ -414,6 +445,7 @@ router.get('/conversaciones', authenticate, authorize([2]), async (req, res) => 
         rol_contacto: 'CLIENTE',
         cliente: {
           id_usuario: conv.id_cliente,
+          id_empresa: empresaCliente?.id_empresa || clienteUser?.id_empresa || null,
           nombre: clienteUser?.nombre || 'Usuario',
           nombre_empresa: empresaCliente?.nombre || 'Empresa Cliente'
         },
@@ -558,60 +590,47 @@ router.post('/mensajes', authenticate, authorize([2]), async (req, res) => {
 
 // Rutas de reportes de auditor
 
-router.post('/reportes', authenticate, authorize([2]), upload.single('archivo'), async (req, res) => {
+
+// GET /api/auditor/reportes
+// Lista reportes finales de auditorias asignadas al auditor autenticado.
+router.get('/reportes', authenticate, authorize([2]), async (req, res) => {
   try {
-    const { id_auditoria, nombre } = req.body;
-
-    // Validaciones
-    if (!req.file) {
-      return res.status(400).json({ message: 'Debes subir el archivo PDF.' });
-    }
-    if (!id_auditoria) {
-      return res.status(400).json({ message: 'Selecciona una auditoría.' });
-    }
-
+    const idAuditor = Number(req.user.id_usuario);
     const reportes = await readJson('reportes.json');
     const auditorias = await readJson('auditorias.json');
+    const participantes = await readJson('auditoria_participantes.json');
+    const usuarios = await readJson('usuarios.json');
+    const empresas = await readJson('empresas.json');
 
-    // Verificar auditoria
-    const idxAudit = auditorias.findIndex(a => a.id_auditoria === Number(id_auditoria));
-    if (idxAudit === -1) {
-      return res.status(404).json({ message: 'Auditoría no encontrada.' });
-    }
+    const idsAsignadas = new Set(
+      participantes
+        .filter(p => Number(p.id_auditor) === idAuditor)
+        .map(p => Number(p.id_auditoria))
+    );
 
-    // Guardar reporte
-    const idReporte = await getNextId('reportes.json', 'id_reporte');
-    const fileUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+    const resultado = await Promise.all(
+      reportes
+        .filter(r => Number(r.creado_por) === idAuditor || idsAsignadas.has(Number(r.id_auditoria)))
+        .map(async (reporte) => {
+          const auditoria = auditorias.find(a => Number(a.id_auditoria) === Number(reporte.id_auditoria));
+          const cliente = auditoria ? await cargarClienteAuditoria(auditoria.id_cliente, usuarios, empresas) : null;
+          return {
+            ...reporte,
+            auditoria: auditoria ? {
+              id_auditoria: auditoria.id_auditoria,
+              id_estado: auditoria.id_estado,
+              objetivo: auditoria.objetivo || null,
+              cliente
+            } : null
+          };
+        })
+    );
 
-    const nuevoReporte = {
-      id_reporte: idReporte,
-      id_auditoria: Number(id_auditoria),
-      nombre: nombre || 'Reporte Final',
-      tipo: 'FINAL',
-      url: fileUrl,
-      nombre_archivo: req.file.originalname,
-      creado_por: req.user.id_usuario,
-      fecha_creacion: new Date().toISOString()
-    };
-
-    reportes.push(nuevoReporte);
-    await writeJson('reportes.json', reportes);
-
-    // Cambiar estado a finalizada (3)
-    if (auditorias[idxAudit].id_estado !== 3) {
-      auditorias[idxAudit].id_estado = 3;
-      auditorias[idxAudit].estado_actualizado_en = new Date().toISOString();
-      await writeJson('auditorias.json', auditorias);
-    }
-
-    res.status(201).json({ 
-      message: 'Reporte subido y auditoría finalizada.', 
-      reporte: nuevoReporte 
-    });
-
+    resultado.sort((a, b) => new Date(b.fecha_creacion || b.creado_en || 0) - new Date(a.fecha_creacion || a.creado_en || 0));
+    res.json(resultado);
   } catch (error) {
-    console.error('Error subiendo reporte:', error);
-    res.status(500).json({ message: 'Error interno.' });
+    console.error('Error listando reportes de auditor:', error);
+    res.status(500).json({ message: 'Error interno al obtener reportes.' });
   }
 });
 
@@ -662,6 +681,9 @@ router.post('/reportes', authenticate, authorize([2]), upload.single('archivo'),
       auditorias[idxAudit].estado_actualizado_en = new Date().toISOString();
       await writeJson('auditorias.json', auditorias);
     }
+
+    // Mejora futura: patron Outbox/cola para reintentar sincronizacion con Elasticsearch.
+    await updateAuditoria(auditorias[idxAudit]);
 
     res.status(201).json({ 
       message: 'Reporte subido y auditoría finalizada correctamente.', 

@@ -15,6 +15,7 @@ const mercadopagoRoutes = require('./routes/mercadopago.routes');
 const timelineRoutes = require('./routes/timeline.routes');
 const mysqlRoutes = require('./routes/mysql.routes');
 const fragmentosRoutes = require('./routes/fragmentos.routes');
+const elasticRoutes = require('./routes/elastic.routes');
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
 
@@ -27,7 +28,13 @@ function getAllowedOrigins() {
     'http://localhost:5173',
     'http://localhost:3000',
     'http://localhost:4200',
-    'http://192.168.1.243:3000'
+    'http://127.0.0.1:4200',
+    'http://192.168.1.30:4200',
+    'http://192.168.1.243:3000',
+    'http://192.168.1.243:4200',
+    'http://192.168.30.1:4200',
+    'http://192.168.1.243:4300',
+    'http://192.168.30.1:4300'
   ];
 
   const frontendUrl = process.env.FRONTEND_URL;
@@ -38,8 +45,7 @@ function getAllowedOrigins() {
   return [...new Set([...envOrigins, ...defaultOrigins].map(normalizeOrigin).filter(Boolean))];
 }
 
-// Middleware base
-app.use(cors({
+const corsOptions = {
   origin(origin, callback) {
     if (!origin) {
       return callback(null, true);
@@ -50,10 +56,17 @@ app.use(cors({
       return callback(null, true);
     }
 
-    return callback(new Error(`Origen no permitido por CORS: ${origin}`));
+    return callback(new Error("Origen no permitido por CORS: " + origin));
   },
-  credentials: true
-}));
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  optionsSuccessStatus: 204
+};
+
+// Middleware base
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
 app.use(express.json());
 
 // Rutas API
@@ -63,6 +76,7 @@ app.use('/api/cliente', clienteRoutes);
 app.use('/api/auditor', auditorRoutes);
 app.use('/api/paypal', paypalRoutes);
 app.use('/api/pagos/mercadopago', mercadopagoRoutes);
+app.use('/api/mercadopago', mercadopagoRoutes);
 
 // Servir uploads directos
 app.use('/uploads', async (req, res, next) => {
@@ -108,6 +122,7 @@ app.use('/api/timeline', timelineRoutes);
 // Rutas MySQL (integración paralela)
 app.use('/api/mysql', mysqlRoutes);
 app.use('/api/fragmentos', fragmentosRoutes);
+app.use('/api/elastic', elasticRoutes);
 
 // Salud
 app.get('/', (req, res) => {

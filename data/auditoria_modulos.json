@@ -1,1 +1,380 @@
-[]
+[
+  {
+    "id_auditoria_modulo": 1,
+    "id_auditoria": 1,
+    "id_modulo": 3,
+    "registrado_en": "2026-06-16T01:26:17.841Z"
+  },
+  {
+    "id_auditoria_modulo": 2,
+    "id_auditoria": 1,
+    "id_modulo": 3,
+    "registrado_en": "2026-06-16T01:52:45.912Z"
+  },
+  {
+    "id_auditoria_modulo": 3,
+    "id_auditoria": 1,
+    "id_modulo": 3,
+    "registrado_en": "2026-06-16T01:53:43.447Z"
+  },
+  {
+    "id_auditoria_modulo": 1001,
+    "id_auditoria": 501,
+    "id_modulo": 1,
+    "registrado_en": "2026-01-09T15:00:00.000Z"
+  },
+  {
+    "id_auditoria_modulo": 1002,
+    "id_auditoria": 502,
+    "id_modulo": 1,
+    "registrado_en": "2026-01-13T15:00:00.000Z"
+  },
+  {
+    "id_auditoria_modulo": 1003,
+    "id_auditoria": 502,
+    "id_modulo": 2,
+    "registrado_en": "2026-01-13T15:00:00.000Z"
+  },
+  {
+    "id_auditoria_modulo": 1004,
+    "id_auditoria": 503,
+    "id_modulo": 1,
+    "registrado_en": "2026-01-17T15:00:00.000Z"
+  },
+  {
+    "id_auditoria_modulo": 1005,
+    "id_auditoria": 503,
+    "id_modulo": 2,
+    "registrado_en": "2026-01-17T15:00:00.000Z"
+  },
+  {
+    "id_auditoria_modulo": 1006,
+    "id_auditoria": 503,
+    "id_modulo": 3,
+    "registrado_en": "2026-01-17T15:00:00.000Z"
+  },
+  {
+    "id_auditoria_modulo": 1007,
+    "id_auditoria": 504,
+    "id_modulo": 1,
+    "registrado_en": "2026-01-21T15:00:00.000Z"
+  },
+  {
+    "id_auditoria_modulo": 1008,
+    "id_auditoria": 505,
+    "id_modulo": 1,
+    "registrado_en": "2026-01-25T15:00:00.000Z"
+  },
+  {
+    "id_auditoria_modulo": 1009,
+    "id_auditoria": 505,
+    "id_modulo": 2,
+    "registrado_en": "2026-01-25T15:00:00.000Z"
+  },
+  {
+    "id_auditoria_modulo": 1010,
+    "id_auditoria": 506,
+    "id_modulo": 1,
+    "registrado_en": "2026-01-29T15:00:00.000Z"
+  },
+  {
+    "id_auditoria_modulo": 1011,
+    "id_auditoria": 506,
+    "id_modulo": 2,
+    "registrado_en": "2026-01-29T15:00:00.000Z"
+  },
+  {
+    "id_auditoria_modulo": 1012,
+    "id_auditoria": 506,
+    "id_modulo": 3,
+    "registrado_en": "2026-01-29T15:00:00.000Z"
+  },
+  {
+    "id_auditoria_modulo": 1013,
+    "id_auditoria": 507,
+    "id_modulo": 1,
+    "registrado_en": "2026-02-02T15:00:00.000Z"
+  },
+  {
+    "id_auditoria_modulo": 1014,
+    "id_auditoria": 508,
+    "id_modulo": 1,
+    "registrado_en": "2026-02-06T15:00:00.000Z"
+  },
+  {
+    "id_auditoria_modulo": 1015,
+    "id_auditoria": 508,
+    "id_modulo": 2,
+    "registrado_en": "2026-02-06T15:00:00.000Z"
+  },
+  {
+    "id_auditoria_modulo": 1016,
+    "id_auditoria": 509,
+    "id_modulo": 1,
+    "registrado_en": "2026-02-10T15:00:00.000Z"
+  },
+  {
+    "id_auditoria_modulo": 1017,
+    "id_auditoria": 509,
+    "id_modulo": 2,
+    "registrado_en": "2026-02-10T15:00:00.000Z"
+  },
+  {
+    "id_auditoria_modulo": 1018,
+    "id_auditoria": 509,
+    "id_modulo": 3,
+    "registrado_en": "2026-02-10T15:00:00.000Z"
+  },
+  {
+    "id_auditoria_modulo": 1019,
+    "id_auditoria": 510,
+    "id_modulo": 1,
+    "registrado_en": "2026-02-14T15:00:00.000Z"
+  },
+  {
+    "id_auditoria_modulo": 1020,
+    "id_auditoria": 511,
+    "id_modulo": 1,
+    "registrado_en": "2026-02-18T15:00:00.000Z"
+  },
+  {
+    "id_auditoria_modulo": 1021,
+    "id_auditoria": 511,
+    "id_modulo": 2,
+    "registrado_en": "2026-02-18T15:00:00.000Z"
+  },
+  {
+    "id_auditoria_modulo": 1022,
+    "id_auditoria": 512,
+    "id_modulo": 1,
+    "registrado_en": "2026-02-22T15:00:00.000Z"
+  },
+  {
+    "id_auditoria_modulo": 1023,
+    "id_auditoria": 512,
+    "id_modulo": 2,
+    "registrado_en": "2026-02-22T15:00:00.000Z"
+  },
+  {
+    "id_auditoria_modulo": 1024,
+    "id_auditoria": 512,
+    "id_modulo": 3,
+    "registrado_en": "2026-02-22T15:00:00.000Z"
+  },
+  {
+    "id_auditoria_modulo": 1025,
+    "id_auditoria": 513,
+    "id_modulo": 1,
+    "registrado_en": "2026-02-26T15:00:00.000Z"
+  },
+  {
+    "id_auditoria_modulo": 1026,
+    "id_auditoria": 514,
+    "id_modulo": 1,
+    "registrado_en": "2026-03-02T15:00:00.000Z"
+  },
+  {
+    "id_auditoria_modulo": 1027,
+    "id_auditoria": 514,
+    "id_modulo": 2,
+    "registrado_en": "2026-03-02T15:00:00.000Z"
+  },
+  {
+    "id_auditoria_modulo": 1028,
+    "id_auditoria": 515,
+    "id_modulo": 1,
+    "registrado_en": "2026-03-06T15:00:00.000Z"
+  },
+  {
+    "id_auditoria_modulo": 1029,
+    "id_auditoria": 515,
+    "id_modulo": 2,
+    "registrado_en": "2026-03-06T15:00:00.000Z"
+  },
+  {
+    "id_auditoria_modulo": 1030,
+    "id_auditoria": 515,
+    "id_modulo": 3,
+    "registrado_en": "2026-03-06T15:00:00.000Z"
+  },
+  {
+    "id_auditoria_modulo": 1031,
+    "id_auditoria": 516,
+    "id_modulo": 1,
+    "registrado_en": "2026-03-10T15:00:00.000Z"
+  },
+  {
+    "id_auditoria_modulo": 1032,
+    "id_auditoria": 517,
+    "id_modulo": 1,
+    "registrado_en": "2026-03-14T15:00:00.000Z"
+  },
+  {
+    "id_auditoria_modulo": 1033,
+    "id_auditoria": 517,
+    "id_modulo": 2,
+    "registrado_en": "2026-03-14T15:00:00.000Z"
+  },
+  {
+    "id_auditoria_modulo": 1034,
+    "id_auditoria": 518,
+    "id_modulo": 1,
+    "registrado_en": "2026-03-18T15:00:00.000Z"
+  },
+  {
+    "id_auditoria_modulo": 1035,
+    "id_auditoria": 518,
+    "id_modulo": 2,
+    "registrado_en": "2026-03-18T15:00:00.000Z"
+  },
+  {
+    "id_auditoria_modulo": 1036,
+    "id_auditoria": 518,
+    "id_modulo": 3,
+    "registrado_en": "2026-03-18T15:00:00.000Z"
+  },
+  {
+    "id_auditoria_modulo": 1037,
+    "id_auditoria": 519,
+    "id_modulo": 1,
+    "registrado_en": "2026-03-22T15:00:00.000Z"
+  },
+  {
+    "id_auditoria_modulo": 1038,
+    "id_auditoria": 520,
+    "id_modulo": 1,
+    "registrado_en": "2026-03-26T15:00:00.000Z"
+  },
+  {
+    "id_auditoria_modulo": 1039,
+    "id_auditoria": 520,
+    "id_modulo": 2,
+    "registrado_en": "2026-03-26T15:00:00.000Z"
+  },
+  {
+    "id_auditoria_modulo": 1040,
+    "id_auditoria": 521,
+    "id_modulo": 1,
+    "registrado_en": "2026-03-30T15:00:00.000Z"
+  },
+  {
+    "id_auditoria_modulo": 1041,
+    "id_auditoria": 521,
+    "id_modulo": 2,
+    "registrado_en": "2026-03-30T15:00:00.000Z"
+  },
+  {
+    "id_auditoria_modulo": 1042,
+    "id_auditoria": 521,
+    "id_modulo": 3,
+    "registrado_en": "2026-03-30T15:00:00.000Z"
+  },
+  {
+    "id_auditoria_modulo": 1043,
+    "id_auditoria": 522,
+    "id_modulo": 1,
+    "registrado_en": "2026-04-03T15:00:00.000Z"
+  },
+  {
+    "id_auditoria_modulo": 1044,
+    "id_auditoria": 523,
+    "id_modulo": 1,
+    "registrado_en": "2026-04-07T15:00:00.000Z"
+  },
+  {
+    "id_auditoria_modulo": 1045,
+    "id_auditoria": 523,
+    "id_modulo": 2,
+    "registrado_en": "2026-04-07T15:00:00.000Z"
+  },
+  {
+    "id_auditoria_modulo": 1046,
+    "id_auditoria": 524,
+    "id_modulo": 1,
+    "registrado_en": "2026-04-11T15:00:00.000Z"
+  },
+  {
+    "id_auditoria_modulo": 1047,
+    "id_auditoria": 524,
+    "id_modulo": 2,
+    "registrado_en": "2026-04-11T15:00:00.000Z"
+  },
+  {
+    "id_auditoria_modulo": 1048,
+    "id_auditoria": 524,
+    "id_modulo": 3,
+    "registrado_en": "2026-04-11T15:00:00.000Z"
+  },
+  {
+    "id_auditoria_modulo": 1049,
+    "id_auditoria": 525,
+    "id_modulo": 1,
+    "registrado_en": "2026-04-15T15:00:00.000Z"
+  },
+  {
+    "id_auditoria_modulo": 1050,
+    "id_auditoria": 526,
+    "id_modulo": 1,
+    "registrado_en": "2026-04-19T15:00:00.000Z"
+  },
+  {
+    "id_auditoria_modulo": 1051,
+    "id_auditoria": 526,
+    "id_modulo": 2,
+    "registrado_en": "2026-04-19T15:00:00.000Z"
+  },
+  {
+    "id_auditoria_modulo": 1052,
+    "id_auditoria": 527,
+    "id_modulo": 1,
+    "registrado_en": "2026-04-23T15:00:00.000Z"
+  },
+  {
+    "id_auditoria_modulo": 1053,
+    "id_auditoria": 527,
+    "id_modulo": 2,
+    "registrado_en": "2026-04-23T15:00:00.000Z"
+  },
+  {
+    "id_auditoria_modulo": 1054,
+    "id_auditoria": 527,
+    "id_modulo": 3,
+    "registrado_en": "2026-04-23T15:00:00.000Z"
+  },
+  {
+    "id_auditoria_modulo": 1055,
+    "id_auditoria": 528,
+    "id_modulo": 1,
+    "registrado_en": "2026-04-27T15:00:00.000Z"
+  },
+  {
+    "id_auditoria_modulo": 1056,
+    "id_auditoria": 529,
+    "id_modulo": 1,
+    "registrado_en": "2026-05-01T15:00:00.000Z"
+  },
+  {
+    "id_auditoria_modulo": 1057,
+    "id_auditoria": 529,
+    "id_modulo": 2,
+    "registrado_en": "2026-05-01T15:00:00.000Z"
+  },
+  {
+    "id_auditoria_modulo": 1058,
+    "id_auditoria": 530,
+    "id_modulo": 1,
+    "registrado_en": "2026-05-05T15:00:00.000Z"
+  },
+  {
+    "id_auditoria_modulo": 1059,
+    "id_auditoria": 530,
+    "id_modulo": 2,
+    "registrado_en": "2026-05-05T15:00:00.000Z"
+  },
+  {
+    "id_auditoria_modulo": 1060,
+    "id_auditoria": 530,
+    "id_modulo": 3,
+    "registrado_en": "2026-05-05T15:00:00.000Z"
+  }
+]

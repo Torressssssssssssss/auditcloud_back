@@ -1,0 +1,17 @@
+[
+  {
+    "id_empresa_modulo": 1,
+    "id_empresa": 1,
+    "id_modulo": 1
+  },
+  {
+    "id_empresa_modulo": 2,
+    "id_empresa": 1,
+    "id_modulo": 2
+  },
+  {
+    "id_empresa_modulo": 3,
+    "id_empresa": 1,
+    "id_modulo": 3
+  }
+]

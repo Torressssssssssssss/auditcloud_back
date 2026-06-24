@@ -50,5 +50,215 @@
     "activo": true,
     "google_id": "116438965805343819876",
     "creado_en": "2026-06-10T04:17:38.820Z"
+  },
+  {
+    "id_usuario": 101,
+    "id_empresa": 1,
+    "nombre": "Auditor Demo",
+    "correo": "auditor@auditcloud.com",
+    "password_hash": null,
+    "id_rol": 2,
+    "activo": true,
+    "creado_en": "2025-12-29T12:00:00.000Z"
+  },
+  {
+    "id_usuario": 1001,
+    "id_empresa": 20002,
+    "nombre": "Cliente Demo 01",
+    "correo": "demo.cliente.01@auditcloud.test",
+    "password_hash": null,
+    "id_rol": 3,
+    "activo": true,
+    "creado_en": "2026-01-03T10:00:00.000Z"
+  },
+  {
+    "id_usuario": 1002,
+    "id_empresa": 20003,
+    "nombre": "Cliente Demo 02",
+    "correo": "demo.cliente.02@auditcloud.test",
+    "password_hash": null,
+    "id_rol": 3,
+    "activo": true,
+    "creado_en": "2026-01-06T10:00:00.000Z"
+  },
+  {
+    "id_usuario": 1003,
+    "id_empresa": 20004,
+    "nombre": "Cliente Demo 03",
+    "correo": "demo.cliente.03@auditcloud.test",
+    "password_hash": null,
+    "id_rol": 3,
+    "activo": true,
+    "creado_en": "2026-01-09T10:00:00.000Z"
+  },
+  {
+    "id_usuario": 1004,
+    "id_empresa": 20005,
+    "nombre": "Cliente Demo 04",
+    "correo": "demo.cliente.04@auditcloud.test",
+    "password_hash": null,
+    "id_rol": 3,
+    "activo": true,
+    "creado_en": "2026-01-12T10:00:00.000Z"
+  },
+  {
+    "id_usuario": 1005,
+    "id_empresa": 20006,
+    "nombre": "Cliente Demo 05",
+    "correo": "demo.cliente.05@auditcloud.test",
+    "password_hash": null,
+    "id_rol": 3,
+    "activo": true,
+    "creado_en": "2026-01-15T10:00:00.000Z"
+  },
+  {
+    "id_usuario": 1006,
+    "id_empresa": 20007,
+    "nombre": "Cliente Demo 06",
+    "correo": "demo.cliente.06@auditcloud.test",
+    "password_hash": null,
+    "id_rol": 3,
+    "activo": true,
+    "creado_en": "2026-01-18T10:00:00.000Z"
+  },
+  {
+    "id_usuario": 1007,
+    "id_empresa": 20008,
+    "nombre": "Cliente Demo 07",
+    "correo": "demo.cliente.07@auditcloud.test",
+    "password_hash": null,
+    "id_rol": 3,
+    "activo": true,
+    "creado_en": "2026-01-21T10:00:00.000Z"
+  },
+  {
+    "id_usuario": 1008,
+    "id_empresa": 20009,
+    "nombre": "Cliente Demo 08",
+    "correo": "demo.cliente.08@auditcloud.test",
+    "password_hash": null,
+    "id_rol": 3,
+    "activo": true,
+    "creado_en": "2026-01-24T10:00:00.000Z"
+  },
+  {
+    "id_usuario": 1009,
+    "id_empresa": 20010,
+    "nombre": "Cliente Demo 09",
+    "correo": "demo.cliente.09@auditcloud.test",
+    "password_hash": null,
+    "id_rol": 3,
+    "activo": true,
+    "creado_en": "2026-01-27T10:00:00.000Z"
+  },
+  {
+    "id_usuario": 1010,
+    "id_empresa": 20011,
+    "nombre": "Cliente Demo 10",
+    "correo": "demo.cliente.10@auditcloud.test",
+    "password_hash": null,
+    "id_rol": 3,
+    "activo": true,
+    "creado_en": "2026-01-30T10:00:00.000Z"
+  },
+  {
+    "id_usuario": 1011,
+    "id_empresa": 20012,
+    "nombre": "Cliente Demo 11",
+    "correo": "demo.cliente.11@auditcloud.test",
+    "password_hash": null,
+    "id_rol": 3,
+    "activo": true,
+    "creado_en": "2026-02-02T10:00:00.000Z"
+  },
+  {
+    "id_usuario": 1012,
+    "id_empresa": 20013,
+    "nombre": "Cliente Demo 12",
+    "correo": "demo.cliente.12@auditcloud.test",
+    "password_hash": null,
+    "id_rol": 3,
+    "activo": true,
+    "creado_en": "2026-02-05T10:00:00.000Z"
+  },
+  {
+    "id_usuario": 1013,
+    "id_empresa": 20014,
+    "nombre": "Cliente Demo 13",
+    "correo": "demo.cliente.13@auditcloud.test",
+    "password_hash": null,
+    "id_rol": 3,
+    "activo": true,
+    "creado_en": "2026-02-08T10:00:00.000Z"
+  },
+  {
+    "id_usuario": 1014,
+    "id_empresa": 20015,
+    "nombre": "Cliente Demo 14",
+    "correo": "demo.cliente.14@auditcloud.test",
+    "password_hash": null,
+    "id_rol": 3,
+    "activo": true,
+    "creado_en": "2026-02-11T10:00:00.000Z"
+  },
+  {
+    "id_usuario": 1015,
+    "id_empresa": 20016,
+    "nombre": "Cliente Demo 15",
+    "correo": "demo.cliente.15@auditcloud.test",
+    "password_hash": null,
+    "id_rol": 3,
+    "activo": true,
+    "creado_en": "2026-02-14T10:00:00.000Z"
+  },
+  {
+    "id_usuario": 1016,
+    "id_empresa": 20017,
+    "nombre": "Cliente Demo 16",
+    "correo": "demo.cliente.16@auditcloud.test",
+    "password_hash": null,
+    "id_rol": 3,
+    "activo": true,
+    "creado_en": "2026-02-17T10:00:00.000Z"
+  },
+  {
+    "id_usuario": 1017,
+    "id_empresa": 20018,
+    "nombre": "Cliente Demo 17",
+    "correo": "demo.cliente.17@auditcloud.test",
+    "password_hash": null,
+    "id_rol": 3,
+    "activo": true,
+    "creado_en": "2026-02-20T10:00:00.000Z"
+  },
+  {
+    "id_usuario": 1018,
+    "id_empresa": 20019,
+    "nombre": "Cliente Demo 18",
+    "correo": "demo.cliente.18@auditcloud.test",
+    "password_hash": null,
+    "id_rol": 3,
+    "activo": true,
+    "creado_en": "2026-02-23T10:00:00.000Z"
+  },
+  {
+    "id_usuario": 1019,
+    "id_empresa": 20020,
+    "nombre": "Cliente Demo 19",
+    "correo": "demo.cliente.19@auditcloud.test",
+    "password_hash": null,
+    "id_rol": 3,
+    "activo": true,
+    "creado_en": "2026-02-26T10:00:00.000Z"
+  },
+  {
+    "id_usuario": 1020,
+    "id_empresa": 20021,
+    "nombre": "Cliente Demo 20",
+    "correo": "demo.cliente.20@auditcloud.test",
+    "password_hash": null,
+    "id_rol": 3,
+    "activo": true,
+    "creado_en": "2026-03-01T10:00:00.000Z"
   }
 ]

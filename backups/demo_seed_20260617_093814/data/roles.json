@@ -1,0 +1,14 @@
+[
+  {
+    "id_rol": 1,
+    "nombre": "SUPERVISOR"
+  },
+  {
+    "id_rol": 2,
+    "nombre": "AUDITOR"
+  },
+  {
+    "id_rol": 3,
+    "nombre": "CLIENTE"
+  }
+]

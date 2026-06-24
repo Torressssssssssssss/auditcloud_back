@@ -1,0 +1,15 @@
+[
+  {
+    "id_auditoria": 1,
+    "id_empresa_auditora": 1,
+    "id_cliente": 301,
+    "id_empresa_cliente": 101,
+    "id_solicitud_pago": 3,
+    "id_estado": 3,
+    "objetivo": "Au",
+    "monto": 1000,
+    "creada_en": "2026-06-16T00:26:17.910Z",
+    "creado_por_supervisor": 1,
+    "estado_actualizado_en": "2026-06-17T01:21:54.087Z"
+  }
+]

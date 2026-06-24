@@ -1,0 +1,10 @@
+[
+  {
+    "id_tipo_empresa": 1,
+    "nombre": "AUDITORA"
+  },
+  {
+    "id_tipo_empresa": 2,
+    "nombre": "CLIENTE"
+  }
+]
