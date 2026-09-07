@@ -7,7 +7,7 @@ function isElasticsearchEnabled() {
 }
 
 function getElasticsearchNode() {
-  return String(process.env.ELASTICSEARCH_NODE || 'http://192.168.30.11:9200').trim();
+  return String(process.env.ELASTICSEARCH_NODE || 'http://127.0.0.1:9200').trim();
 }
 
 function getAuditoriasIndex() {

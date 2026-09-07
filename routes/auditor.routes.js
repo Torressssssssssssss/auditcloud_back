@@ -4,7 +4,7 @@ const router = express.Router();
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const { readJson, writeJson, getNextId, crearNotificacion } = require('../utils/jsonDb');
+const { listRows, saveRows, nextId, crearNotificacion } = require('../utils/mysqlStore');
 const { query } = require('../utils/db');
 const { authenticate, authorize } = require('../utils/auth');
 const { normalizeConversation, isAuditConversation } = require('../utils/conversationContext');
@@ -47,16 +47,16 @@ const upload = multer({
 });
 
 async function cargarClienteAuditoria(idCliente, usuarios, empresas) {
-  const usuarioJson = usuarios.find(u => Number(u.id_usuario) === Number(idCliente));
-  const empresaJson = usuarioJson?.id_empresa
-    ? empresas.find(e => Number(e.id_empresa) === Number(usuarioJson.id_empresa))
+  const usuarioSql = usuarios.find(u => Number(u.id_usuario) === Number(idCliente));
+  const empresaSql = usuarioSql?.id_empresa
+    ? empresas.find(e => Number(e.id_empresa) === Number(usuarioSql.id_empresa))
     : null;
 
-  if (usuarioJson) {
+  if (usuarioSql) {
     return {
-      id_usuario: usuarioJson.id_usuario,
-      nombre: usuarioJson.nombre,
-      nombre_empresa: empresaJson?.nombre || usuarioJson.nombre_empresa || null
+      id_usuario: usuarioSql.id_usuario,
+      nombre: usuarioSql.nombre,
+      nombre_empresa: empresaSql?.nombre || usuarioSql.nombre_empresa || null
     };
   }
 
@@ -88,6 +88,11 @@ async function cargarClienteAuditoria(idCliente, usuarios, empresas) {
 
 // Rutas de auditorias
 
+async function assignedAudit(id, user) {
+  const [row] = await query('SELECT a.id_auditoria FROM auditorias a JOIN auditoria_participantes p ON p.id_auditoria=a.id_auditoria WHERE a.id_auditoria=? AND p.id_auditor=? AND a.id_empresa_auditora=?',[Number(id),user.id_usuario,user.id_empresa]);
+  return Boolean(row);
+}
+
 // GET /api/auditor/auditorias-asignadas/:idAuditor
 // Lista auditorias asignadas
 router.get('/auditorias-asignadas/:idAuditor', authenticate, authorize([2]), async (req, res) => {
@@ -98,11 +103,11 @@ router.get('/auditorias-asignadas/:idAuditor', authenticate, authorize([2]), asy
     return res.status(403).json({ message: 'No puedes ver auditorías de otro usuario.' });
   }
 
-  const participantes = await readJson('auditoria_participantes.json');
-  const auditorias = await readJson('auditorias.json');
-  const usuarios = await readJson('usuarios.json');
-  const empresas = await readJson('empresas.json');
-  const auditoriaModulos = await readJson('auditoria_modulos.json');
+  const participantes = await listRows('auditoria_participantes');
+  const auditorias = await listRows('auditorias');
+  const usuarios = await listRows('usuarios');
+  const empresas = await listRows('empresas');
+  const auditoriaModulos = await listRows('auditoria_modulos');
 
   const idsAuditorias = participantes
     .filter(p => p.id_auditor === idAuditor)
@@ -133,11 +138,11 @@ router.get('/auditorias/:id', authenticate, authorize([2]), async (req, res) => 
   const idAuditoria = Number(req.params.id);
   const idAuditor = req.user.id_usuario;
 
-  const auditorias = await readJson('auditorias.json');
-  const participantes = await readJson('auditoria_participantes.json');
-  const usuarios = await readJson('usuarios.json');
-  const empresas = await readJson('empresas.json');
-  const auditoriaModulos = await readJson('auditoria_modulos.json');
+  const auditorias = await listRows('auditorias');
+  const participantes = await listRows('auditoria_participantes');
+  const usuarios = await listRows('usuarios');
+  const empresas = await listRows('empresas');
+  const auditoriaModulos = await listRows('auditoria_modulos');
 
   // Verificar asignacion
   const isAsignado = participantes.some(p => p.id_auditoria === idAuditoria && p.id_auditor === idAuditor);
@@ -172,12 +177,14 @@ router.patch('/auditorias/:id/objetivo', authenticate, authorize([2]), async (re
   const { objetivo } = req.body;
 
   try {
-    const auditorias = await readJson('auditorias.json');
+    const auditorias = await listRows('auditorias');
     const index = auditorias.findIndex(a => a.id_auditoria === idAuditoria);
 
     if (index === -1) {
       return res.status(404).json({ message: 'Auditoría no encontrada' });
     }
+
+    if (!await assignedAudit(idAuditoria,req.user)) return res.status(403).json({message:'Auditor no asignado'});
 
     // Actualizar objetivo
     const auditoriaActual = auditorias[index];
@@ -187,7 +194,7 @@ router.patch('/auditorias/:id/objetivo', authenticate, authorize([2]), async (re
 
     // Persistir cambios
     auditorias[index] = auditoriaActual;
-    await writeJson('auditorias.json', auditorias);
+    await saveRows('auditorias', auditorias);
 
     res.json(auditoriaActual);
 
@@ -215,8 +222,11 @@ router.post('/evidencias', authenticate, authorize([2]), upload.single('archivo'
       return res.status(400).json({ message: 'Debes subir un archivo de evidencia (PDF o Imagen)' });
     }
 
-    const evidencias = await readJson('evidencias.json');
-    const idEvidencia = await getNextId('evidencias.json', 'id_evidencia');
+    if (!await assignedAudit(id_auditoria,req.user)) return res.status(403).json({message:'Auditor no asignado'});
+    const [modulo] = await query('SELECT id_modulo FROM auditoria_modulos WHERE id_auditoria=? AND id_modulo=?',[Number(id_auditoria),Number(id_modulo)]);
+    if (!modulo) return res.status(400).json({message:'Módulo no asignado a la auditoría'});
+    const evidencias = await listRows('evidencias');
+    const idEvidencia = await nextId('evidencias', 'id_evidencia');
 
     const nueva = {
       id_evidencia: idEvidencia,
@@ -231,11 +241,11 @@ router.post('/evidencias', authenticate, authorize([2]), upload.single('archivo'
     };
 
     evidencias.push(nueva);
-    await writeJson('evidencias.json', evidencias);
+    await saveRows('evidencias', evidencias);
 
     // Notificar al cliente
     try {
-      const auditorias = await readJson('auditorias.json');
+      const auditorias = await listRows('auditorias');
       const auditoria = auditorias.find(a => a.id_auditoria === Number(id_auditoria));
       
       if (auditoria && auditoria.id_cliente) {
@@ -263,10 +273,11 @@ router.post('/evidencias', authenticate, authorize([2]), upload.single('archivo'
 // Lista evidencias (0 = todas del auditor)
 router.get('/evidencias/:idAuditoria', authenticate, authorize([2]), async (req, res) => {
   const idAuditoria = Number(req.params.idAuditoria);
-  const evidencias = await readJson('evidencias.json');
+  const evidencias = await listRows('evidencias');
   
   let resultado = [];
   if (idAuditoria > 0) {
+    if (!await assignedAudit(idAuditoria,req.user)) return res.status(403).json({message:'Auditor no asignado'});
     resultado = evidencias.filter(e => e.id_auditoria === idAuditoria);
   } else {
     // Todas del auditor
@@ -283,7 +294,7 @@ router.put('/evidencias/:idEvidencia', authenticate, authorize([2]), async (req,
   const idEvidencia = Number(req.params.idEvidencia);
   const { tipo, descripcion } = req.body;
 
-  const evidencias = await readJson('evidencias.json');
+  const evidencias = await listRows('evidencias');
   const idx = evidencias.findIndex(e => e.id_evidencia === idEvidencia);
   
   if (idx === -1) return res.status(404).json({ message: 'Evidencia no encontrada' });
@@ -293,14 +304,14 @@ router.put('/evidencias/:idEvidencia', authenticate, authorize([2]), async (req,
   if (descripcion !== undefined) evidencias[idx].descripcion = descripcion;
   evidencias[idx].actualizado_en = new Date().toISOString();
 
-  await writeJson('evidencias.json', evidencias);
+  await saveRows('evidencias', evidencias);
   res.json({ message: 'Evidencia actualizada', evidencia: evidencias[idx] });
 });
 
 // DELETE /api/auditor/evidencias/:idEvidencia
 router.delete('/evidencias/:idEvidencia', authenticate, authorize([2]), async (req, res) => {
   const idEvidencia = Number(req.params.idEvidencia);
-  let evidencias = await readJson('evidencias.json');
+  let evidencias = await listRows('evidencias');
   
   const evidencia = evidencias.find(e => e.id_evidencia === idEvidencia);
   if (!evidencia) return res.status(404).json({ message: 'Evidencia no encontrada' });
@@ -312,7 +323,7 @@ router.delete('/evidencias/:idEvidencia', authenticate, authorize([2]), async (r
   // Pendiente: borrar archivo fisico con fs.unlink
 
   evidencias = evidencias.filter(e => e.id_evidencia !== idEvidencia);
-  await writeJson('evidencias.json', evidencias);
+  await saveRows('evidencias', evidencias);
   res.json({ message: 'Evidencia eliminada' });
 });
 
@@ -328,9 +339,9 @@ router.post('/solicitudes-pago', authenticate, authorize([2]), async (req, res) 
     return res.status(400).json({ message: 'id_empresa, monto y concepto son obligatorios' });
   }
 
-  const solicitudes = await readJson('solicitudes_pago.json');
-  const empresas = await readJson('empresas.json');
-  const usuarios = await readJson('usuarios.json');
+  const solicitudes = await listRows('solicitudes_pago');
+  const empresas = await listRows('empresas');
+  const usuarios = await listRows('usuarios');
 
   // Validar empresa cliente
   const empresaObjetivo = empresas.find(e => e.id_empresa === Number(id_empresa) && e.activo);
@@ -344,7 +355,7 @@ router.post('/solicitudes-pago', authenticate, authorize([2]), async (req, res) 
     return res.status(400).json({ message: 'La empresa existe, pero no tiene usuario administrador para recibir el cobro.' });
   }
 
-  const idSolicitud = await getNextId('solicitudes_pago.json', 'id_solicitud');
+  const idSolicitud = await nextId('solicitudes_pago', 'id_solicitud');
   
   const nueva = {
     id_solicitud: idSolicitud,
@@ -360,7 +371,7 @@ router.post('/solicitudes-pago', authenticate, authorize([2]), async (req, res) 
   };
 
   solicitudes.push(nueva);
-  await writeJson('solicitudes_pago.json', solicitudes);
+  await saveRows('solicitudes_pago', solicitudes);
 
   res.status(201).json({ 
     message: `Solicitud creada para ${empresaObjetivo.nombre}`, 
@@ -373,8 +384,8 @@ router.post('/solicitudes-pago', authenticate, authorize([2]), async (req, res) 
 router.get('/solicitudes-pago', authenticate, authorize([2]), async (req, res) => {
   try {
     const idEmpresaAuditora = req.user.id_empresa;
-    const solicitudes = await readJson('solicitudes_pago.json');
-    const empresas = await readJson('empresas.json');
+    const solicitudes = await listRows('solicitudes_pago');
+    const empresas = await listRows('empresas');
 
     const misSolicitudes = solicitudes.filter(s => s.id_empresa_auditora === idEmpresaAuditora || s.id_empresa === idEmpresaAuditora);
 
@@ -412,11 +423,11 @@ router.get('/conversaciones', authenticate, authorize([2]), async (req, res) => 
   try {
     const idEmpresaAuditora = req.user.id_empresa;
     
-    const conversaciones = (await readJson('conversaciones.json')).map(normalizeConversation);
-    const mensajes = await readJson('mensajes.json');
-    const usuarios = await readJson('usuarios.json'); // nombres de cliente
-    const empresas = await readJson('empresas.json'); // nombres de empresa cliente
-    const participantes = await readJson('auditoria_participantes.json');
+    const conversaciones = (await listRows('conversaciones')).map(normalizeConversation);
+    const mensajes = await listRows('mensajes');
+    const usuarios = await listRows('usuarios'); // nombres de cliente
+    const empresas = await listRows('empresas'); // nombres de empresa cliente
+    const participantes = await listRows('auditoria_participantes');
 
     // Filtrar conversaciones de la empresa
     const misConversaciones = conversaciones.filter(c =>
@@ -470,9 +481,9 @@ router.get('/conversaciones', authenticate, authorize([2]), async (req, res) => 
 // GET /api/auditor/mensajes/:idConversacion
 router.get('/mensajes/:idConversacion', authenticate, authorize([2]), async (req, res) => {
   const idConversacion = Number(req.params.idConversacion);
-  const mensajes = await readJson('mensajes.json');
-  const conversaciones = (await readJson('conversaciones.json')).map(normalizeConversation);
-  const participantes = await readJson('auditoria_participantes.json');
+  const mensajes = await listRows('mensajes');
+  const conversaciones = (await listRows('conversaciones')).map(normalizeConversation);
+  const participantes = await listRows('auditoria_participantes');
 
   // Validar acceso
   const conversacion = conversaciones.find(c => c.id_conversacion === idConversacion && c.activo);
@@ -504,12 +515,12 @@ router.post('/mensajes', authenticate, authorize([2]), async (req, res) => {
       return res.status(400).json({ message: 'id_conversacion y contenido son obligatorios' });
     }
 
-    const conversaciones = await readJson('conversaciones.json');
+    const conversaciones = await listRows('conversaciones');
     const conversacionesNormalizadas = conversaciones.map(normalizeConversation);
-    const mensajes = await readJson('mensajes.json');
-    const usuarios = await readJson('usuarios.json');
-    const empresas = await readJson('empresas.json');
-    const participantes = await readJson('auditoria_participantes.json');
+    const mensajes = await listRows('mensajes');
+    const usuarios = await listRows('usuarios');
+    const empresas = await listRows('empresas');
+    const participantes = await listRows('auditoria_participantes');
 
     const conversacion = conversacionesNormalizadas.find(c => c.id_conversacion === Number(id_conversacion) && c.activo);
     if (!conversacion || !isAuditConversation(conversacion)) {
@@ -540,12 +551,12 @@ router.post('/mensajes', authenticate, authorize([2]), async (req, res) => {
       const idxConv = conversacionesNormalizadas.findIndex(c => c.id_conversacion === Number(id_conversacion));
       if (idxConv !== -1) {
         conversacionesNormalizadas[idxConv] = conversacion;
-        await writeJson('conversaciones.json', conversacionesNormalizadas);
+        await saveRows('conversaciones', conversacionesNormalizadas);
       }
     }
 
     // Crear mensaje
-    const idMensaje = await getNextId('mensajes.json', 'id_mensaje');
+    const idMensaje = await nextId('mensajes', 'id_mensaje');
     const nuevoMensaje = {
       id_mensaje: idMensaje,
       id_conversacion: Number(id_conversacion),
@@ -555,13 +566,13 @@ router.post('/mensajes', authenticate, authorize([2]), async (req, res) => {
       creado_en: new Date().toISOString()
     };
     mensajes.push(nuevoMensaje);
-    await writeJson('mensajes.json', mensajes);
+    await saveRows('mensajes', mensajes);
 
     // Actualizar fecha de conversacion
     const idxConv = conversacionesNormalizadas.findIndex(c => c.id_conversacion === Number(id_conversacion));
     if (idxConv !== -1) {
       conversacionesNormalizadas[idxConv].ultimo_mensaje_fecha = nuevoMensaje.creado_en;
-      await writeJson('conversaciones.json', conversacionesNormalizadas);
+      await saveRows('conversaciones', conversacionesNormalizadas);
     }
 
     // Notificar al cliente
@@ -596,11 +607,11 @@ router.post('/mensajes', authenticate, authorize([2]), async (req, res) => {
 router.get('/reportes', authenticate, authorize([2]), async (req, res) => {
   try {
     const idAuditor = Number(req.user.id_usuario);
-    const reportes = await readJson('reportes.json');
-    const auditorias = await readJson('auditorias.json');
-    const participantes = await readJson('auditoria_participantes.json');
-    const usuarios = await readJson('usuarios.json');
-    const empresas = await readJson('empresas.json');
+    const reportes = await listRows('reportes');
+    const auditorias = await listRows('auditorias');
+    const participantes = await listRows('auditoria_participantes');
+    const usuarios = await listRows('usuarios');
+    const empresas = await listRows('empresas');
 
     const idsAsignadas = new Set(
       participantes
@@ -647,8 +658,9 @@ router.post('/reportes', authenticate, authorize([2]), upload.single('archivo'),
       return res.status(400).json({ message: 'id_auditoria y nombre del reporte son obligatorios.' });
     }
 
-    const reportes = await readJson('reportes.json');
-    const auditorias = await readJson('auditorias.json');
+    if (!await assignedAudit(id_auditoria,req.user)) return res.status(403).json({message:'Auditor no asignado'});
+    const reportes = await listRows('reportes');
+    const auditorias = await listRows('auditorias');
 
     // Verificar auditoria
     const idxAudit = auditorias.findIndex(a => a.id_auditoria === Number(id_auditoria));
@@ -657,8 +669,8 @@ router.post('/reportes', authenticate, authorize([2]), upload.single('archivo'),
     }
 
     // Guardar reporte
-    const idReporte = await getNextId('reportes.json', 'id_reporte');
-    const fileUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+    const idReporte = await nextId('reportes', 'id_reporte');
+    const fileUrl = `/uploads/${req.file.filename}`;
 
     const nuevoReporte = {
       id_reporte: idReporte,
@@ -673,13 +685,13 @@ router.post('/reportes', authenticate, authorize([2]), upload.single('archivo'),
     };
 
     reportes.push(nuevoReporte);
-    await writeJson('reportes.json', reportes);
+    await saveRows('reportes', reportes);
 
     // Actualizar estado a finalizada (3) si aplica
     if (auditorias[idxAudit].id_estado !== 3) {
       auditorias[idxAudit].id_estado = 3; 
       auditorias[idxAudit].estado_actualizado_en = new Date().toISOString();
-      await writeJson('auditorias.json', auditorias);
+      await saveRows('auditorias', auditorias);
     }
 
     // Mejora futura: patron Outbox/cola para reintentar sincronizacion con Elasticsearch.
@@ -696,4 +708,4 @@ router.post('/reportes', authenticate, authorize([2]), upload.single('archivo'),
   }
 });
 
-module.exports = router;
+module.exports = require('../utils/sqlRouter').transactionalRouter(router);

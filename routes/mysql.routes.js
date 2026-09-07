@@ -37,6 +37,11 @@ router.get('/health', async (req, res) => {
   }
 });
 
+// Las consultas de laboratorio no se publican en producción.
+router.use((req, res, next) => process.env.NODE_ENV === 'production'
+  ? res.status(404).json({ message: 'No encontrado' }) : next());
+router.use(require('../utils/auth').authenticate);
+
 // GET /api/mysql/empresas
 router.get('/empresas', async (req, res) => {
   try {

@@ -104,6 +104,15 @@ async function ensureAuditoriasIndex() {
 }
 
 async function indexAuditoria(auditoria) {
+  const { transactionContext, afterCommit } = require('../utils/db');
+  if (transactionContext.getStore()) {
+    const copy = {...auditoria};
+    afterCommit(() => indexAuditoriaNow(copy));
+    return { deferred: true };
+  }
+  return indexAuditoriaNow(auditoria);
+}
+async function indexAuditoriaNow(auditoria) {
   const document = buildAuditoriaDocument(auditoria);
   if (!document.id_auditoria) {
     return { enabled: isElasticsearchEnabled(), ok: false, skipped: true };

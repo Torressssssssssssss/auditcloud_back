@@ -2,9 +2,10 @@
 // backend/routes/auth.routes.js
 const express = require('express');
 const router = express.Router();
-const jwt = require('jsonwebtoken'); // Para decodificar el token de Google
+const { OAuth2Client } = require('google-auth-library');
+const googleClient = new OAuth2Client();
 const { query } = require('../utils/db');
-const { readJson, writeJson, getNextId } = require('../utils/jsonDb');
+const { listRows, saveRows, nextId } = require('../utils/mysqlStore');
 const { signToken, authenticate } = require('../utils/auth'); // Importamos las utilidades
 
 function buildLoginUser(usuario) {
@@ -25,6 +26,9 @@ function buildLoginUser(usuario) {
 router.post('/login', async (req, res) => {
   try {
     const { correo, password } = req.body;
+    if (typeof correo !== 'string' || typeof password !== 'string' || !password) {
+      return res.status(401).json({ message: 'Credenciales inválidas' });
+    }
     const usuarios = await query(
       `SELECT
         u.id_usuario,
@@ -65,6 +69,10 @@ router.post('/login', async (req, res) => {
 
 // POST /api/auth/google
 router.post('/google', async (req, res) => {
+  if (process.env.GOOGLE_AUTH_ENABLED !== 'true' ||
+      !/^[a-zA-Z0-9_-]+\.apps\.googleusercontent\.com$/.test(process.env.GOOGLE_CLIENT_ID?.trim() || '')) {
+    return res.status(503).json({ message: 'Inicio de sesión con Google disponible próximamente' });
+  }
   try {
     console.log('[Autenticación Google] Petición recibida');
 
@@ -75,25 +83,29 @@ router.post('/google', async (req, res) => {
       return res.status(400).json({ message: 'Token es obligatorio' });
     }
     
-    // Decodificar el token
-    const googlePayload = jwt.decode(token); 
-    
-    if (!googlePayload) {
-        console.error('[Autenticación Google] Error: No se pudo decodificar el token de Google');
-        return res.status(400).json({ message: 'Token de Google inválido o corrupto' });
+    let googlePayload;
+    try {
+      const ticket = await googleClient.verifyIdToken({
+        idToken: token,
+        audience: process.env.GOOGLE_CLIENT_ID.trim()
+      });
+      googlePayload = ticket.getPayload();
+      if (!googlePayload?.sub || !googlePayload.email || googlePayload.email_verified !== true) {
+        return res.status(401).json({ message: 'Token de Google inválido' });
+      }
+    } catch {
+      return res.status(401).json({ message: 'Token de Google inválido' });
     }
-
-    console.log('[Autenticación Google] Token decodificado exitosamente. Email:', googlePayload.email);
 
     const { email, name, sub } = googlePayload;
 
-    const usuarios = await readJson('usuarios.json');
+    const usuarios = await listRows('usuarios');
     let usuario = usuarios.find(u => u.correo === email);
     
     // Si no existe, lo creamos
     if (!usuario) {
       console.log('[Autenticación Google] Usuario nuevo detectado. Creando registro...');
-      const idUsuario = await getNextId('usuarios.json', 'id_usuario');
+      const idUsuario = await nextId('usuarios', 'id_usuario');
       
       usuario = {
         id_usuario: idUsuario,
@@ -108,17 +120,20 @@ router.post('/google', async (req, res) => {
       };
       
       usuarios.push(usuario);
-      await writeJson('usuarios.json', usuarios);
+      await saveRows('usuarios', usuarios);
       console.log('[Autenticación Google] Usuario nuevo creado exitosamente. ID:', usuario.id_usuario);
     } else {
       console.log('[Autenticación Google] Usuario existente encontrado. ID:', usuario.id_usuario);
     }
 
+    if (!usuario.activo || (usuario.google_id && usuario.google_id !== sub)) {
+      return res.status(403).json({ message: 'Cuenta no disponible' });
+    }
     const jwtToken = signToken(usuario);
 
     res.json({
       token: jwtToken,
-      usuario: usuario,
+      usuario: buildLoginUser(usuario),
       require_company_info: !usuario.id_empresa 
     });
 
@@ -138,11 +153,11 @@ router.post('/complete-profile', authenticate, async (req, res) => {
       return res.status(400).json({ message: 'Faltan datos obligatorios' });
     }
 
-    const usuarios = await readJson('usuarios.json');
-    const empresas = await readJson('empresas.json');
+    const usuarios = await listRows('usuarios');
+    const empresas = await listRows('empresas');
 
     // Crear empresa
-    const idEmpresa = await getNextId('empresas.json', 'id_empresa');
+    const idEmpresa = await nextId('empresas', 'id_empresa');
     const nuevaEmpresa = {
       id_empresa: idEmpresa,
       id_tipo_empresa: 2, // Tipo CLIENTE
@@ -160,13 +175,13 @@ router.post('/complete-profile', authenticate, async (req, res) => {
     };
 
     empresas.push(nuevaEmpresa);
-    await writeJson('empresas.json', empresas);
+    await saveRows('empresas', empresas);
 
     // Asociar empresa al usuario
     const usuarioIdx = usuarios.findIndex(u => u.id_usuario === idUsuario);
     if (usuarioIdx !== -1) {
       usuarios[usuarioIdx].id_empresa = idEmpresa;
-      await writeJson('usuarios.json', usuarios);
+      await saveRows('usuarios', usuarios);
     }
 
     // Opcional: regenerar token con id_empresa
@@ -183,4 +198,4 @@ router.post('/complete-profile', authenticate, async (req, res) => {
   }
 });
 
-module.exports = router;
+module.exports = require('../utils/sqlRouter').transactionalRouter(router);

@@ -4,7 +4,7 @@ const router = express.Router();
 const path = require('path');
 const fs = require('fs');
 const { query } = require('../utils/db');
-const { readJson, writeJson, getNextId, crearNotificacion } = require('../utils/jsonDb');
+const { listRows, saveRows, nextId, crearNotificacion } = require('../utils/mysqlStore');
 const { authenticate, authorize, signToken } = require('../utils/auth');
 const { normalizeConversation, isCommercialConversation, isAuditConversation } = require('../utils/conversationContext');
 
@@ -21,8 +21,8 @@ router.post('/registro', async (req, res) => {
       });
     }
 
-    const usuarios = await readJson('usuarios.json');
-    const empresas = await readJson('empresas.json');
+    const usuarios = await listRows('usuarios');
+    const empresas = await listRows('empresas');
 
     // Validar correo unico
     const correoExistente = usuarios.find(u => u.correo === correo && u.activo);
@@ -33,7 +33,7 @@ router.post('/registro', async (req, res) => {
     }
 
     // Crear empresa cliente
-    const idEmpresa = await getNextId('empresas.json', 'id_empresa');
+    const idEmpresa = await nextId('empresas', 'id_empresa');
     const nuevaEmpresa = {
       id_empresa: idEmpresa,
       id_tipo_empresa: 2, // Tipo CLIENTE
@@ -50,10 +50,10 @@ router.post('/registro', async (req, res) => {
       activo: true
     };
     empresas.push(nuevaEmpresa);
-    await writeJson('empresas.json', empresas);
+    await saveRows('empresas', empresas);
 
     // Crear usuario cliente
-    const idUsuario = await getNextId('usuarios.json', 'id_usuario');
+    const idUsuario = await nextId('usuarios', 'id_usuario');
     const nuevoUsuario = {
       id_usuario: idUsuario,
       id_empresa: idEmpresa,
@@ -65,7 +65,7 @@ router.post('/registro', async (req, res) => {
       creado_en: new Date().toISOString()
     };
     usuarios.push(nuevoUsuario);
-    await writeJson('usuarios.json', usuarios);
+    await saveRows('usuarios', usuarios);
     // Generar token
     const token = signToken(nuevoUsuario);
 
@@ -95,13 +95,13 @@ router.get('/conversaciones', authenticate, authorize([2]), async (req, res) => 
     const idAuditor = req.user.id_usuario;
     const idEmpresa = req.user.id_empresa;
 
-    const conversaciones = (await readJson('conversaciones.json')).map(normalizeConversation);
-    const mensajes = await readJson('mensajes.json');
-    const usuarios = await readJson('usuarios.json');
+    const conversaciones = (await listRows('conversaciones')).map(normalizeConversation);
+    const mensajes = await listRows('mensajes');
+    const usuarios = await listRows('usuarios');
     
     // Datos para validar permisos
-    const participantes = await readJson('auditoria_participantes.json');
-    const auditorias = await readJson('auditorias.json');
+    const participantes = await listRows('auditoria_participantes');
+    const auditorias = await listRows('auditorias');
 
     // IDs de auditorias del auditor
     const misAuditoriasIds = participantes
@@ -162,11 +162,11 @@ router.get('/conversaciones', authenticate, authorize([2]), async (req, res) => 
 // Carga el historial de un chat específico
 router.get('/mensajes/:idConversacion', authenticate, authorize([3]), async (req, res) => {
   const idConversacion = Number(req.params.idConversacion);
-  const mensajes = await readJson('mensajes.json');
-  const conversaciones = (await readJson('conversaciones.json')).map(normalizeConversation);
-  const participantes = await readJson('auditoria_participantes.json');
-  const auditorias = await readJson('auditorias.json');
-  const usuarios = await readJson('usuarios.json');
+  const mensajes = await listRows('mensajes');
+  const conversaciones = (await listRows('conversaciones')).map(normalizeConversation);
+  const participantes = await listRows('auditoria_participantes');
+  const auditorias = await listRows('auditorias');
+  const usuarios = await listRows('usuarios');
   
   const conversacion = conversaciones.find(c => c.id_conversacion === idConversacion && c.activo);
   if (!conversacion || conversacion.id_cliente !== req.user.id_usuario) {
@@ -200,8 +200,8 @@ router.post('/mensajes', authenticate, authorize([3]), async (req, res) => {
 
     if (!contenido) return res.status(400).json({ message: 'Contenido obligatorio' });
 
-    const conversaciones = (await readJson('conversaciones.json')).map(normalizeConversation);
-    const mensajes = await readJson('mensajes.json');
+    const conversaciones = (await listRows('conversaciones')).map(normalizeConversation);
+    const mensajes = await listRows('mensajes');
 
     let conversacionId = id_conversacion;
 
@@ -221,7 +221,7 @@ router.post('/mensajes', authenticate, authorize([3]), async (req, res) => {
         conversacionId = existe.id_conversacion;
       } else {
         // Crear conversacion
-        conversacionId = await getNextId('conversaciones.json', 'id_conversacion');
+        conversacionId = await nextId('conversaciones', 'id_conversacion');
         const nueva = {
           id_conversacion: conversacionId,
           id_cliente: idUsuario,
@@ -237,7 +237,7 @@ router.post('/mensajes', authenticate, authorize([3]), async (req, res) => {
           activo: true
         };
         conversaciones.push(nueva);
-        await writeJson('conversaciones.json', conversaciones);
+        await saveRows('conversaciones', conversaciones);
       }
     }
 
@@ -247,7 +247,7 @@ router.post('/mensajes', authenticate, authorize([3]), async (req, res) => {
     }
 
     // Crear mensaje
-    const idMensaje = await getNextId('mensajes.json', 'id_mensaje');
+    const idMensaje = await nextId('mensajes', 'id_mensaje');
     const nuevoMensaje = {
       id_mensaje: idMensaje,
       id_conversacion: Number(conversacionId),
@@ -263,10 +263,10 @@ router.post('/mensajes', authenticate, authorize([3]), async (req, res) => {
     const idx = conversaciones.findIndex(c => c.id_conversacion === Number(conversacionId));
     if(idx !== -1) {
         conversaciones[idx].ultimo_mensaje_fecha = nuevoMensaje.creado_en;
-        await writeJson('conversaciones.json', conversaciones);
+        await saveRows('conversaciones', conversaciones);
     }
     
-    await writeJson('mensajes.json', mensajes);
+    await saveRows('mensajes', mensajes);
 
     res.status(201).json(nuevoMensaje);
 
@@ -285,9 +285,9 @@ router.post('/conversaciones', authenticate, authorize([3]), async (req, res) =>
     return res.status(400).json({ message: 'id_cliente, id_empresa_auditora, asunto y primer_mensaje son obligatorios' });
   }
 
-  const conversaciones = (await readJson('conversaciones.json')).map(normalizeConversation);
-  const mensajes = await readJson('mensajes.json');
-  const empresas = await readJson('empresas.json');
+  const conversaciones = (await listRows('conversaciones')).map(normalizeConversation);
+  const mensajes = await listRows('mensajes');
+  const empresas = await listRows('empresas');
   const empresaValida = empresas.some(e => e.id_empresa === Number(id_empresa_auditora) && (e.activo ?? e.activa));
   if (!empresaValida) return res.status(404).json({ message: 'Empresa auditora no encontrada o inactiva' });
 
@@ -303,7 +303,7 @@ router.post('/conversaciones', authenticate, authorize([3]), async (req, res) =>
   );
 
   if (existente) {
-    const idMensaje = await getNextId('mensajes.json', 'id_mensaje');
+    const idMensaje = await nextId('mensajes', 'id_mensaje');
     const mensajeInicial = {
       id_mensaje: idMensaje,
       id_conversacion: existente.id_conversacion,
@@ -313,7 +313,7 @@ router.post('/conversaciones', authenticate, authorize([3]), async (req, res) =>
       creado_en: new Date().toISOString()
     };
     mensajes.push(mensajeInicial);
-    await writeJson('mensajes.json', mensajes);
+    await saveRows('mensajes', mensajes);
 
     return res.status(201).json({
       message: 'Conversación creada',
@@ -322,7 +322,7 @@ router.post('/conversaciones', authenticate, authorize([3]), async (req, res) =>
     });
   }
 
-  const idConversacion = await getNextId('conversaciones.json', 'id_conversacion');
+  const idConversacion = await nextId('conversaciones', 'id_conversacion');
   const nueva = {
     id_conversacion: idConversacion,
     id_cliente: Number(id_cliente),
@@ -339,9 +339,9 @@ router.post('/conversaciones', authenticate, authorize([3]), async (req, res) =>
   };
 
   conversaciones.push(nueva);
-  await writeJson('conversaciones.json', conversaciones);
+  await saveRows('conversaciones', conversaciones);
 
-  const idMensaje = await getNextId('mensajes.json', 'id_mensaje');
+  const idMensaje = await nextId('mensajes', 'id_mensaje');
   const mensajeInicial = {
     id_mensaje: idMensaje,
     id_conversacion: idConversacion,
@@ -351,7 +351,7 @@ router.post('/conversaciones', authenticate, authorize([3]), async (req, res) =>
     creado_en: new Date().toISOString()
   };
   mensajes.push(mensajeInicial);
-  await writeJson('mensajes.json', mensajes);
+  await saveRows('mensajes', mensajes);
 
   res.status(201).json({
     message: 'Conversación creada',
@@ -366,12 +366,12 @@ router.get('/conversaciones/:idCliente', authenticate, authorize([3]), async (re
   try {
     const idCliente = Number(req.params.idCliente);
     
-    const conversaciones = (await readJson('conversaciones.json')).map(normalizeConversation);
-    const mensajes = await readJson('mensajes.json');
-    const empresas = await readJson('empresas.json');
-    const usuarios = await readJson('usuarios.json');
-    const auditorias = await readJson('auditorias.json');
-    const participantes = await readJson('auditoria_participantes.json');
+    const conversaciones = (await listRows('conversaciones')).map(normalizeConversation);
+    const mensajes = await listRows('mensajes');
+    const empresas = await listRows('empresas');
+    const usuarios = await listRows('usuarios');
+    const auditorias = await listRows('auditorias');
+    const participantes = await listRows('auditoria_participantes');
 
     // Filtrar conversaciones de este cliente
     const misConversaciones = conversaciones.filter(c => c.id_cliente === idCliente && c.activo);
@@ -413,9 +413,9 @@ router.get('/auditorias/:idCliente', authenticate, authorize([3]), async (req, r
     const idCliente = Number(req.params.idCliente);
     
     // Leemos todas las tablas necesarias
-    const auditorias = await readJson('auditorias.json');
-    const empresas = await readJson('empresas.json');
-    const auditoriaModulos = await readJson('auditoria_modulos.json');
+    const auditorias = await listRows('auditorias');
+    const empresas = await listRows('empresas');
+    const auditoriaModulos = await listRows('auditoria_modulos');
     
     // 1. Filtrar auditorías de este cliente
     const misAuditorias = auditorias.filter(a => a.id_cliente === idCliente);
@@ -461,7 +461,7 @@ router.get('/auditorias/:idCliente', authenticate, authorize([3]), async (req, r
 // GET /api/cliente/solicitudes-pago/:idCliente
 router.get('/solicitudes-pago/:idCliente', authenticate, authorize([3]), async (req, res) => {
   const idCliente = Number(req.params.idCliente);
-  const solicitudes = await readJson('solicitudes_pago.json');
+  const solicitudes = await listRows('solicitudes_pago');
   res.json(solicitudes.filter(s => s.id_cliente === idCliente));
 });
 // POST /api/auditor/solicitudes-pago
@@ -477,14 +477,14 @@ router.post('/solicitudes-pago', authenticate, authorize([2]), async (req, res) 
     return res.status(400).json({ message: 'id_cliente, monto y concepto son obligatorios' });
   }
 
-  const solicitudes = await readJson('solicitudes_pago.json');
-  const usuarios = await readJson('usuarios.json');
+  const solicitudes = await listRows('solicitudes_pago');
+  const usuarios = await listRows('usuarios');
 
   // Validar que el cliente exista
   const clienteValido = usuarios.some(u => u.id_usuario === Number(id_cliente) && u.id_rol === 3 && u.activo);
   if (!clienteValido) return res.status(404).json({ message: 'Cliente no encontrado o inactivo' });
 
-  const idSolicitud = await getNextId('solicitudes_pago.json', 'id_solicitud');
+  const idSolicitud = await nextId('solicitudes_pago', 'id_solicitud');
   
   const nueva = {
     id_solicitud: idSolicitud,
@@ -499,7 +499,7 @@ router.post('/solicitudes-pago', authenticate, authorize([2]), async (req, res) 
   };
 
   solicitudes.push(nueva);
-  await writeJson('solicitudes_pago.json', solicitudes);
+  await saveRows('solicitudes_pago', solicitudes);
 
   res.status(201).json({ message: 'Solicitud de cobro creada', solicitud: nueva });
 });
@@ -652,8 +652,8 @@ router.get('/mensajes/:idConversacion', authenticate, authorize([3]), async (req
     const idConversacion = Number(req.params.idConversacion);
     const idUsuario = req.user.id_usuario;
 
-    const conversaciones = await readJson('conversaciones.json');
-    const mensajes = await readJson('mensajes.json');
+    const conversaciones = await listRows('conversaciones');
+    const mensajes = await listRows('mensajes');
 
     const conversacion = conversaciones.find(c => c.id_conversacion === idConversacion && c.activo);
     if (!conversacion) {
@@ -700,10 +700,10 @@ router.post('/mensajes', authenticate, authorize([3]), async (req, res) => {
       return res.status(400).json({ message: 'contenido es obligatorio' });
     }
 
-    const conversaciones = await readJson('conversaciones.json');
-    const mensajes = await readJson('mensajes.json');
-    const empresas = await readJson('empresas.json');
-    const usuarios = await readJson('usuarios.json');
+    const conversaciones = await listRows('conversaciones');
+    const mensajes = await listRows('mensajes');
+    const empresas = await listRows('empresas');
+    const usuarios = await listRows('usuarios');
 
     let conversacionId = id_conversacion;
 
@@ -723,7 +723,7 @@ router.post('/mensajes', authenticate, authorize([3]), async (req, res) => {
         return res.status(404).json({ message: 'Cliente no encontrado o inactivo' });
       }
 
-      conversacionId = await getNextId('conversaciones.json', 'id_conversacion');
+      conversacionId = await nextId('conversaciones', 'id_conversacion');
       const nuevaConversacion = {
         id_conversacion: conversacionId,
         id_cliente: idUsuario,
@@ -733,7 +733,7 @@ router.post('/mensajes', authenticate, authorize([3]), async (req, res) => {
         activo: true
       };
       conversaciones.push(nuevaConversacion);
-      await writeJson('conversaciones.json', conversaciones);
+      await saveRows('conversaciones', conversaciones);
     } else {
       // Verificar que la conversación existe y pertenece al cliente
       const conversacion = conversaciones.find(c => c.id_conversacion === Number(conversacionId) && c.activo);
@@ -746,7 +746,7 @@ router.post('/mensajes', authenticate, authorize([3]), async (req, res) => {
     }
 
     // Crear el mensaje
-    const idMensaje = await getNextId('mensajes.json', 'id_mensaje');
+    const idMensaje = await nextId('mensajes', 'id_mensaje');
     const nuevoMensaje = {
       id_mensaje: idMensaje,
       id_conversacion: conversacionId,
@@ -756,7 +756,7 @@ router.post('/mensajes', authenticate, authorize([3]), async (req, res) => {
       creado_en: new Date().toISOString()
     };
     mensajes.push(nuevoMensaje);
-    await writeJson('mensajes.json', mensajes);
+    await saveRows('mensajes', mensajes);
 
     res.status(201).json({
       id_mensaje: nuevoMensaje.id_mensaje,
@@ -778,11 +778,11 @@ router.get('/auditorias/:idAuditoria/detalle', authenticate, authorize([3]), asy
     const idAuditoria = Number(req.params.idAuditoria);
     const idUsuario = req.user.id_usuario;
 
-    const auditorias = await readJson('auditorias.json');
-    const empresas = await readJson('empresas.json');
-    const estados = await readJson('estados_auditoria.json');
-    const auditoriaModulos = await readJson('auditoria_modulos.json');
-    const modulosAmbientales = await readJson('modulos_ambientales.json');
+    const auditorias = await listRows('auditorias');
+    const empresas = await listRows('empresas');
+    const estados = await listRows('estados_auditoria');
+    const auditoriaModulos = await listRows('auditoria_modulos');
+    const modulosAmbientales = await listRows('modulos_ambientales');
 
     const auditoria = auditorias.find(a => a.id_auditoria === idAuditoria);
     if (!auditoria) {
@@ -848,9 +848,9 @@ router.get('/notificaciones/:idCliente', authenticate, authorize([3]), async (re
       return res.status(403).json({ message: 'No tienes permisos para ver estas notificaciones' });
     }
 
-    const notificaciones = await readJson('notificaciones.json');
-    const auditorias = await readJson('auditorias.json');
-    const empresas = await readJson('empresas.json');
+    const notificaciones = await listRows('notificaciones');
+    const auditorias = await listRows('auditorias');
+    const empresas = await listRows('empresas');
 
     // Filtrar notificaciones del cliente y enriquecer con datos de auditoría
     const notificacionesCliente = notificaciones
@@ -900,7 +900,7 @@ router.put('/notificaciones/:idNotificacion/leer', authenticate, authorize([3]),
     const idNotificacion = Number(req.params.idNotificacion);
     const idUsuario = req.user.id_usuario;
 
-    const notificaciones = await readJson('notificaciones.json');
+    const notificaciones = await listRows('notificaciones');
     const notificacionIdx = notificaciones.findIndex(n => n.id_notificacion === idNotificacion);
 
     if (notificacionIdx === -1) {
@@ -914,7 +914,7 @@ router.put('/notificaciones/:idNotificacion/leer', authenticate, authorize([3]),
 
     // Marcar como leída
     notificaciones[notificacionIdx].leida = true;
-    await writeJson('notificaciones.json', notificaciones);
+    await saveRows('notificaciones', notificaciones);
 
     res.json({ 
       message: 'Notificación marcada como leída',
@@ -938,7 +938,7 @@ router.put('/notificaciones/:idCliente/leer-todas', authenticate, authorize([3])
       return res.status(403).json({ message: 'No tienes permisos para marcar estas notificaciones' });
     }
 
-    const notificaciones = await readJson('notificaciones.json');
+    const notificaciones = await listRows('notificaciones');
     
     // Contar y marcar todas las notificaciones no leídas del cliente
     let contador = 0;
@@ -949,7 +949,7 @@ router.put('/notificaciones/:idCliente/leer-todas', authenticate, authorize([3])
       }
     });
 
-    await writeJson('notificaciones.json', notificaciones);
+    await saveRows('notificaciones', notificaciones);
 
     res.json({ 
       message: `${contador} notificaciones marcadas como leídas`,
@@ -978,9 +978,9 @@ router.get('/reportes/:idCliente', authenticate, authorize([3]), async (req, res
       return res.status(403).json({ message: 'No tienes permisos para ver estos reportes' });
     }
 
-    const reportes = await readJson('reportes.json');
-    const auditorias = await readJson('auditorias.json');
-    const empresas = await readJson('empresas.json');
+    const reportes = await listRows('reportes');
+    const auditorias = await listRows('auditorias');
+    const empresas = await listRows('empresas');
 
     // Filtrar reportes de auditorías del cliente
     const reportesCliente = reportes
@@ -1030,8 +1030,8 @@ router.get('/auditorias/:idAuditoria/reporte', authenticate, authorize([3]), asy
     const idAuditoria = Number(req.params.idAuditoria);
     const idUsuario = req.user.id_usuario;
 
-    const auditorias = await readJson('auditorias.json');
-    const reportes = await readJson('reportes.json');
+    const auditorias = await listRows('auditorias');
+    const reportes = await listRows('reportes');
 
     // Verificar que la auditoría existe y pertenece al cliente
     const auditoria = auditorias.find(a => a.id_auditoria === idAuditoria);
@@ -1077,4 +1077,4 @@ router.get('/auditorias/:idAuditoria/reporte', authenticate, authorize([3]), asy
   }
 });
 
-module.exports = router;
+module.exports = require('../utils/sqlRouter').transactionalRouter(router);

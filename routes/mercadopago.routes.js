@@ -4,7 +4,7 @@ const router = express.Router();
 
 const { MercadoPagoConfig, Preference, Payment } = require('mercadopago');
 const { query } = require('../utils/db');
-const { readJson, writeJson } = require('../utils/jsonDb');
+const { listRows, saveRows } = require('../utils/mysqlStore');
 const { authenticate, authorize } = require('../utils/auth');
 
 function getMercadoPagoAccessToken() {
@@ -103,7 +103,7 @@ function montosCoinciden(a, b) {
   const montoA = Number(a);
   const montoB = Number(b);
   if (!Number.isFinite(montoA) || !Number.isFinite(montoB)) {
-    return true;
+    return false;
   }
 
   return Math.abs(montoA - montoB) < 0.01;
@@ -120,75 +120,10 @@ function sanitizeMercadoPagoError(error) {
 }
 
 async function obtenerSolicitudPago(idSolicitud) {
-  const idBuscado = Number(idSolicitud);
-  if (!Number.isInteger(idBuscado) || idBuscado <= 0) {
-    return null;
-  }
-
-  const solicitudes = await readJson('solicitudes_pago.json');
-  const solicitudJson = solicitudes.find(s => Number(s.id_solicitud) === idBuscado);
-
-  if (solicitudJson) {
-    return { fuente: 'json', solicitud: normalizarSolicitud(solicitudJson) };
-  }
-
-  try {
-    const rows = await query(
-      `SELECT
-        id_solicitud,
-        id_empresa,
-        id_empresa_auditora,
-        id_empresa_cliente,
-        id_cliente,
-        monto,
-        concepto,
-        id_estado,
-        creado_en,
-        creado_por_supervisor,
-        creado_por_auditor,
-        pagada_en
-      FROM solicitudes_pago
-      WHERE id_solicitud = ?
-      LIMIT 1;`,
-      [idBuscado]
-    );
-
-    if (rows && rows[0]) {
-      return { fuente: 'mysql', solicitud: normalizarSolicitud(rows[0]) };
-    }
-  } catch (error) {
-    if (error?.code !== 'DB_NOT_CONFIGURED') {
-      console.warn('MySQL no disponible para solicitudes de pago:', error?.code || error?.message || error);
-    }
-  }
-
-  return null;
-}
-
-async function guardarSolicitudPagada(solicitudActualizada) {
-  const solicitudes = await readJson('solicitudes_pago.json');
-  const idx = solicitudes.findIndex(s => Number(s.id_solicitud) === Number(solicitudActualizada.id_solicitud));
-  if (idx !== -1) {
-    solicitudes[idx] = {
-      ...solicitudes[idx],
-      ...solicitudActualizada
-    };
-    await writeJson('solicitudes_pago.json', solicitudes);
-  }
-
-  try {
-    await query(
-      `UPDATE solicitudes_pago
-       SET id_estado = 2,
-           pagada_en = ?
-       WHERE id_solicitud = ?;`,
-      [solicitudActualizada.pagada_en, Number(solicitudActualizada.id_solicitud)]
-    );
-  } catch (error) {
-    if (error?.code !== 'DB_NOT_CONFIGURED') {
-      console.warn('No fue posible actualizar la solicitud en MySQL:', error?.code || error?.message || error);
-    }
-  }
+  const id = Number(idSolicitud);
+  if (!Number.isInteger(id) || id <= 0) return null;
+  const [row] = await query('SELECT * FROM solicitudes_pago WHERE id_solicitud=?',[id]);
+  return row ? {fuente:'mysql',solicitud:normalizarSolicitud(row)} : null;
 }
 
 function construirDatosMercadoPago(paymentData = {}) {
@@ -229,7 +164,7 @@ function obtenerPreferenceIdDesdePayment(paymentData = {}) {
   return paymentData?.preference_id || paymentData?.order?.id || null;
 }
 
-function buscarJsonPorIdMercadoPago(solicitudes, paymentId) {
+function buscarSqlPorIdMercadoPago(solicitudes, paymentId) {
   if (!paymentId) {
     return null;
   }
@@ -240,7 +175,7 @@ function buscarJsonPorIdMercadoPago(solicitudes, paymentId) {
   )) || null;
 }
 
-function buscarJsonPorPreferenceId(solicitudes, preferenceId) {
+function buscarSqlPorPreferenceId(solicitudes, preferenceId) {
   if (!preferenceId) {
     return null;
   }
@@ -263,16 +198,16 @@ async function buscarSolicitudPorMercadoPago(paymentData = {}) {
   const preferenceId = obtenerPreferenceIdDesdePayment(paymentData);
   const externalReferenceId = obtenerIdNumerico(paymentData?.external_reference);
   const metadataIds = obtenerIdsSolicitudDesdeMetadata(paymentData);
-  const solicitudes = await readJson('solicitudes_pago.json');
+  const solicitudes = await listRows('solicitudes_pago');
 
-  const solicitudPorPaymentId = buscarJsonPorIdMercadoPago(solicitudes, paymentId);
+  const solicitudPorPaymentId = buscarSqlPorIdMercadoPago(solicitudes, paymentId);
   if (solicitudPorPaymentId && montosCoinciden(solicitudPorPaymentId.monto, montoPago)) {
-    return { fuente: 'json', solicitud: normalizarSolicitud(solicitudPorPaymentId), match: 'json_payment_id' };
+    return { fuente: 'mysql', solicitud: normalizarSolicitud(solicitudPorPaymentId), match: 'mysql_payment_id' };
   }
 
-  const solicitudPorPreferencia = buscarJsonPorPreferenceId(solicitudes, preferenceId);
+  const solicitudPorPreferencia = buscarSqlPorPreferenceId(solicitudes, preferenceId);
   if (solicitudPorPreferencia && montosCoinciden(solicitudPorPreferencia.monto, montoPago)) {
-    return { fuente: 'json', solicitud: normalizarSolicitud(solicitudPorPreferencia), match: 'json_preference_id' };
+    return { fuente: 'mysql', solicitud: normalizarSolicitud(solicitudPorPreferencia), match: 'mysql_preference_id' };
   }
 
   if (externalReferenceId) {
@@ -293,64 +228,26 @@ async function buscarSolicitudPorMercadoPago(paymentData = {}) {
 }
 
 async function guardarDatosMercadoPago(solicitud, paymentData = {}) {
-  const datosMercadoPago = construirDatosMercadoPago(paymentData);
-  const status = String(paymentData?.status || '').toLowerCase();
-  const ahora = new Date().toISOString();
-  const solicitudActualizada = {
-    ...solicitud,
-    ...datosMercadoPago
-  };
-
-  if (status === 'approved') {
-    solicitudActualizada.id_estado = 2;
-    solicitudActualizada.pagada_en = solicitud.pagada_en || ahora;
-  }
-
-  const solicitudes = await readJson('solicitudes_pago.json');
-  const idx = solicitudes.findIndex(s => Number(s.id_solicitud) === Number(solicitud.id_solicitud));
-  let jsonActualizado = false;
-  if (idx !== -1) {
-    solicitudes[idx] = {
-      ...solicitudes[idx],
-      ...solicitudActualizada
-    };
-    await writeJson('solicitudes_pago.json', solicitudes);
-    jsonActualizado = true;
-  }
-
-  let mysqlActualizado = false;
-  try {
-    if (status === 'approved') {
-      const result = await query(
-        `UPDATE solicitudes_pago
-         SET id_estado = 2,
-             pagada_en = ?
-         WHERE id_solicitud = ?
-           AND ABS(monto - ?) < 0.01;`,
-        [
-          solicitudActualizada.pagada_en,
-          Number(solicitud.id_solicitud),
-          Number(paymentData?.transaction_amount || solicitud.monto)
-        ]
-      );
-      mysqlActualizado = Number(result?.affectedRows || 0) > 0;
+  const solicitudes = await listRows('solicitudes_pago');
+  const idx = solicitudes.findIndex(s=>s.id_solicitud===Number(solicitud.id_solicitud));
+  if (idx === -1) throw new Error('Solicitud no encontrada');
+  const updated = {...solicitudes[idx],...construirDatosMercadoPago(paymentData)};
+  if (paymentData.status === 'approved') {
+    if (!montosCoinciden(updated.monto,paymentData.transaction_amount) || paymentData.currency_id !== 'MXN') {
+      throw new Error('Monto o moneda de pago no coincide');
     }
-  } catch (error) {
-    if (error?.code !== 'DB_NOT_CONFIGURED') {
-      console.warn('No fue posible sincronizar pago Mercado Pago en MySQL:', error?.code || error?.message || error);
-    }
+    updated.id_estado=2;
+    updated.pagada_en=updated.pagada_en || new Date().toISOString();
   }
-
-  return {
-    solicitud: normalizarSolicitud(solicitudActualizada),
-    jsonActualizado,
-    mysqlActualizado
-  };
+  solicitudes[idx]=updated;
+  await saveRows('solicitudes_pago',solicitudes);
+  await require('../services/paymentPersistence').ensurePaidAudit(updated);
+  return {solicitud:normalizarSolicitud(updated),mysqlActualizado:true};
 }
 
 async function guardarPreferenciaSolicitud(idSolicitud, data = {}) {
   const idBuscado = Number(idSolicitud);
-  const solicitudes = await readJson('solicitudes_pago.json');
+  const solicitudes = await listRows('solicitudes_pago');
   const idx = solicitudes.findIndex(s => Number(s.id_solicitud) === idBuscado);
 
   if (idx !== -1) {
@@ -360,7 +257,7 @@ async function guardarPreferenciaSolicitud(idSolicitud, data = {}) {
       preference_id: data.id || solicitudes[idx].preference_id || null,
       mercadopago_preference_created_at: new Date().toISOString()
     };
-    await writeJson('solicitudes_pago.json', solicitudes);
+    await saveRows('solicitudes_pago', solicitudes);
   }
 }
 
@@ -385,7 +282,7 @@ async function procesarPagoMercadoPago(paymentOrId) {
     };
   }
 
-  const { solicitud, jsonActualizado, mysqlActualizado } = await guardarDatosMercadoPago(
+  const { solicitud, mysqlActualizado } = await guardarDatosMercadoPago(
     resultadoSolicitud.solicitud,
     paymentData
   );
@@ -398,7 +295,6 @@ async function procesarPagoMercadoPago(paymentOrId) {
     status_detail: statusDetail,
     solicitud,
     match: resultadoSolicitud.match,
-    jsonActualizado,
     mysqlActualizado,
     message: status === 'approved'
       ? 'Pago aprobado y solicitud actualizada'
@@ -628,7 +524,6 @@ router.post('/webhook', async (req, res) => {
         status_detail: resultado.status_detail,
         id_solicitud: resultado.solicitud?.id_solicitud || null,
         match: resultado.match || null,
-        jsonActualizado: resultado.jsonActualizado || false,
         mysqlActualizado: resultado.mysqlActualizado || false
       });
     } catch (error) {
@@ -738,4 +633,4 @@ router.post('/confirmar', authenticate, authorize([3]), async (req, res) => {
   }
 });
 
-module.exports = router;
+module.exports = require('../utils/sqlRouter').transactionalRouter(router);
