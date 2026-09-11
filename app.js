@@ -14,7 +14,6 @@ const paypalRoutes = require('./routes/paypal.routes');
 const mercadopagoRoutes = require('./routes/mercadopago.routes');
 const timelineRoutes = require('./routes/timeline.routes');
 const mysqlRoutes = require('./routes/mysql.routes');
-const elasticRoutes = require('./routes/elastic.routes');
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
 
@@ -93,7 +92,8 @@ app.use('/uploads', require('./utils/auth').authenticate, async (req, res, next)
       '.jpg': 'image/jpeg',
       '.jpeg': 'image/jpeg',
       '.png': 'image/png',
-      '.gif': 'image/gif'
+      '.gif': 'image/gif',
+      '.webp': 'image/webp'
     };
     
     const contentType = contentTypeMap[ext] || 'application/octet-stream';
@@ -112,7 +112,6 @@ app.use('/api/timeline', timelineRoutes);
 
 // Rutas MySQL (integración paralela)
 app.use('/api/mysql', mysqlRoutes);
-app.use('/api/elastic', elasticRoutes);
 
 // Salud
 app.get('/', (req, res) => {

@@ -224,6 +224,7 @@ CREATE TABLE auditorias (
   KEY idx_auditorias_auditora (id_empresa_auditora),
   KEY idx_auditorias_cliente (id_cliente),
   KEY idx_auditorias_solicitud (id_solicitud_pago),
+  UNIQUE KEY uq_auditorias_solicitud_pago (id_solicitud_pago),
   KEY idx_auditorias_estado (id_estado),
   CONSTRAINT fk_auditorias_empresas_auditora
     FOREIGN KEY (id_empresa_auditora) REFERENCES empresas(id_empresa)

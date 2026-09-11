@@ -4,7 +4,7 @@ const { listRows, saveRows, nextId } = require('../utils/mysqlStore');
 async function ensurePaidAudit(solicitud) {
   if (Number(solicitud.id_estado) !== 2) return null;
   const audits = await listRows('auditorias');
-  const existing = audits.find(a => a.id_solicitud_pago === Number(solicitud.id_solicitud));
+  const existing = audits.find(a => Number(a.id_solicitud_pago) === Number(solicitud.id_solicitud));
   if (existing) return existing;
   const audit = {
     id_auditoria: await nextId('auditorias'),

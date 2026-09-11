@@ -28,3 +28,5 @@ ALTER TABLE solicitudes_pago
   ADD COLUMN mercadopago_actualizado_en datetime NULL,
   ADD COLUMN mercadopago_preference_created_at datetime NULL,
   ADD UNIQUE KEY uq_mp_payment (mercadopago_payment_id);
+ALTER TABLE auditorias
+  ADD UNIQUE KEY uq_auditorias_solicitud_pago (id_solicitud_pago);
