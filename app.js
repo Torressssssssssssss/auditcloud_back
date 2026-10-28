@@ -17,11 +17,13 @@ const mysqlRoutes = require('./routes/mysql.routes');
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
 
-function normalizeOrigin(origin) {
+function normalizeOrigin(origin) 
+{
   return String(origin || '').trim().replace(/\/$/, '');
 }
 
-function getAllowedOrigins() {
+function getAllowedOrigins() 
+{
   const defaultOrigins = process.env.NODE_ENV === 'production' ? [] : [
     'http://localhost:4200',
     'http://127.0.0.1:4200'
@@ -36,13 +38,16 @@ function getAllowedOrigins() {
 }
 
 const corsOptions = {
-  origin(origin, callback) {
-    if (!origin) {
+  origin(origin, callback) 
+{
+    if(!origin) 
+{
       return callback(null, true);
     }
 
     const allowedOrigins = getAllowedOrigins();
-    if (allowedOrigins.includes(normalizeOrigin(origin))) {
+    if(allowedOrigins.includes(normalizeOrigin(origin))) 
+{
       return callback(null, true);
     }
 
@@ -69,19 +74,25 @@ app.use('/api/pagos/mercadopago', mercadopagoRoutes);
 app.use('/api/mercadopago', mercadopagoRoutes);
 
 // Servir uploads directos
-app.use('/uploads', require('./utils/auth').authenticate, async (req, res, next) => {
-  try {
+app.use('/uploads', require('./utils/auth').authenticate, async (req, res, next) => 
+{
+  try 
+{
     const fileName = req.path.split('/').pop();
-    if (!fileName) {
+    if(!fileName) 
+{
       return next();
     }
     
     const filePath = path.join(__dirname, 'data', 'uploads', fileName);
     
     // Validar que el archivo exista
-    try {
+    try 
+{
       await fs.promises.access(filePath);
-    } catch (err) {
+    }
+ catch(err) 
+{
       return res.status(404).json({ message: 'Archivo no encontrado' });
     }
     
@@ -102,7 +113,9 @@ app.use('/uploads', require('./utils/auth').authenticate, async (req, res, next)
     res.setHeader('Content-Type', contentType);
     res.setHeader('Content-Disposition', `inline; filename="${fileName}"`);
     res.sendFile(filePath);
-  } catch (error) {
+  }
+ catch(error) 
+{
     console.error('Error sirviendo archivo:', error);
     res.status(500).json({ message: 'Error al procesar el archivo' });
   }
@@ -114,14 +127,15 @@ app.use('/api/timeline', timelineRoutes);
 app.use('/api/mysql', mysqlRoutes);
 
 // Salud
-app.get('/', (req, res) => {
+app.get('/', (req, res) => 
+{
   res.send('AuditCloud backend MySQL está activo');
 });
 
 // Respuestas públicas para errores que alcanzan el final del pipeline.
 app.use((error, solicitud, respuesta, siguiente) =>
 {
-  if (respuesta.headersSent)
+  if(respuesta.headersSent)
   {
     return siguiente(error);
   }
@@ -131,7 +145,8 @@ app.use((error, solicitud, respuesta, siguiente) =>
   });
 });
 
-if (require.main === module) app.listen(PORT, '127.0.0.1', () => {
+if(require.main === module) app.listen(PORT, '127.0.0.1', () => 
+{
   console.log(`🚀 Servidor backend corriendo en http://127.0.0.1:${PORT}`);
 });
 
