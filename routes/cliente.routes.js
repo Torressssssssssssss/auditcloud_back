@@ -365,6 +365,12 @@ router.post('/conversaciones', authenticate, authorize([3]), async (req, res) =>
 router.get('/conversaciones/:idCliente', authenticate, authorize([3]), async (req, res) => {
   try {
     const idCliente = Number(req.params.idCliente);
+
+    const idToken = req.user?.id_usuario || req.user?.id;
+    if (!idToken || idCliente !== idToken) {
+      console.log('[cliente/conversaciones] acceso denegado por identidad del token');
+      return res.status(403).json({ message: 'No tienes permisos para ver las conversaciones de otro cliente' });
+    }
     
     const conversaciones = (await listRows('conversaciones')).map(normalizeConversation);
     const mensajes = await listRows('mensajes');
