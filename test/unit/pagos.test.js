@@ -18,6 +18,7 @@ function fixture(t, paymentOverrides = {}) {
   });
   const persistence = mockPersistence(t, {
     execute(sql, params) {
+      if (sql === 'SELECT nombre,correo FROM usuarios WHERE id_usuario=?') return [];
       assert.equal(sql, 'SELECT * FROM solicitudes_pago WHERE id_solicitud=?');
       return structuredClone(tables.solicitudes_pago.filter(row => row.id_solicitud === params[0]));
     }

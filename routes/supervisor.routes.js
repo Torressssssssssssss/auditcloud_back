@@ -1110,6 +1110,34 @@ router.post('/mensajes', authenticate, authorize([1]), async (req, res) => {
 
 // Reportes y evidencias
 
+router.post('/reportes', authenticate, authorize([1]), upload.single('archivo'), async (solicitud, respuesta) =>
+{
+  const { id_auditoria, nombre, observaciones } = solicitud.body;
+  if (!solicitud.file || !nombre || !Number.isInteger(Number(id_auditoria)) || Number(id_auditoria) <= 0)
+  {
+    return respuesta.status(400).json({ message: 'PDF, id_auditoria y nombre son obligatorios' });
+  }
+  const auditorias = await listRows('auditorias');
+  const auditoria = auditorias.find(elemento => Number(elemento.id_auditoria) === Number(id_auditoria));
+  if (!auditoria || Number(auditoria.id_empresa_auditora) !== Number(solicitud.user.id_empresa))
+  {
+    return respuesta.status(403).json({ message: 'Auditoría inválida o sin permisos' });
+  }
+  const reportes = await listRows('reportes');
+  const idReporte = await nextId('reportes');
+  const archivo = await uploadFileToFirebase(solicitud.file.buffer, solicitud.file.originalname,
+    `reportes/${auditoria.id_auditoria}`, solicitud.file.mimetype);
+  const reporte = {
+    id_reporte: idReporte, id_auditoria: auditoria.id_auditoria, nombre,
+    tipo: 'FINAL', observaciones: observaciones || '', url: archivo.url,
+    nombre_archivo: solicitud.file.originalname, creado_por: solicitud.user.id_usuario,
+    fecha_creacion: new Date().toISOString()
+  };
+  reportes.push(reporte);
+  await saveRows('reportes', reportes);
+  respuesta.status(201).json({ message: 'Reporte subido correctamente', reporte });
+});
+
 router.get('/auditorias/:id/reporte-final', authenticate, authorize([1]), async (req, res) => {
   const idAuditoria = Number(req.params.id);
   const reportes = await listRows('reportes');

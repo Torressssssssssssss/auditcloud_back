@@ -4,6 +4,7 @@ const nodemailer = require('nodemailer');
 
 let transporter = null;
 let emailEnabled = false;
+let verificacion = Promise.resolve();
 
 if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
   console.warn('⚠️ Email Service deshabilitado: faltan EMAIL_USER o EMAIL_PASS');
@@ -22,7 +23,7 @@ if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
     });
 
     // Intentar verificar conexión, pero manejar fallos sin detener el backend
-    transporter.verify()
+    verificacion = transporter.verify()
       .then(() => {
         emailEnabled = true;
         console.log('✅ Servidor de correos listo para enviar mensajes');
@@ -44,6 +45,7 @@ const enviarNotificacionFinalizacion = async (correoCliente, nombreCliente, nomb
 };
 
 const enviarAlertaNotificacion = async (correoDestino, nombreUsuario, titulo, mensaje) => {
+  await verificacion;
   if (!emailEnabled || !transporter) {
     return false;
   }

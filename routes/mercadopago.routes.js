@@ -3,7 +3,7 @@ const express = require('express');
 const router = express.Router();
 
 const { MercadoPagoConfig, Preference, Payment } = require('mercadopago');
-const { query } = require('../utils/db');
+const { query, afterCommit } = require('../utils/db');
 const { listRows, saveRows } = require('../utils/mysqlStore');
 const { authenticate, authorize } = require('../utils/auth');
 
@@ -242,6 +242,17 @@ async function guardarDatosMercadoPago(solicitud, paymentData = {}) {
   solicitudes[idx]=updated;
   await saveRows('solicitudes_pago',solicitudes);
   await require('../services/paymentPersistence').ensurePaidAudit(updated);
+  if (Number(solicitud.id_estado) !== 2 && Number(updated.id_estado) === 2)
+  {
+    const [cliente] = await query('SELECT nombre,correo FROM usuarios WHERE id_usuario=?', [Number(updated.id_cliente)]);
+    if (cliente?.correo)
+    {
+      afterCommit(() => require('../utils/email.service').enviarAlertaNotificacion(
+        cliente.correo, cliente.nombre, 'Pago confirmado',
+        `Se confirmó el pago de la solicitud #${updated.id_solicitud}.`
+      ));
+    }
+  }
   return {solicitud:normalizarSolicitud(updated),mysqlActualizado:true};
 }
 

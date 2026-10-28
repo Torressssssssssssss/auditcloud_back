@@ -118,6 +118,19 @@ app.get('/', (req, res) => {
   res.send('AuditCloud backend MySQL está activo');
 });
 
+// Respuestas públicas para errores que alcanzan el final del pipeline.
+app.use((error, solicitud, respuesta, siguiente) =>
+{
+  if (respuesta.headersSent)
+  {
+    return siguiente(error);
+  }
+  const jsonInvalido = error.type === 'entity.parse.failed';
+  respuesta.status(jsonInvalido ? 400 : 500).json({
+    message: jsonInvalido ? 'JSON inválido' : 'Error interno del servidor'
+  });
+});
+
 if (require.main === module) app.listen(PORT, '127.0.0.1', () => {
   console.log(`🚀 Servidor backend corriendo en http://127.0.0.1:${PORT}`);
 });
