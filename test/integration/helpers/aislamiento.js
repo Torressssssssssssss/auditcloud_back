@@ -13,20 +13,20 @@ function prepararAplicacion(prueba)
   const esAplicacion = archivo => archivo === ruta.join(raiz, 'app.js') ||
     ['routes', 'utils', 'services'].some(carpeta => archivo.startsWith(ruta.join(raiz, carpeta) + ruta.sep));
   const anteriores = Object.entries(require.cache).filter(([archivo]) => esAplicacion(archivo));
-  for (const [archivo] of anteriores)
+  for(const [archivo] of anteriores)
   {
     delete require.cache[archivo];
   }
   prueba.after(() =>
   {
-    for (const archivo of Object.keys(require.cache))
+    for(const archivo of Object.keys(require.cache))
     {
-      if (esAplicacion(archivo))
+      if(esAplicacion(archivo))
       {
         delete require.cache[archivo];
       }
     }
-    for (const [archivo, modulo] of anteriores)
+    for(const [archivo, modulo] of anteriores)
     {
       require.cache[archivo] = modulo;
     }
@@ -41,7 +41,7 @@ function prepararAplicacion(prueba)
     FIREBASE_SERVICE_ACCOUNT_PATH: '', FIREBASE_STORAGE_BUCKET: 'integracion.example.test'
   });
   // El reportero nativo también usa console: no ocultar su salida.
-  for (const metodo of ['log', 'warn', 'error', 'info'])
+  for(const metodo of ['log', 'warn', 'error', 'info'])
   {
     console[metodo].mock.restore();
   }
@@ -50,7 +50,8 @@ function prepararAplicacion(prueba)
     afirmar.fail('La integración no debe abrir un servidor TCP');
   });
   const enviarCorreo = prueba.mock.fn(async () => ({ messageId: 'correo-simulado' }));
-  const transporte = { verify: prueba.mock.fn(async () => {}), sendMail: enviarCorreo };
+  const transporte = { verify: prueba.mock.fn(async () => 
+{}), sendMail: enviarCorreo };
   sustituir('nodemailer', { createTransport: prueba.mock.fn(() => transporte) });
   const fragmentos = [];
   const archivoFirebase = {
@@ -61,20 +62,26 @@ function prepararAplicacion(prueba)
         continuar();
       }
     })),
-    makePublic: prueba.mock.fn(async () => {})
+    makePublic: prueba.mock.fn(async () => 
+{})
   };
   const deposito = { name: 'integracion.example.test', file: prueba.mock.fn(() => archivoFirebase) };
   sustituir('firebase-admin', {
     credential: { cert: prueba.mock.fn(() => 'credencial-ficticia') },
-    initializeApp: prueba.mock.fn(() => {}),
+    initializeApp: prueba.mock.fn(() => 
+{}),
     storage: prueba.mock.fn(() => ({ bucket: () => deposito }))
   });
   const pago = { id: 123, status: 'approved', status_detail: 'accredited', currency_id: 'MXN',
     transaction_amount: 1000, external_reference: '7' };
   const obtenerPago = prueba.mock.fn(async () => structuredClone(pago));
   sustituir('mercadopago', {
-    MercadoPagoConfig: prueba.mock.fn(function () {}),
-    Payment: prueba.mock.fn(function () { this.get = obtenerPago; }),
+    MercadoPagoConfig: prueba.mock.fn(function () 
+{}),
+    Payment: prueba.mock.fn(function () 
+{
+ this.get = obtenerPago; 
+}),
     Preference: prueba.mock.fn(function ()
     {
       this.create = () => afirmar.fail('Preferencia no prevista');
@@ -98,48 +105,51 @@ function prepararAplicacion(prueba)
     execute(sentencia, parametros)
     {
       let coincidencia;
-      if ((coincidencia = /^SELECT \* FROM `(\w+)`$/.exec(sentencia)))
+      if((coincidencia = /^SELECT \* FROM `(\w+)`$/.exec(sentencia)))
       {
         afirmar.ok(Object.hasOwn(tablas, coincidencia[1]), sentencia);
         return structuredClone(tablas[coincidencia[1]]);
       }
-      if (sentencia === 'SELECT * FROM solicitudes_pago WHERE id_solicitud=?')
+      if(sentencia === 'SELECT * FROM solicitudes_pago WHERE id_solicitud=?')
       {
         return structuredClone(tablas.solicitudes_pago.filter(fila => fila.id_solicitud === parametros[0]));
       }
-      if (sentencia === 'SELECT nombre,correo FROM usuarios WHERE id_usuario=?')
+      if(sentencia === 'SELECT nombre,correo FROM usuarios WHERE id_usuario=?')
       {
         return structuredClone(tablas.usuarios.filter(fila => fila.id_usuario === parametros[0]));
       }
-      if ((coincidencia = /^SHOW COLUMNS FROM `(\w+)`$/.exec(sentencia)))
+      if((coincidencia = /^SHOW COLUMNS FROM `(\w+)`$/.exec(sentencia)))
       {
         return columnas[coincidencia[1]].split(' ').map(campo => ({ Field: campo, Type: 'varchar' }));
       }
-      if (sentencia.startsWith('INSERT IGNORE INTO app_sequences') || sentencia.startsWith('UPDATE app_sequences'))
+      if(sentencia.startsWith('INSERT IGNORE INTO app_sequences') || sentencia.startsWith('UPDATE app_sequences'))
       {
         return { affectedRows: 1 };
       }
-      if (sentencia.startsWith('SELECT last_id'))
+      if(sentencia.startsWith('SELECT last_id'))
       {
         return [{ last_id: 0 }];
       }
-      if ((coincidencia = /^SELECT COALESCE\(MAX\(`(\w+)`\),0\) AS maximum FROM `(\w+)`$/.exec(sentencia)))
+      if((coincidencia = /^SELECT COALESCE\(MAX\(`(\w+)`\),0\) AS maximum FROM `(\w+)`$/.exec(sentencia)))
       {
         return [{ maximum: Math.max(0, ...tablas[coincidencia[2]].map(fila => fila[coincidencia[1]])) }];
       }
-      if ((coincidencia = /^INSERT INTO `(\w+)` \(([^)]+)\) VALUES/.exec(sentencia)))
+      if((coincidencia = /^INSERT INTO `(\w+)` \(([^)]+)\) VALUES/.exec(sentencia)))
       {
         const campos = [...coincidencia[2].matchAll(/`(\w+)`/g)].map(elemento => elemento[1]);
         tablas[coincidencia[1]].push(Object.fromEntries(campos.map((campo, indice) => [campo, parametros[indice]])));
         cambios.push(sentencia);
         return { affectedRows: 1 };
       }
-      if ((coincidencia = /^UPDATE `(\w+)` SET (.+) WHERE `(\w+)`=\?/.exec(sentencia)))
+      if((coincidencia = /^UPDATE `(\w+)` SET (.+) WHERE `(\w+)`=\?/.exec(sentencia)))
       {
         const campos = [...coincidencia[2].matchAll(/`(\w+)`=\?/g)].map(elemento => elemento[1]);
         const fila = tablas[coincidencia[1]].find(elemento => elemento[coincidencia[3]] === parametros[campos.length]);
         afirmar.ok(fila, sentencia);
-        campos.forEach((campo, indice) => { fila[campo] = parametros[indice]; });
+        campos.forEach((campo, indice) => 
+{
+ fila[campo] = parametros[indice]; 
+});
         cambios.push(sentencia);
         return { affectedRows: 1 };
       }
@@ -156,7 +166,8 @@ async function solicitar(aplicacion, metodo, destino, { token, cuerpo, contenido
 {
   const fragmentos = [];
   const flujo = new FlujoDoble({
-    read() {},
+    read() 
+{},
     write(fragmento, codificacion, continuar)
     {
       fragmentos.push(Buffer.from(fragmento));
@@ -170,12 +181,12 @@ async function solicitar(aplicacion, metodo, destino, { token, cuerpo, contenido
   solicitud.method = metodo;
   solicitud.url = destino;
   solicitud.headers = { host: 'integracion.test', connection: 'close' };
-  if (token)
+  if(token)
   {
     solicitud.headers.authorization = `Bearer ${token}`;
   }
   const datos = contenido === undefined ? (cuerpo === undefined ? null : Buffer.from(JSON.stringify(cuerpo))) : Buffer.from(contenido);
-  if (datos)
+  if(datos)
   {
     solicitud.headers['content-type'] = tipo;
     solicitud.headers['content-length'] = String(datos.length);
@@ -200,12 +211,12 @@ async function solicitar(aplicacion, metodo, destino, { token, cuerpo, contenido
           resolver({ estado: respuesta.statusCode, cuerpo: tipoRespuesta.includes('application/json') ? JSON.parse(texto) : texto,
             texto, tipo: tipoRespuesta });
         }
-        catch (error)
+        catch(error)
         {
           rechazar(error);
         }
       });
-      if (datos)
+      if(datos)
       {
         solicitud.push(datos);
       }

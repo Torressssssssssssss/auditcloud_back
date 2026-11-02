@@ -7,43 +7,54 @@ const { enviarAlertaNotificacion } = require('./email.service');
 const dataDir = path.join(__dirname, '..', 'data');
 
 // Crear carpeta data si no existe
-if (!fs.existsSync(dataDir)) {
+if(!fs.existsSync(dataDir)) 
+{
   fs.mkdirSync(dataDir);
 }
 
 // Leer JSON; crea archivo vacio si no existe
-const readJson = async (filename) => {
+const readJson = async (filename) => 
+{
   const filePath = path.join(dataDir, filename);
-  try {
-    if (!fs.existsSync(filePath)) {
+  try 
+{
+    if(!fs.existsSync(filePath)) 
+{
       // Crear archivo vacio
       await fs.promises.writeFile(filePath, '[]', 'utf8');
       return [];
     }
     const rawData = await fs.promises.readFile(filePath, 'utf8');
     return JSON.parse(rawData || '[]');
-  } catch (error) {
+  }
+ catch(error) 
+{
     console.error(`Error leyendo ${filename}:`, error);
     return [];
   }
 };
 
 // Escribe JSON en texto plano
-const writeJson = async (filename, data) => {
+const writeJson = async (filename, data) => 
+{
   const filePath = path.join(dataDir, filename);
-  try {
+  try 
+{
     await fs.promises.writeFile(filePath, JSON.stringify(data, null, 2), 'utf8');
     return true;
-  } catch (error) {
+  }
+ catch(error) 
+{
     console.error(`Error escribiendo ${filename}:`, error);
     throw error;
   }
 };
 
 // Obtiene el siguiente ID
-const getNextId = async (filename, idField) => {
+const getNextId = async (filename, idField) => 
+{
   const data = await readJson(filename);
-  if (data.length === 0) return 1;
+  if(data.length === 0) return 1;
   
   // Convertir IDs a numero
   const ids = data.map(item => Number(item[idField]) || 0);
@@ -52,8 +63,10 @@ const getNextId = async (filename, idField) => {
 };
 
 // Crea notificacion y dispara correo
-async function crearNotificacion(data) {
-  try {
+async function crearNotificacion(data) 
+{
+  try 
+{
     // Guardar notificacion
     const notificaciones = await readJson('notificaciones.json');
     const idNotificacion = await getNextId('notificaciones.json', 'id_notificacion');
@@ -76,7 +89,8 @@ async function crearNotificacion(data) {
     const usuarios = await readJson('usuarios.json');
     const usuarioDestino = usuarios.find(u => u.id_usuario === Number(data.id_cliente));
 
-    if (usuarioDestino && usuarioDestino.correo) {
+    if(usuarioDestino && usuarioDestino.correo) 
+{
       console.log(`[Notificación] Enviando correo a: ${usuarioDestino.correo}`);
       
       // Enviar correo sin bloquear flujo
@@ -87,12 +101,16 @@ async function crearNotificacion(data) {
         data.mensaje
       ).catch(err => console.error('[Notificación] Error al enviar correo:', err));
       
-    } else {
+    }
+ else 
+{
       console.warn(`[Notificación] Usuario ${data.id_cliente} no encontrado o sin correo.`);
     }
 
     return nueva;
-  } catch (error) {
+  }
+ catch(error) 
+{
     console.error('Error creando notificación:', error);
     // No bloquear flujo principal
     return null; 

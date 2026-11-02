@@ -3,11 +3,14 @@ const admin = require('./firebase');
 const { Readable } = require('stream');
 
 // Sube archivo y devuelve URL publica + path
-async function uploadFileToFirebase(fileBuffer, fileName, folder = 'uploads', contentType = 'application/octet-stream') {
-  if (!admin || !admin.firebaseEnabled) {
+async function uploadFileToFirebase(fileBuffer, fileName, folder = 'uploads', contentType = 'application/octet-stream') 
+{
+  if(!admin || !admin.firebaseEnabled) 
+{
     throw new Error('Firebase Storage no está configurado');
   }
-  try {
+  try 
+{
     const bucket = admin.storage().bucket();
     
     // Generar nombre unico
@@ -39,15 +42,19 @@ async function uploadFileToFirebase(fileBuffer, fileName, folder = 'uploads', co
     bufferStream.push(null);
 
     // Subir
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve, reject) => 
+{
       bufferStream
         .pipe(stream)
-        .on('error', (error) => {
+        .on('error', (error) => 
+{
           console.error('Error subiendo archivo a Firebase:', error);
           reject(error);
         })
-        .on('finish', async () => {
-          try {
+        .on('finish', async () => 
+{
+          try 
+{
             // Asegurar acceso publico
             await file.makePublic();
             
@@ -59,32 +66,42 @@ async function uploadFileToFirebase(fileBuffer, fileName, folder = 'uploads', co
               path: filePath,
               fileName: uniqueFileName
             });
-          } catch (error) {
+          }
+ catch(error) 
+{
             console.error('Error obteniendo URL pública:', error);
             reject(error);
           }
         });
     });
-  } catch (error) {
+  }
+ catch(error) 
+{
     console.error('Error en uploadFileToFirebase:', error);
     throw error;
   }
 }
 
 // Elimina archivo en Storage
-async function deleteFileFromFirebase(filePath) {
-  if (!admin || !admin.firebaseEnabled) {
+async function deleteFileFromFirebase(filePath) 
+{
+  if(!admin || !admin.firebaseEnabled) 
+{
     throw new Error('Firebase Storage no está configurado');
   }
-  try {
+  try 
+{
     const bucket = admin.storage().bucket();
     const file = bucket.file(filePath);
     
     await file.delete();
     console.log(`Archivo ${filePath} eliminado de Firebase Storage`);
-  } catch (error) {
+  }
+ catch(error) 
+{
     // Ignorar si no existe
-    if (error.code !== 404) {
+    if(error.code !== 404) 
+{
       console.error('Error eliminando archivo de Firebase:', error);
       throw error;
     }
@@ -92,11 +109,14 @@ async function deleteFileFromFirebase(filePath) {
 }
 
 // Genera URL firmada temporal
-async function getSignedUrl(filePath, expiresIn = 3600000) {
-  if (!admin || !admin.firebaseEnabled) {
+async function getSignedUrl(filePath, expiresIn = 3600000) 
+{
+  if(!admin || !admin.firebaseEnabled) 
+{
     throw new Error('Firebase Storage no está configurado');
   }
-  try {
+  try 
+{
     const bucket = admin.storage().bucket();
     const file = bucket.file(filePath);
     
@@ -106,7 +126,9 @@ async function getSignedUrl(filePath, expiresIn = 3600000) {
     });
     
     return url;
-  } catch (error) {
+  }
+ catch(error) 
+{
     console.error('Error obteniendo URL firmada:', error);
     throw error;
   }

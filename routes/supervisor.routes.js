@@ -1,5 +1,6 @@
 // Rutas de supervisor: gestion de auditores, empresa, pagos y evidencias.
 const express = require('express');
+const bcrypt = require('bcrypt');
 const router = express.Router();
 const multer = require('multer');
 const path = require('path');
@@ -14,11 +15,15 @@ const { indexAuditoria, updateAuditoria } = require('../services/elasticsearchAu
 // Configuracion de carga de archivos
 const storage = multer.memoryStorage(); // Para Firebase
 
-const fileFilter = (req, file, cb) => {
+const fileFilter = (req, file, cb) => 
+{
   const allowedTypes = ['application/pdf'];
-  if (allowedTypes.includes(file.mimetype)) {
+  if(allowedTypes.includes(file.mimetype)) 
+{
     cb(null, true);
-  } else {
+  }
+ else 
+{
     cb(new Error('Tipo de archivo no soportado. Solo PDF.'), false);
   }
 };
@@ -32,12 +37,14 @@ const upload = multer({
 // Gestion de auditores
 
 // GET /api/supervisor/auditores/:idEmpresa
-router.get('/auditores/:idEmpresa', authenticate, authorize([1]), async (req, res) => {
+router.get('/auditores/:idEmpresa', authenticate, authorize([1]), async (req, res) => 
+{
   const idEmpresa = Number(req.params.idEmpresa);
   const page = Number(req.query.page || 1);
   const limit = Number(req.query.limit || 20);
 
-  if (req.user.id_empresa !== idEmpresa) {
+  if(req.user.id_empresa !== idEmpresa) 
+{
       return res.status(403).json({ message: 'No tienes permiso para ver auditores de otra empresa.' });
   }
 
@@ -47,37 +54,43 @@ router.get('/auditores/:idEmpresa', authenticate, authorize([1]), async (req, re
 });
 
 // POST /api/supervisor/auditores
-router.post('/auditores', authenticate, authorize([1]), async (req, res) => {
+router.post('/auditores', authenticate, authorize([1]), async (req, res) => 
+{
   const { id_empresa, nombre, correo, password } = req.body;
 
-  if (!id_empresa || !nombre || !correo || !password) {
+  if(!id_empresa || !nombre || !correo || !password) 
+{
     return res.status(400).json({ message: 'Todos los campos son obligatorios' });
   }
 
-  if (req.user.id_empresa !== Number(id_empresa)) {
+  if(req.user.id_empresa !== Number(id_empresa)) 
+{
       return res.status(403).json({ message: 'No puedes crear auditores para otra empresa.' });
   }
 
   const usuarios = await listRows('usuarios');
   const empresas = await listRows('empresas');
   const existeEmpresa = empresas.some(e => e.id_empresa === Number(id_empresa) && e.activo);
-  if (!existeEmpresa) {
+  if(!existeEmpresa) 
+{
     return res.status(404).json({ message: 'Empresa no encontrada o inactiva' });
   }
 
   const yaExiste = usuarios.find(u => u.correo === correo);
-  if (yaExiste) {
+  if(yaExiste) 
+{
     return res.status(400).json({ message: 'Ese correo ya está registrado' });
   }
 
   const idNuevo = await nextId('usuarios', 'id_usuario');
+  const contrasenaHash = await bcrypt.hash(password, 10);
 
   const nuevoAuditor = {
     id_usuario: idNuevo,
     id_empresa: Number(id_empresa),
     nombre,
     correo,
-    password_hash: password,
+    password_hash: contrasenaHash,
     id_rol: 2,
     activo: true,
     creado_en: new Date().toISOString()
@@ -101,8 +114,10 @@ router.post('/auditores', authenticate, authorize([1]), async (req, res) => {
 // Configuracion de empresa
 
 // GET /api/supervisor/empresa/:id
-router.get('/empresa/:id', authenticate, authorize([1]), async (req, res) => {
-  try {
+router.get('/empresa/:id', authenticate, authorize([1]), async (req, res) => 
+{
+  try 
+{
     const idEmpresa = Number(req.params.id);
     const idUsuario = req.user.id_usuario;
 
@@ -111,12 +126,14 @@ router.get('/empresa/:id', authenticate, authorize([1]), async (req, res) => {
     const empresaModulos = await listRows('empresa_modulos');
 
     const empresa = empresas.find(e => e.id_empresa === idEmpresa && e.id_tipo_empresa === 1 && e.activo);
-    if (!empresa) {
+    if(!empresa) 
+{
       return res.status(404).json({ message: 'Empresa auditora no encontrada' });
     }
 
     const usuario = usuarios.find(u => u.id_usuario === idUsuario && u.id_rol === 1 && u.activo);
-    if (!usuario || usuario.id_empresa !== idEmpresa) {
+    if(!usuario || usuario.id_empresa !== idEmpresa) 
+{
       return res.status(403).json({ message: 'No tienes permisos para acceder a esta empresa' });
     }
 
@@ -132,20 +149,24 @@ router.get('/empresa/:id', authenticate, authorize([1]), async (req, res) => {
       telefono: empresa.contacto_telefono || null,
       modulos: modulos
     });
-  } catch (error) {
+  }
+ catch(error) 
+{
     console.error('Error config empresa:', error);
     res.status(500).json({ message: 'Error al obtener configuración' });
   }
 });
 
 // PUT /api/supervisor/empresa/:id
-router.put('/empresa/:id', authenticate, authorize([1]), async (req, res) => {
-  try {
+router.put('/empresa/:id', authenticate, authorize([1]), async (req, res) => 
+{
+  try 
+{
     const idEmpresa = Number(req.params.id);
     const { nombre, rfc, direccion, telefono, modulos } = req.body;
     const idUsuario = req.user.id_usuario;
 
-    if (!nombre) return res.status(400).json({ message: 'nombre es obligatorio' });
+    if(!nombre) return res.status(400).json({ message: 'nombre es obligatorio' });
 
     const empresas = await listRows('empresas');
     const usuarios = await listRows('usuarios');
@@ -153,18 +174,21 @@ router.put('/empresa/:id', authenticate, authorize([1]), async (req, res) => {
     const modulosAmbientales = await listRows('modulos_ambientales');
 
     const empresaIdx = empresas.findIndex(e => e.id_empresa === idEmpresa && e.id_tipo_empresa === 1 && e.activo);
-    if (empresaIdx === -1) return res.status(404).json({ message: 'Empresa no encontrada' });
+    if(empresaIdx === -1) return res.status(404).json({ message: 'Empresa no encontrada' });
 
     const usuario = usuarios.find(u => u.id_usuario === idUsuario && u.id_rol === 1 && u.activo);
-    if (!usuario || usuario.id_empresa !== idEmpresa) {
+    if(!usuario || usuario.id_empresa !== idEmpresa) 
+{
       return res.status(403).json({ message: 'No tienes permisos para modificar esta empresa' });
     }
 
     // Validar modulos
-    if (modulos && Array.isArray(modulos)) {
-      for (const idModulo of modulos) {
+    if(modulos && Array.isArray(modulos)) 
+{
+      for(const idModulo of modulos) 
+{
         const moduloValido = modulosAmbientales.some(m => m.id_modulo === Number(idModulo));
-        if (!moduloValido) return res.status(400).json({ message: `Módulo ${idModulo} no válido` });
+        if(!moduloValido) return res.status(400).json({ message: `Módulo ${idModulo} no válido` });
       }
     }
 
@@ -179,8 +203,10 @@ router.put('/empresa/:id', authenticate, authorize([1]), async (req, res) => {
     // Guardar modulos
     const modulosActualizados = empresaModulos.filter(em => em.id_empresa !== idEmpresa);
     
-    if (modulos && Array.isArray(modulos)) {
-      for (const idModulo of modulos) {
+    if(modulos && Array.isArray(modulos)) 
+{
+      for(const idModulo of modulos) 
+{
         const idEmpresaModulo = await nextId('empresa_modulos', 'id_empresa_modulo');
         modulosActualizados.push({
           id_empresa_modulo: idEmpresaModulo,
@@ -199,7 +225,9 @@ router.put('/empresa/:id', authenticate, authorize([1]), async (req, res) => {
       rfc: empresas[empresaIdx].rfc,
       modulos: modulos.map(Number)
     });
-  } catch (error) {
+  }
+ catch(error) 
+{
     console.error('Error guardando empresa:', error);
     res.status(500).json({ message: 'Error al guardar configuración' });
   }
@@ -207,36 +235,43 @@ router.put('/empresa/:id', authenticate, authorize([1]), async (req, res) => {
 
 // Solicitudes de pago
 
-function empresaEsActiva(empresa = {}) {
+function empresaEsActiva(empresa = {}) 
+{
   return empresa.activo !== false && empresa.activa !== false;
 }
 
-async function validarDestinoSolicitudPago(idEmpresaDestino, idCliente) {
+async function validarDestinoSolicitudPago(idEmpresaDestino, idCliente) 
+{
   const [empresa] = await query('SELECT id_empresa,nombre FROM empresas WHERE id_empresa=? AND id_tipo_empresa=2 AND activo=1',[Number(idEmpresaDestino)]);
   const [usuario] = await query('SELECT id_usuario,id_empresa,nombre FROM usuarios WHERE id_usuario=? AND id_empresa=? AND id_rol=3 AND activo=1',[Number(idCliente),Number(idEmpresaDestino)]);
-  if (!empresa) return {error:'Empresa cliente no encontrada'};
-  if (!usuario) return {error:'Usuario cliente no encontrado o no pertenece a la empresa indicada'};
+  if(!empresa) return {error:'Empresa cliente no encontrada'};
+  if(!usuario) return {error:'Usuario cliente no encontrado o no pertenece a la empresa indicada'};
   return {empresa,usuario,origen:'mysql'};
 }
 
 // POST /api/supervisor/solicitudes-pago
-router.post('/solicitudes-pago', authenticate, authorize([1]), async (req, res) => {
-  try {
+router.post('/solicitudes-pago', authenticate, authorize([1]), async (req, res) => 
+{
+  try 
+{
     const { id_empresa: id_empresa_destino, id_cliente, monto, concepto } = req.body;
     const mi_id_empresa = req.user.id_empresa;
 
-    if (!monto || !concepto) {
+    if(!monto || !concepto) 
+{
       return res.status(400).json({ message: 'monto y concepto son obligatorios' });
     }
 
     const solicitudes = await listRows('solicitudes_pago');
     const idSolicitud = await nextId('solicitudes_pago', 'id_solicitud');
-    if (!id_empresa_destino || !id_cliente) {
+    if(!id_empresa_destino || !id_cliente) 
+{
       return res.status(400).json({ message: 'id_empresa e id_cliente son obligatorios' });
     }
 
     const destino = await validarDestinoSolicitudPago(id_empresa_destino, id_cliente);
-    if (destino.error) {
+    if(destino.error) 
+{
       return res.status(404).json({ message: destino.error });
     }
 
@@ -261,15 +296,19 @@ router.post('/solicitudes-pago', authenticate, authorize([1]), async (req, res) 
     
     res.status(201).json({ message: 'Solicitud creada con éxito', solicitud: nueva });
 
-  } catch (error) {
+  }
+ catch(error) 
+{
     console.error('Error creando solicitud:', error);
     res.status(500).json({ message: 'Error interno' });
   }
 });
 
 // GET /api/supervisor/solicitudes-pago
-router.get('/solicitudes-pago', authenticate, authorize([1]), async (req, res) => {
-  try {
+router.get('/solicitudes-pago', authenticate, authorize([1]), async (req, res) => 
+{
+  try 
+{
     const idEmpresaAuditora = Number(req.user.id_empresa);
     const page = Number(req.query.page || 1);
     const limit = Number(req.query.limit || 20);
@@ -278,18 +317,21 @@ router.get('/solicitudes-pago', authenticate, authorize([1]), async (req, res) =
     const empresas = await listRows('empresas');
 
     // Filtrar solicitudes de esta empresa auditora
-    const misSolicitudes = solicitudes.filter(s => {
+    const misSolicitudes = solicitudes.filter(s => 
+{
       const ownerId = s.id_empresa_auditora ? Number(s.id_empresa_auditora) : Number(s.id_empresa);
       return ownerId === idEmpresaAuditora;
     });
 
-    const data = misSolicitudes.map(s => {
+    const data = misSolicitudes.map(s => 
+{
       let nombreCliente = 'Desconocido';
       const targetId = s.id_empresa_cliente || (s.id_empresa !== idEmpresaAuditora ? s.id_empresa : null);
       
-      if (targetId) {
+      if(targetId) 
+{
         const empresa = empresas.find(e => e.id_empresa === Number(targetId));
-        if (empresa) nombreCliente = empresa.nombre;
+        if(empresa) nombreCliente = empresa.nombre;
       }
       
       return {
@@ -299,57 +341,69 @@ router.get('/solicitudes-pago', authenticate, authorize([1]), async (req, res) =
       };
     });
 
-    data.sort((a, b) => {
-      if (a.id_estado === b.id_estado) return new Date(b.creado_en) - new Date(a.creado_en);
+    data.sort((a, b) => 
+{
+      if(a.id_estado === b.id_estado) return new Date(b.creado_en) - new Date(a.creado_en);
       return a.id_estado - b.id_estado;
     });
 
     const start = (page - 1) * limit;
     res.json({ total: data.length, page, limit, data: data.slice(start, start + limit) });
 
-  } catch (error) {
+  }
+ catch(error) 
+{
     console.error('Error obteniendo pagos:', error);
     res.status(500).json({ message: 'Error interno' });
   }
 });
 
-function estaActivo(item = {}) {
+function estaActivo(item = {}) 
+{
   return item.activo !== false && item.activa !== false;
 }
 
-function estadoOperativoCartera(solicitud, auditoria, asignacion) {
-  if (auditoria?.id_estado === 3) {
+function estadoOperativoCartera(solicitud, auditoria, asignacion) 
+{
+  if(auditoria?.id_estado === 3) 
+{
     return 'Finalizada';
   }
 
-  if (auditoria?.id_estado === 2) {
+  if(auditoria?.id_estado === 2) 
+{
     return 'Auditoría activa';
   }
 
-  if (asignacion) {
+  if(asignacion) 
+{
     return 'Auditor asignado';
   }
 
   return 'Pendiente de asignar auditor';
 }
 
-async function cargarAuditorAsignable(idAuditor, idEmpresaAuditora) {
+async function cargarAuditorAsignable(idAuditor, idEmpresaAuditora) 
+{
   const rows = await query('SELECT id_usuario,id_empresa,nombre,correo,id_rol,activo FROM usuarios WHERE id_usuario=? AND id_empresa=? AND id_rol=2 AND activo=1',[Number(idAuditor),Number(idEmpresaAuditora)]);
   return rows[0] || null;
 }
 
-async function cargarClienteEmpresaCartera(idCliente, usuarios, empresas) {
+async function cargarClienteEmpresaCartera(idCliente, usuarios, empresas) 
+{
   const usuarioCliente = usuarios.find(u=>u.id_usuario===Number(idCliente)) || null;
   const empresaCliente = empresas.find(e=>e.id_empresa===usuarioCliente?.id_empresa) || null;
   return {usuarioCliente,empresaCliente};
 }
 
-async function cargarUsuarioPorId(idUsuario) {
+async function cargarUsuarioPorId(idUsuario) 
+{
   const rows = await query('SELECT id_usuario,id_empresa,nombre,correo,id_rol,activo FROM usuarios WHERE id_usuario=?',[Number(idUsuario)]);
   return rows[0] || null;
 }
 
-function construirRegistroCartera({ solicitud, empresaCliente, usuarioCliente, auditoria, asignacion, auditor }) {
+function construirRegistroCartera({ solicitud, empresaCliente, usuarioCliente, auditoria, asignacion, auditor }) 
+{
   return {
     id_empresa: empresaCliente?.id_empresa || solicitud.id_empresa_cliente,
     nombre: empresaCliente?.nombre || 'Empresa Cliente',
@@ -379,8 +433,10 @@ function construirRegistroCartera({ solicitud, empresaCliente, usuarioCliente, a
 
 // GET /api/supervisor/clientes-cartera
 // Empresas con pagos aprobados y su siguiente paso operativo.
-router.get('/clientes-cartera', authenticate, authorize([1]), async (req, res) => {
-  try {
+router.get('/clientes-cartera', authenticate, authorize([1]), async (req, res) => 
+{
+  try 
+{
     const idEmpresaAuditora = Number(req.user.id_empresa);
     const solicitudes = await listRows('solicitudes_pago');
     const auditorias = await listRows('auditorias');
@@ -388,12 +444,14 @@ router.get('/clientes-cartera', authenticate, authorize([1]), async (req, res) =
     const usuarios = await listRows('usuarios');
     const empresas = await listRows('empresas');
 
-    const pagadas = solicitudes.filter(s => {
+    const pagadas = solicitudes.filter(s => 
+{
       const ownerId = s.id_empresa_auditora ? Number(s.id_empresa_auditora) : Number(s.id_empresa);
       return ownerId === idEmpresaAuditora && Number(s.id_estado) === 2;
     });
 
-    const registros = await Promise.all(pagadas.map(async (solicitud) => {
+    const registros = await Promise.all(pagadas.map(async (solicitud) => 
+{
       const auditoria = auditorias.find(a =>
         Number(a.id_empresa_auditora) === idEmpresaAuditora &&
         Number(a.id_solicitud_pago) === Number(solicitud.id_solicitud)
@@ -414,7 +472,9 @@ router.get('/clientes-cartera', authenticate, authorize([1]), async (req, res) =
 
     registros.sort((a, b) => new Date(b.pagada_en || 0) - new Date(a.pagada_en || 0));
     res.json(registros);
-  } catch (error) {
+  }
+ catch(error) 
+{
     console.error('Error cargando cartera de clientes:', error);
     res.status(500).json({ message: 'Error cargando cartera de clientes' });
   }
@@ -422,17 +482,21 @@ router.get('/clientes-cartera', authenticate, authorize([1]), async (req, res) =
 
 // POST /api/supervisor/solicitudes-pago/:idSolicitud/asignar-auditor
 // Crea/reusa una auditoría para una solicitud pagada y asigna auditor una sola vez.
-router.post('/solicitudes-pago/:idSolicitud/asignar-auditor', authenticate, authorize([1]), async (req, res) => {
-  try {
+router.post('/solicitudes-pago/:idSolicitud/asignar-auditor', authenticate, authorize([1]), async (req, res) => 
+{
+  try 
+{
     const idSolicitud = Number(req.params.idSolicitud);
     const idAuditor = Number(req.body.id_auditor);
     const idEmpresaAuditora = Number(req.user.id_empresa);
 
-    if (!Number.isInteger(idSolicitud) || idSolicitud <= 0) {
+    if(!Number.isInteger(idSolicitud) || idSolicitud <= 0) 
+{
       return res.status(400).json({ message: 'Solicitud inválida' });
     }
 
-    if (!Number.isInteger(idAuditor) || idAuditor <= 0) {
+    if(!Number.isInteger(idAuditor) || idAuditor <= 0) 
+{
       return res.status(400).json({ message: 'id_auditor es obligatorio' });
     }
 
@@ -444,21 +508,25 @@ router.post('/solicitudes-pago/:idSolicitud/asignar-auditor', authenticate, auth
 
     const solicitud = solicitudes.find(s => Number(s.id_solicitud) === idSolicitud);
     const ownerId = solicitud?.id_empresa_auditora ? Number(solicitud.id_empresa_auditora) : Number(solicitud?.id_empresa);
-    if (!solicitud || ownerId !== idEmpresaAuditora) {
+    if(!solicitud || ownerId !== idEmpresaAuditora) 
+{
       return res.status(404).json({ message: 'Solicitud de pago no encontrada' });
     }
 
-    if (Number(solicitud.id_estado) !== 2) {
+    if(Number(solicitud.id_estado) !== 2) 
+{
       return res.status(400).json({ message: 'La solicitud debe estar pagada antes de asignar auditor' });
     }
 
     const auditor = await cargarAuditorAsignable(idAuditor, idEmpresaAuditora);
-    if (!auditor) {
+    if(!auditor) 
+{
       return res.status(404).json({ message: 'Auditor no encontrado para esta empresa auditora' });
     }
 
     const idCliente = Number(solicitud.id_cliente);
-    if (!Number.isInteger(idCliente) || idCliente <= 0) {
+    if(!Number.isInteger(idCliente) || idCliente <= 0) 
+{
       return res.status(400).json({ message: 'La solicitud no tiene cliente relacionado' });
     }
 
@@ -467,7 +535,8 @@ router.post('/solicitudes-pago/:idSolicitud/asignar-auditor', authenticate, auth
       Number(a.id_solicitud_pago) === idSolicitud
     );
 
-    if (!auditoria) {
+    if(!auditoria) 
+{
       auditoria = {
         id_auditoria: await nextId('auditorias', 'id_auditoria'),
         id_empresa_auditora: idEmpresaAuditora,
@@ -487,8 +556,10 @@ router.post('/solicitudes-pago/:idSolicitud/asignar-auditor', authenticate, auth
     }
 
     const actuales = participantes.filter(p => Number(p.id_auditoria) === Number(auditoria.id_auditoria));
-    if (actuales.length > 0) {
-      if (actuales.length === 1 && Number(actuales[0].id_auditor) === idAuditor) {
+    if(actuales.length > 0) 
+{
+      if(actuales.length === 1 && Number(actuales[0].id_auditor) === idAuditor) 
+{
         return res.status(400).json({ message: 'Este auditor ya está asignado.' });
       }
       return res.status(409).json({ message: 'La auditoría ya tiene un auditor asignado. Usa Cambiar auditor.' });
@@ -506,19 +577,23 @@ router.post('/solicitudes-pago/:idSolicitud/asignar-auditor', authenticate, auth
       auditoria,
       participante: resultadoAsignacion.participante
     });
-  } catch (error) {
+  }
+ catch(error) 
+{
     console.error('Error asignando auditor desde solicitud:', error);
     res.status(500).json({ message: 'Error asignando auditor' });
   }
 });
 
-async function cargarClienteAuditoriaSupervisor(idCliente, usuarios, empresas) {
+async function cargarClienteAuditoriaSupervisor(idCliente, usuarios, empresas) 
+{
   const usuario = usuarios.find(u=>u.id_usuario===Number(idCliente)) || null;
   const empresa = empresas.find(e=>e.id_empresa===usuario?.id_empresa) || null;
   return {usuario,empresa,cliente:{id_usuario:Number(idCliente),nombre:usuario?.nombre || null,correo:usuario?.correo || null,nombre_empresa:empresa?.nombre || null}};
 }
 
-function normalizarTextoModulo(valor) {
+function normalizarTextoModulo(valor) 
+{
   return String(valor || '')
     .trim()
     .toLowerCase()
@@ -527,10 +602,12 @@ function normalizarTextoModulo(valor) {
     .replace(/\s+/g, ' ');
 }
 
-async function resolverIdModulo(input) {
+async function resolverIdModulo(input) 
+{
   const modulosAmbientales = await listRows('modulos_ambientales');
   const valorNumerico = Number(input);
-  if (Number.isInteger(valorNumerico) && valorNumerico > 0) {
+  if(Number.isInteger(valorNumerico) && valorNumerico > 0) 
+{
     const existe = modulosAmbientales.some(m => Number(m.id_modulo) === valorNumerico);
     return existe ? valorNumerico : null;
   }
@@ -543,19 +620,22 @@ async function resolverIdModulo(input) {
   return modulo ? Number(modulo.id_modulo) : null;
 }
 
-function modulosUnicosPorAuditoria(auditoriaModulos, idAuditoria) {
+function modulosUnicosPorAuditoria(auditoriaModulos, idAuditoria) 
+{
   const vistos = new Set();
   return auditoriaModulos
     .filter(am => Number(am.id_auditoria) === Number(idAuditoria))
     .map(am => Number(am.id_modulo))
-    .filter(idModulo => {
-      if (vistos.has(idModulo)) return false;
+    .filter(idModulo => 
+{
+      if(vistos.has(idModulo)) return false;
       vistos.add(idModulo);
       return true;
     });
 }
 
-function actualizarConversacionAuditor(conversaciones, auditoria, idAuditor, idSupervisor) {
+function actualizarConversacionAuditor(conversaciones, auditoria, idAuditor, idSupervisor) 
+{
   const idxConversacion = conversaciones.findIndex(c =>
     isAuditConversation(c) &&
     Number(c.id_auditoria) === Number(auditoria.id_auditoria) &&
@@ -564,7 +644,8 @@ function actualizarConversacionAuditor(conversaciones, auditoria, idAuditor, idS
     c.activo
   );
 
-  if (idxConversacion === -1) {
+  if(idxConversacion === -1) 
+{
     conversaciones.push({
       id_conversacion: null,
       id_cliente: auditoria.id_cliente,
@@ -588,29 +669,35 @@ function actualizarConversacionAuditor(conversaciones, auditoria, idAuditor, idS
   return 'updated';
 }
 
-function limpiarConversacionAuditor(conversaciones, idAuditoria) {
-  for (const conversacion of conversaciones) {
-    if (isAuditConversation(conversacion) && Number(conversacion.id_auditoria) === Number(idAuditoria)) {
+function limpiarConversacionAuditor(conversaciones, idAuditoria) 
+{
+  for(const conversacion of conversaciones) 
+{
+    if(isAuditConversation(conversacion) && Number(conversacion.id_auditoria) === Number(idAuditoria)) 
+{
       conversacion.id_usuario_auditor = null;
       conversacion.id_auditor = null;
     }
   }
 }
 
-async function guardarAsignacionUnicaAuditor({ idAuditoria, idAuditor, req, reemplazar = false }) {
+async function guardarAsignacionUnicaAuditor({ idAuditoria, idAuditor, req, reemplazar = false }) 
+{
   const auditorias = await listRows('auditorias');
   const participantes = await listRows('auditoria_participantes');
   const conversaciones = (await listRows('conversaciones')).map(normalizeConversation);
   const auditoria = auditorias.find(a => Number(a.id_auditoria) === Number(idAuditoria));
 
-  if (!auditoria || Number(auditoria.id_empresa_auditora) !== Number(req.user.id_empresa)) {
+  if(!auditoria || Number(auditoria.id_empresa_auditora) !== Number(req.user.id_empresa)) 
+{
     const error = new Error('Auditoría inválida o sin permisos');
     error.statusCode = 403;
     throw error;
   }
 
   const auditor = await cargarAuditorAsignable(idAuditor, req.user.id_empresa);
-  if (!auditor) {
+  if(!auditor) 
+{
     const error = new Error('Auditor no encontrado para esta empresa auditora');
     error.statusCode = 404;
     throw error;
@@ -618,13 +705,15 @@ async function guardarAsignacionUnicaAuditor({ idAuditoria, idAuditor, req, reem
 
   const actuales = participantes.filter(p => Number(p.id_auditoria) === Number(idAuditoria));
   const yaMismo = actuales.length === 1 && Number(actuales[0].id_auditor) === Number(idAuditor);
-  if (yaMismo) {
+  if(yaMismo) 
+{
     const error = new Error('Este auditor ya está asignado.');
     error.statusCode = 400;
     throw error;
   }
 
-  if (actuales.length > 0 && !reemplazar) {
+  if(actuales.length > 0 && !reemplazar) 
+{
     const error = new Error('La auditoría ya tiene un auditor asignado. Usa Cambiar auditor.');
     error.statusCode = 409;
     throw error;
@@ -641,7 +730,8 @@ async function guardarAsignacionUnicaAuditor({ idAuditoria, idAuditor, req, reem
   await saveRows('auditoria_participantes', restantes);
 
   const accionConversacion = actualizarConversacionAuditor(conversaciones, auditoria, idAuditor, req.user.id_usuario);
-  if (accionConversacion === 'created') {
+  if(accionConversacion === 'created') 
+{
     const nueva = conversaciones[conversaciones.length - 1];
     nueva.id_conversacion = await nextId('conversaciones', 'id_conversacion');
   }
@@ -650,20 +740,23 @@ async function guardarAsignacionUnicaAuditor({ idAuditoria, idAuditor, req, reem
   return { auditoria, participante: nuevaAsignacion, auditor };
 }
 
-async function quitarAsignacionAuditor({ idAuditoria, req }) {
+async function quitarAsignacionAuditor({ idAuditoria, req }) 
+{
   const auditorias = await listRows('auditorias');
   const participantes = await listRows('auditoria_participantes');
   const conversaciones = (await listRows('conversaciones')).map(normalizeConversation);
   const auditoria = auditorias.find(a => Number(a.id_auditoria) === Number(idAuditoria));
 
-  if (!auditoria || Number(auditoria.id_empresa_auditora) !== Number(req.user.id_empresa)) {
+  if(!auditoria || Number(auditoria.id_empresa_auditora) !== Number(req.user.id_empresa)) 
+{
     const error = new Error('Auditoría inválida o sin permisos');
     error.statusCode = 403;
     throw error;
   }
 
   const restantes = participantes.filter(p => Number(p.id_auditoria) !== Number(idAuditoria));
-  if (restantes.length === participantes.length) {
+  if(restantes.length === participantes.length) 
+{
     const error = new Error('La auditoría no tiene auditor asignado.');
     error.statusCode = 404;
     throw error;
@@ -679,15 +772,18 @@ async function quitarAsignacionAuditor({ idAuditoria, req }) {
 // Gestion de auditorias
 
 // GET /api/supervisor/auditorias/:idEmpresa
-router.get('/auditorias/:idEmpresa', authenticate, authorize([1]), async (req, res) => {
-  try {
+router.get('/auditorias/:idEmpresa', authenticate, authorize([1]), async (req, res) => 
+{
+  try 
+{
     const idEmpresa = Number(req.params.idEmpresa);
     const idUsuario = req.user.id_usuario;
     const page = Number(req.query.page || 1);
     const limit = Number(req.query.limit || 20);
     const idEstado = req.query.id_estado ? Number(req.query.id_estado) : null;
 
-    if (req.user.id_empresa !== idEmpresa) {
+    if(req.user.id_empresa !== idEmpresa) 
+{
       return res.status(403).json({ message: 'Acceso denegado' });
     }
 
@@ -699,11 +795,13 @@ router.get('/auditorias/:idEmpresa', authenticate, authorize([1]), async (req, r
 
     let all = auditorias.filter(a => a.id_empresa_auditora === idEmpresa);
     
-    if (idEstado) {
+    if(idEstado) 
+{
       all = all.filter(a => a.id_estado === idEstado);
     }
 
-    const auditoriasEnriquecidas = await Promise.all(all.map(async (auditoria) => {
+    const auditoriasEnriquecidas = await Promise.all(all.map(async (auditoria) => 
+{
       const datosCliente = await cargarClienteAuditoriaSupervisor(auditoria.id_cliente, usuarios, empresas);
       const estado = estados.find(e => e.id_estado === auditoria.id_estado);
       
@@ -730,25 +828,29 @@ router.get('/auditorias/:idEmpresa', authenticate, authorize([1]), async (req, r
       limit,
       data: auditoriasEnriquecidas.slice(start, start + limit)
     });
-  } catch (error) {
+  }
+ catch(error) 
+{
     console.error('Error auditorías:', error);
     res.status(500).json({ message: 'Error interno' });
   }
 });
 
 // Actualizar estado de auditoria
-router.put('/auditorias/:idAuditoria/estado', authenticate, authorize([1]), async (req, res) => {
+router.put('/auditorias/:idAuditoria/estado', authenticate, authorize([1]), async (req, res) => 
+{
   const idAuditoria = Number(req.params.idAuditoria);
   const { id_estado } = req.body;
   
-  if (!id_estado) return res.status(400).json({ message: 'Falta id_estado' });
+  if(!id_estado) return res.status(400).json({ message: 'Falta id_estado' });
 
   const auditorias = await listRows('auditorias');
   const idx = auditorias.findIndex(a => a.id_auditoria === idAuditoria);
   
-  if (idx === -1) return res.status(404).json({ message: 'Auditoría no encontrada' });
+  if(idx === -1) return res.status(404).json({ message: 'Auditoría no encontrada' });
   
-  if (auditorias[idx].id_empresa_auditora !== req.user.id_empresa) {
+  if(auditorias[idx].id_empresa_auditora !== req.user.id_empresa) 
+{
     return res.status(403).json({ message: 'No tienes permiso' });
   }
 
@@ -759,8 +861,10 @@ router.put('/auditorias/:idAuditoria/estado', authenticate, authorize([1]), asyn
   await updateAuditoria(auditorias[idx]);
 
   // Notificar al cliente
-  try {
-    if (auditorias[idx].id_cliente) {
+  try 
+{
+    if(auditorias[idx].id_cliente) 
+{
       await crearNotificacion({
         id_cliente: auditorias[idx].id_cliente,
         id_auditoria: idAuditoria,
@@ -769,74 +873,95 @@ router.put('/auditorias/:idAuditoria/estado', authenticate, authorize([1]), asyn
         mensaje: `Tu auditoría #${idAuditoria} cambió de estado.`
       });
     }
-  } catch (e) { console.error(e); }
+  }
+ catch(e) 
+{
+ console.error(e); 
+}
 
   res.json({ message: 'Estado actualizado', auditoria: auditorias[idx] });
 });
 
 // Asignar auditor
-router.post('/auditorias/:idAuditoria/asignar', authenticate, authorize([1]), async (req, res) => {
-  try {
+router.post('/auditorias/:idAuditoria/asignar', authenticate, authorize([1]), async (req, res) => 
+{
+  try 
+{
     const idAuditoria = Number(req.params.idAuditoria);
     const { id_auditor } = req.body;
 
-    if (!Number.isInteger(idAuditoria) || idAuditoria <= 0) return res.status(400).json({ message: 'Auditoría inválida' });
-    if (!id_auditor) return res.status(400).json({ message: 'Falta id_auditor' });
+    if(!Number.isInteger(idAuditoria) || idAuditoria <= 0) return res.status(400).json({ message: 'Auditoría inválida' });
+    if(!id_auditor) return res.status(400).json({ message: 'Falta id_auditor' });
 
     const resultado = await guardarAsignacionUnicaAuditor({ idAuditoria, idAuditor: Number(id_auditor), req, reemplazar: false });
     res.status(201).json({ message: 'Auditor asignado correctamente', ...resultado });
-  } catch (error) {
+  }
+ catch(error) 
+{
     res.status(error.statusCode || 500).json({ message: error.message || 'Error al asignar auditor' });
   }
 });
 
 // Cambiar auditor asignado
-router.put('/auditorias/:idAuditoria/asignar', authenticate, authorize([1]), async (req, res) => {
-  try {
+router.put('/auditorias/:idAuditoria/asignar', authenticate, authorize([1]), async (req, res) => 
+{
+  try 
+{
     const idAuditoria = Number(req.params.idAuditoria);
     const { id_auditor } = req.body;
 
-    if (!Number.isInteger(idAuditoria) || idAuditoria <= 0) return res.status(400).json({ message: 'Auditoría inválida' });
-    if (!id_auditor) return res.status(400).json({ message: 'Falta id_auditor' });
+    if(!Number.isInteger(idAuditoria) || idAuditoria <= 0) return res.status(400).json({ message: 'Auditoría inválida' });
+    if(!id_auditor) return res.status(400).json({ message: 'Falta id_auditor' });
 
     const resultado = await guardarAsignacionUnicaAuditor({ idAuditoria, idAuditor: Number(id_auditor), req, reemplazar: true });
     res.json({ message: 'Auditor cambiado correctamente', ...resultado });
-  } catch (error) {
+  }
+ catch(error) 
+{
     res.status(error.statusCode || 500).json({ message: error.message || 'Error al cambiar auditor' });
   }
 });
 
 // Quitar auditor asignado
-router.delete('/auditorias/:idAuditoria/asignar', authenticate, authorize([1]), async (req, res) => {
-  try {
+router.delete('/auditorias/:idAuditoria/asignar', authenticate, authorize([1]), async (req, res) => 
+{
+  try 
+{
     const idAuditoria = Number(req.params.idAuditoria);
-    if (!Number.isInteger(idAuditoria) || idAuditoria <= 0) return res.status(400).json({ message: 'Auditoría inválida' });
+    if(!Number.isInteger(idAuditoria) || idAuditoria <= 0) return res.status(400).json({ message: 'Auditoría inválida' });
 
     const resultado = await quitarAsignacionAuditor({ idAuditoria, req });
     res.json({ message: 'Auditor removido. La auditoría queda pendiente de asignar auditor.', ...resultado });
-  } catch (error) {
+  }
+ catch(error) 
+{
     res.status(error.statusCode || 500).json({ message: error.message || 'Error al quitar auditor' });
   }
 });
 
 // Agregar modulo a auditoria
-router.post('/auditorias/:idAuditoria/modulos', authenticate, authorize([1]), async (req, res) => {
-  try {
+router.post('/auditorias/:idAuditoria/modulos', authenticate, authorize([1]), async (req, res) => 
+{
+  try 
+{
     const idAuditoria = Number(req.params.idAuditoria);
     const moduloInput = req.body.id_modulo ?? req.body.modulo ?? req.body.nombre;
     const idModulo = await resolverIdModulo(moduloInput);
 
-    if (!Number.isInteger(idAuditoria) || idAuditoria <= 0) {
+    if(!Number.isInteger(idAuditoria) || idAuditoria <= 0) 
+{
       return res.status(400).json({ message: 'Auditoría inválida' });
     }
 
-    if (!idModulo) {
+    if(!idModulo) 
+{
       return res.status(400).json({ message: 'Módulo no válido' });
     }
 
     const auditorias = await listRows('auditorias');
     const auditoria = auditorias.find(a => Number(a.id_auditoria) === idAuditoria);
-    if (!auditoria || Number(auditoria.id_empresa_auditora) !== Number(req.user.id_empresa)) {
+    if(!auditoria || Number(auditoria.id_empresa_auditora) !== Number(req.user.id_empresa)) 
+{
       return res.status(403).json({ message: 'Auditoría inválida o sin permisos' });
     }
 
@@ -846,7 +971,8 @@ router.post('/auditorias/:idAuditoria/modulos', authenticate, authorize([1]), as
       Number(item.id_modulo) === idModulo
     );
 
-    if (yaExiste) {
+    if(yaExiste) 
+{
       return res.status(409).json({ message: 'Este módulo ya fue agregado.' });
     }
 
@@ -860,20 +986,24 @@ router.post('/auditorias/:idAuditoria/modulos', authenticate, authorize([1]), as
     am.push(nuevo);
     await saveRows('auditoria_modulos', am);
     res.status(201).json({ message: 'Módulo agregado', item: nuevo });
-  } catch (error) {
+  }
+ catch(error) 
+{
     console.error('Error agregando módulo:', error);
     res.status(500).json({ message: 'Error al agregar módulo' });
   }
 });
 
 // Obtener participantes
-router.get('/auditorias/:idAuditoria/participantes', authenticate, authorize([1]), async (req, res) => {
+router.get('/auditorias/:idAuditoria/participantes', authenticate, authorize([1]), async (req, res) => 
+{
   const idAuditoria = Number(req.params.idAuditoria);
   const participantes = await listRows('auditoria_participantes');
 
   const vistos = new Set();
   const asignaciones = participantes.filter(p => Number(p.id_auditoria) === idAuditoria && !vistos.has(Number(p.id_auditor)) && vistos.add(Number(p.id_auditor)));
-  const resultado = await Promise.all(asignaciones.map(async (a) => {
+  const resultado = await Promise.all(asignaciones.map(async (a) => 
+{
     const u = await cargarUsuarioPorId(a.id_auditor);
     return { ...(u || { id_usuario: a.id_auditor, nombre: 'Auditor' }), asignado_en: a.asignado_en };
   }));
@@ -881,7 +1011,8 @@ router.get('/auditorias/:idAuditoria/participantes', authenticate, authorize([1]
 });
 
 // Listar clientes con auditorias
-router.get('/clientes-con-auditorias', authenticate, authorize([1]), async (req, res) => {
+router.get('/clientes-con-auditorias', authenticate, authorize([1]), async (req, res) => 
+{
   const idEmpresa = req.user.id_empresa;
   const auditorias = await listRows('auditorias');
   const usuarios = await listRows('usuarios');
@@ -891,13 +1022,17 @@ router.get('/clientes-con-auditorias', authenticate, authorize([1]), async (req,
   const idsClientes = [...new Set(misAuditorias.map(a => a.id_cliente))];
 
   const resultado = [];
-  idsClientes.forEach(idC => {
+  idsClientes.forEach(idC => 
+{
     const user = usuarios.find(u => u.id_usuario === idC);
-    if(user && user.id_empresa) {
+    if(user && user.id_empresa) 
+{
         const emp = empresas.find(e => e.id_empresa === user.id_empresa);
-        if(emp) {
+        if(emp) 
+{
             const existe = resultado.find(r => r.id_empresa === emp.id_empresa);
-            if(!existe) {
+            if(!existe) 
+{
                 resultado.push({
                     ...emp,
                     contacto: user.nombre,
@@ -912,7 +1047,8 @@ router.get('/clientes-con-auditorias', authenticate, authorize([1]), async (req,
 
 // Mensajeria y chat
 
-async function cargarClienteConEmpresa(idCliente) {
+async function cargarClienteConEmpresa(idCliente) 
+{
   const usuarios = await listRows('usuarios');
   const empresas = await listRows('empresas');
 
@@ -921,7 +1057,8 @@ async function cargarClienteConEmpresa(idCliente) {
     ? empresas.find(e => e.id_empresa === Number(usuarioSql.id_empresa) && (e.activo !== false && e.activa !== false))
     : null;
 
-  if (usuarioSql && usuarioSql.id_empresa) {
+  if(usuarioSql && usuarioSql.id_empresa) 
+{
     return {
       id_usuario: usuarioSql.id_usuario,
       id_empresa: Number(usuarioSql.id_empresa),
@@ -930,7 +1067,8 @@ async function cargarClienteConEmpresa(idCliente) {
     };
   }
 
-  try {
+  try 
+{
     const rows = await query(
       `SELECT
         u.id_usuario,
@@ -945,7 +1083,8 @@ async function cargarClienteConEmpresa(idCliente) {
     );
 
     const usuarioMysql = rows[0];
-    if (usuarioMysql && usuarioMysql.id_empresa) {
+    if(usuarioMysql && usuarioMysql.id_empresa) 
+{
       return {
         id_usuario: Number(usuarioMysql.id_usuario),
         id_empresa: Number(usuarioMysql.id_empresa),
@@ -953,7 +1092,9 @@ async function cargarClienteConEmpresa(idCliente) {
         nombre_empresa: usuarioMysql.nombre_empresa || 'Empresa Cliente'
       };
     }
-  } catch (error) {
+  }
+ catch(error) 
+{
     console.error('Error consultando MySQL para completar cliente de conversación:', error?.code || error?.message || error);
   }
 
@@ -967,8 +1108,10 @@ async function cargarClienteConEmpresa(idCliente) {
 
 // GET /api/supervisor/conversaciones
 // Lista conversaciones de la empresa del supervisor
-router.get('/conversaciones', authenticate, authorize([1]), async (req, res) => {
-  try {
+router.get('/conversaciones', authenticate, authorize([1]), async (req, res) => 
+{
+  try 
+{
     const idEmpresa = req.user.id_empresa;
     
     const conversaciones = (await listRows('conversaciones')).map(normalizeConversation);
@@ -983,7 +1126,8 @@ router.get('/conversaciones', authenticate, authorize([1]), async (req, res) => 
       c.activo
     );
 
-    const listaFinal = misConversaciones.map(conv => {
+    const listaFinal = misConversaciones.map(conv => 
+{
       // Ultimo mensaje
       const msgs = mensajes.filter(m => m.id_conversacion === conv.id_conversacion);
       const ultimoMensaje = msgs.length > 0 ? msgs[msgs.length - 1] : null;
@@ -1008,8 +1152,10 @@ router.get('/conversaciones', authenticate, authorize([1]), async (req, res) => 
       };
     });
 
-    for (const item of listaFinal) {
-      if (!item.cliente.id_empresa) {
+    for(const item of listaFinal) 
+{
+      if(!item.cliente.id_empresa) 
+{
         const clienteCompleto = await cargarClienteConEmpresa(item.cliente.id_usuario);
         item.cliente = {
           ...item.cliente,
@@ -1019,27 +1165,32 @@ router.get('/conversaciones', authenticate, authorize([1]), async (req, res) => 
       }
     }
 
-    listaFinal.sort((a, b) => {
+    listaFinal.sort((a, b) => 
+{
       const fechaA = a.ultimo_mensaje ? new Date(a.ultimo_mensaje.creado_en) : new Date(a.creado_en);
       const fechaB = b.ultimo_mensaje ? new Date(b.ultimo_mensaje.creado_en) : new Date(b.creado_en);
       return fechaB - fechaA;
     });
 
     res.json(listaFinal);
-  } catch (error) {
+  }
+ catch(error) 
+{
     console.error(error);
     res.status(500).json({ message: 'Error cargando conversaciones' });
   }
 });
 
 // GET /api/supervisor/mensajes/:idConversacion
-router.get('/mensajes/:idConversacion', authenticate, authorize([1]), async (req, res) => {
+router.get('/mensajes/:idConversacion', authenticate, authorize([1]), async (req, res) => 
+{
   const idConversacion = Number(req.params.idConversacion);
   const mensajes = await listRows('mensajes');
   const conversaciones = (await listRows('conversaciones')).map(normalizeConversation);
 
   const conversacion = conversaciones.find(c => c.id_conversacion === idConversacion && c.activo);
-  if (!conversacion || !isCommercialConversation(conversacion) || conversacion.id_empresa_auditora !== req.user.id_empresa) {
+  if(!conversacion || !isCommercialConversation(conversacion) || conversacion.id_empresa_auditora !== req.user.id_empresa) 
+{
     return res.status(403).json({ message: 'No tienes permiso' });
   }
   
@@ -1050,12 +1201,14 @@ router.get('/mensajes/:idConversacion', authenticate, authorize([1]), async (req
 });
 
 // POST /api/supervisor/mensajes
-router.post('/mensajes', authenticate, authorize([1]), async (req, res) => {
-  try {
+router.post('/mensajes', authenticate, authorize([1]), async (req, res) => 
+{
+  try 
+{
     const { id_conversacion, contenido } = req.body;
     const idUsuario = req.user.id_usuario;
     
-    if (!id_conversacion || !contenido) return res.status(400).json({ message: 'Faltan datos' });
+    if(!id_conversacion || !contenido) return res.status(400).json({ message: 'Faltan datos' });
 
     const mensajes = await listRows('mensajes');
     const conversaciones = (await listRows('conversaciones')).map(normalizeConversation);
@@ -1063,11 +1216,13 @@ router.post('/mensajes', authenticate, authorize([1]), async (req, res) => {
     const empresas = await listRows('empresas');
 
     const idxConv = conversaciones.findIndex(c => c.id_conversacion === Number(id_conversacion) && c.activo);
-    if (idxConv === -1 || !isCommercialConversation(conversaciones[idxConv]) || conversaciones[idxConv].id_empresa_auditora !== req.user.id_empresa) {
+    if(idxConv === -1 || !isCommercialConversation(conversaciones[idxConv]) || conversaciones[idxConv].id_empresa_auditora !== req.user.id_empresa) 
+{
       return res.status(403).json({ message: 'Conversación no válida' });
     }
 
-    if (!conversaciones[idxConv].id_supervisor) {
+    if(!conversaciones[idxConv].id_supervisor) 
+{
       conversaciones[idxConv].id_supervisor = idUsuario;
       conversaciones[idxConv].id_usuario_supervisor = idUsuario;
     }
@@ -1089,7 +1244,8 @@ router.post('/mensajes', authenticate, authorize([1]), async (req, res) => {
     await saveRows('conversaciones', conversaciones);
 
     // Notificar cliente
-    try {
+    try 
+{
       const empresa = empresas.find(e => e.id_empresa === conversaciones[idxConv].id_empresa_auditora);
       const nombreEmpresa = empresa ? empresa.nombre : 'Empresa auditora';
       await crearNotificacion({
@@ -1099,10 +1255,16 @@ router.post('/mensajes', authenticate, authorize([1]), async (req, res) => {
         titulo: 'Nuevo mensaje',
         mensaje: `Tienes un nuevo mensaje de ${nombreEmpresa}`
       });
-    } catch (e) { console.error(e); }
+    }
+ catch(e) 
+{
+ console.error(e); 
+}
 
     res.status(201).json(nuevoMensaje);
-  } catch (error) {
+  }
+ catch(error) 
+{
     console.error('Error al enviar mensaje:', error);
     res.status(500).json({ message: 'Error al enviar mensaje' });
   }
@@ -1113,13 +1275,13 @@ router.post('/mensajes', authenticate, authorize([1]), async (req, res) => {
 router.post('/reportes', authenticate, authorize([1]), upload.single('archivo'), async (solicitud, respuesta) =>
 {
   const { id_auditoria, nombre, observaciones } = solicitud.body;
-  if (!solicitud.file || !nombre || !Number.isInteger(Number(id_auditoria)) || Number(id_auditoria) <= 0)
+  if(!solicitud.file || !nombre || !Number.isInteger(Number(id_auditoria)) || Number(id_auditoria) <= 0)
   {
     return respuesta.status(400).json({ message: 'PDF, id_auditoria y nombre son obligatorios' });
   }
   const auditorias = await listRows('auditorias');
   const auditoria = auditorias.find(elemento => Number(elemento.id_auditoria) === Number(id_auditoria));
-  if (!auditoria || Number(auditoria.id_empresa_auditora) !== Number(solicitud.user.id_empresa))
+  if(!auditoria || Number(auditoria.id_empresa_auditora) !== Number(solicitud.user.id_empresa))
   {
     return respuesta.status(403).json({ message: 'Auditoría inválida o sin permisos' });
   }
@@ -1138,7 +1300,8 @@ router.post('/reportes', authenticate, authorize([1]), upload.single('archivo'),
   respuesta.status(201).json({ message: 'Reporte subido correctamente', reporte });
 });
 
-router.get('/auditorias/:id/reporte-final', authenticate, authorize([1]), async (req, res) => {
+router.get('/auditorias/:id/reporte-final', authenticate, authorize([1]), async (req, res) => 
+{
   const idAuditoria = Number(req.params.id);
   const reportes = await listRows('reportes');
   
@@ -1149,7 +1312,8 @@ router.get('/auditorias/:id/reporte-final', authenticate, authorize([1]), async 
   res.json(reporte);
 });
 
-router.get('/auditorias/:idAuditoria/evidencias', authenticate, authorize([1]), async (req, res) => {
+router.get('/auditorias/:idAuditoria/evidencias', authenticate, authorize([1]), async (req, res) => 
+{
   const idAuditoria = Number(req.params.idAuditoria);
   const evidencias = await listRows('evidencias');
   res.json(evidencias.filter(e => e.id_auditoria === idAuditoria));
@@ -1157,8 +1321,10 @@ router.get('/auditorias/:idAuditoria/evidencias', authenticate, authorize([1]), 
 
 // GET /api/supervisor/empresas-clientes
 // Lista empresas cliente (tipo 2)
-router.get('/empresas-clientes', authenticate, authorize([1]), async (req, res) => {
-  try {
+router.get('/empresas-clientes', authenticate, authorize([1]), async (req, res) => 
+{
+  try 
+{
     const empresas = await listRows('empresas');
     // Solo clientes activos
     const clientes = empresas.filter(e => e.id_tipo_empresa === 2 && e.activo);
@@ -1167,15 +1333,19 @@ router.get('/empresas-clientes', authenticate, authorize([1]), async (req, res) 
       id_empresa: c.id_empresa,
       nombre: c.nombre
     })));
-  } catch (error) {
+  }
+ catch(error) 
+{
     res.status(500).json({ message: 'Error cargando empresas' });
   }
 });
 
 // GET /api/supervisor/usuarios-empresa/:idEmpresa
 // Lista contactos de una empresa
-router.get('/usuarios-empresa/:idEmpresa', authenticate, authorize([1]), async (req, res) => {
-  try {
+router.get('/usuarios-empresa/:idEmpresa', authenticate, authorize([1]), async (req, res) => 
+{
+  try 
+{
     const idEmpresa = Number(req.params.idEmpresa);
     const usuarios = await listRows('usuarios');
     
@@ -1187,7 +1357,9 @@ router.get('/usuarios-empresa/:idEmpresa', authenticate, authorize([1]), async (
       nombre: u.nombre,
       correo: u.correo
     })));
-  } catch (error) {
+  }
+ catch(error) 
+{
     res.status(500).json({ message: 'Error cargando usuarios' });
   }
 });

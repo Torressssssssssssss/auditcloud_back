@@ -3,20 +3,22 @@ const router = express.Router();
 const { query } = require('../utils/db');
 const { nextId } = require('../utils/mysqlStore');
 const { authenticate } = require('../utils/auth');
-async function allowedAudit(id, user) {
+async function allowedAudit(id, user) 
+{
   const [audit] = await query(`SELECT a.* FROM auditorias a WHERE a.id_auditoria=? AND (
     (?=3 AND a.id_cliente=?) OR (?=1 AND a.id_empresa_auditora=?) OR
     (?=2 AND EXISTS(SELECT 1 FROM auditoria_participantes ap WHERE ap.id_auditoria=a.id_auditoria AND ap.id_auditor=?)))`,
   [id,user.id_rol,user.id_usuario,user.id_rol,user.id_empresa,user.id_rol,user.id_usuario]);
   return audit;
 }
-async function itemsFor(id) {
+async function itemsFor(id) 
+{
   const [audit] = await query(`SELECT a.*, ea.nombre empresa_auditora, u.nombre cliente
     FROM auditorias a
     JOIN empresas ea ON ea.id_empresa=a.id_empresa_auditora
     JOIN usuarios u ON u.id_usuario=a.id_cliente
     WHERE a.id_auditoria=?`, [id]);
-  if (!audit) return [];
+  if(!audit) return [];
   const [payment] = await query('SELECT * FROM solicitudes_pago WHERE id_solicitud=?', [audit.id_solicitud_pago]);
   const evidence = await query(`SELECT e.*,u.nombre autor FROM evidencias e JOIN usuarios u ON u.id_usuario=e.id_auditor WHERE e.id_auditoria=?`,[id]);
   const comments = await query(`SELECT c.*,u.nombre autor FROM comentarios c JOIN usuarios u ON u.id_usuario=c.id_usuario WHERE c.id_auditoria=?`,[id]);
@@ -36,9 +38,10 @@ async function itemsFor(id) {
   ];
   return items.filter(Boolean).sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
 }
-router.get('/empresa/:idEmpresa', authenticate, async(req,res)=>{
+router.get('/empresa/:idEmpresa', authenticate, async(req,res)=>
+{
   const id=Number(req.params.idEmpresa);
-  if(id!==Number(req.user.id_empresa))return res.status(403).json({message:'Acceso denegado'});
+  if(id!==Number(req.user.id_empresa)) return res.status(403).json({message:'Acceso denegado'});
   const audits=await query(`SELECT a.* FROM auditorias a JOIN usuarios u ON u.id_usuario=a.id_cliente WHERE
     (?=3 AND u.id_empresa=? AND a.id_cliente=?) OR (?=1 AND a.id_empresa_auditora=?) OR
     (?=2 AND EXISTS(SELECT 1 FROM auditoria_participantes p WHERE p.id_auditoria=a.id_auditoria AND p.id_auditor=?)) ORDER BY a.creada_en DESC`,
@@ -47,15 +50,17 @@ router.get('/empresa/:idEmpresa', authenticate, async(req,res)=>{
   for(const a of audits)result.push({id_auditoria:a.id_auditoria,fecha_creacion:a.creada_en,estado:a.id_estado,items:await itemsFor(a.id_auditoria)});
   res.json(result);
 });
-router.get('/:idAuditoria',authenticate,async(req,res)=>{
+router.get('/:idAuditoria',authenticate,async(req,res)=>
+{
   const audit=await allowedAudit(Number(req.params.idAuditoria),req.user);
-  if(!audit)return res.status(403).json({message:'Acceso denegado a esta bitácora'});
+  if(!audit) return res.status(403).json({message:'Acceso denegado a esta bitácora'});
   res.json(await itemsFor(audit.id_auditoria));
 });
-router.post('/comentarios',authenticate,async(req,res)=>{
+router.post('/comentarios',authenticate,async(req,res)=>
+{
   const id=Number(req.body.id_auditoria),mensaje=String(req.body.mensaje||'').trim();
-  if(!id||!mensaje)return res.status(400).json({message:'Faltan datos'});
-  if(!await allowedAudit(id,req.user))return res.status(403).json({message:'Acceso denegado'});
+  if(!id||!mensaje) return res.status(400).json({message:'Faltan datos'});
+  if(!await allowedAudit(id,req.user)) return res.status(403).json({message:'Acceso denegado'});
   const comment={id_comentario:await nextId('comentarios'),id_auditoria:id,id_usuario:req.user.id_usuario,mensaje,creado_en:new Date().toISOString()};
   await query('INSERT INTO comentarios (id_comentario,id_auditoria,id_usuario,mensaje,creado_en) VALUES (?,?,?,?,UTC_TIMESTAMP())',[comment.id_comentario,id,req.user.id_usuario,mensaje]);
   res.status(201).json(comment);

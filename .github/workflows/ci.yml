@@ -11,9 +11,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 1. Descarga de código fuente (5%)
       - name: Descargar código fuente del repositorio
         uses: actions/checkout@v4
 
+      # 2. Configuración del entorno y dependencias (5%)
       - name: Configurar Node.js 22
         uses: actions/setup-node@v4
         with:
@@ -23,18 +25,23 @@ jobs:
       - name: Instalar dependencias
         run: npm ci
 
+      # 3. Análisis de Vulnerabilidades (15%)
       - name: Ejecutar análisis de vulnerabilidades
-        run: npm audit --audit-level=high || true
+        run: npm audit --audit-level=high
 
+      # 4. Análisis estático de código (Linting) (15%)
       - name: Ejecutar Linting
-        run: npm run lint || echo "Linting pendiente de configurar, saltando paso temporalmente"
+        run: npm run lint
 
+      # 5. Pruebas Unitarias (15%)
       - name: Ejecutar pruebas unitarias
         run: node --test test/unit/*.test.js test/unit/**/*.test.js
 
+      # 6. Pruebas de Integración (20%)
       - name: Ejecutar pruebas de integración
         run: node --test test/integration/*.test.js
 
+      # 7. Empaquetado del proyecto (25%)
       - name: Configurar Docker Buildx
         uses: docker/setup-buildx-action@v3
         

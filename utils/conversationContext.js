@@ -1,16 +1,20 @@
-function inferConversationType(conversation = {}) {
-  if (conversation.tipo_conversacion) {
+function inferConversationType(conversation = {}) 
+{
+  if(conversation.tipo_conversacion) 
+{
     return conversation.tipo_conversacion;
   }
 
-  if (conversation.id_auditoria !== undefined && conversation.id_auditoria !== null) {
+  if(conversation.id_auditoria !== undefined && conversation.id_auditoria !== null) 
+{
     return 'AUDITORIA';
   }
 
   return 'COMERCIAL';
 }
 
-function normalizeConversation(conversation = {}) {
+function normalizeConversation(conversation = {}) 
+{
   const tipoConversacion = inferConversationType(conversation);
   const idEmpresaAuditora = conversation.id_empresa_auditora ?? conversation.id_empresa ?? null;
   const idCliente = conversation.id_cliente ?? conversation.id_usuario_cliente ?? null;
@@ -34,11 +38,13 @@ function normalizeConversation(conversation = {}) {
   };
 }
 
-function isCommercialConversation(conversation = {}) {
+function isCommercialConversation(conversation = {}) 
+{
   return inferConversationType(conversation) === 'COMERCIAL';
 }
 
-function isAuditConversation(conversation = {}) {
+function isAuditConversation(conversation = {}) 
+{
   return inferConversationType(conversation) === 'AUDITORIA';
 }
 

@@ -1,6 +1,7 @@
 // Rutas de autenticacion: login, acceso con Google y completar perfil.
 // backend/routes/auth.routes.js
 const express = require('express');
+const bcrypt = require('bcrypt');
 const router = express.Router();
 const { OAuth2Client } = require('google-auth-library');
 const googleClient = new OAuth2Client();
@@ -8,7 +9,8 @@ const { query } = require('../utils/db');
 const { listRows, saveRows, nextId } = require('../utils/mysqlStore');
 const { signToken, authenticate } = require('../utils/auth'); // Importamos las utilidades
 
-function buildLoginUser(usuario) {
+function buildLoginUser(usuario) 
+{
   return {
     id_usuario: usuario.id_usuario,
     id_empresa: usuario.id_empresa,
@@ -23,10 +25,13 @@ function buildLoginUser(usuario) {
 }
 
 // POST /api/auth/login (Login Normal)
-router.post('/login', async (req, res) => {
-  try {
+router.post('/login', async (req, res) => 
+{
+  try 
+{
     const { correo, password } = req.body;
-    if (typeof correo !== 'string' || typeof password !== 'string' || !password) {
+    if(typeof correo !== 'string' || typeof password !== 'string' || !password) 
+{
       return res.status(401).json({ message: 'Credenciales inválidas' });
     }
     const usuarios = await query(
@@ -50,9 +55,11 @@ router.post('/login', async (req, res) => {
     );
 
     const usuario = usuarios[0];
-    const passwordValido = usuario && String(password ?? '') === String(usuario.password_hash ?? '');
+    const contrasenaValida = usuario && typeof usuario.password_hash === 'string' &&
+      await bcrypt.compare(password, usuario.password_hash);
 
-    if (!usuario || !passwordValido) {
+    if(!usuario || !contrasenaValida) 
+{
       return res.status(401).json({ message: 'Credenciales inválidas' });
     }
 
@@ -61,39 +68,49 @@ router.post('/login', async (req, res) => {
       token,
       usuario: buildLoginUser(usuario)
     });
-  } catch (error) {
+  }
+ catch(error) 
+{
     console.error(error);
     res.status(500).json({ message: 'Error en el servidor' });
   }
 });
 
 // POST /api/auth/google
-router.post('/google', async (req, res) => {
-  if (process.env.GOOGLE_AUTH_ENABLED !== 'true' ||
-      !/^[a-zA-Z0-9_-]+\.apps\.googleusercontent\.com$/.test(process.env.GOOGLE_CLIENT_ID?.trim() || '')) {
+router.post('/google', async (req, res) => 
+{
+  if(process.env.GOOGLE_AUTH_ENABLED !== 'true' ||
+      !/^[a-zA-Z0-9_-]+\.apps\.googleusercontent\.com$/.test(process.env.GOOGLE_CLIENT_ID?.trim() || '')) 
+{
     return res.status(503).json({ message: 'Inicio de sesión con Google disponible próximamente' });
   }
-  try {
+  try 
+{
     console.log('[Autenticación Google] Petición recibida');
 
     const { token } = req.body;
 
-    if (!token) {
+    if(!token) 
+{
       console.error('[Autenticación Google] Error: No se recibió el campo "token" en el cuerpo de la solicitud');
       return res.status(400).json({ message: 'Token es obligatorio' });
     }
     
     let googlePayload;
-    try {
+    try 
+{
       const ticket = await googleClient.verifyIdToken({
         idToken: token,
         audience: process.env.GOOGLE_CLIENT_ID.trim()
       });
       googlePayload = ticket.getPayload();
-      if (!googlePayload?.sub || !googlePayload.email || googlePayload.email_verified !== true) {
+      if(!googlePayload?.sub || !googlePayload.email || googlePayload.email_verified !== true) 
+{
         return res.status(401).json({ message: 'Token de Google inválido' });
       }
-    } catch {
+    }
+ catch
+{
       return res.status(401).json({ message: 'Token de Google inválido' });
     }
 
@@ -103,7 +120,8 @@ router.post('/google', async (req, res) => {
     let usuario = usuarios.find(u => u.correo === email);
     
     // Si no existe, lo creamos
-    if (!usuario) {
+    if(!usuario) 
+{
       console.log('[Autenticación Google] Usuario nuevo detectado. Creando registro...');
       const idUsuario = await nextId('usuarios', 'id_usuario');
       
@@ -122,11 +140,14 @@ router.post('/google', async (req, res) => {
       usuarios.push(usuario);
       await saveRows('usuarios', usuarios);
       console.log('[Autenticación Google] Usuario nuevo creado exitosamente. ID:', usuario.id_usuario);
-    } else {
+    }
+ else 
+{
       console.log('[Autenticación Google] Usuario existente encontrado. ID:', usuario.id_usuario);
     }
 
-    if (!usuario.activo || (usuario.google_id && usuario.google_id !== sub)) {
+    if(!usuario.activo || (usuario.google_id && usuario.google_id !== sub)) 
+{
       return res.status(403).json({ message: 'Cuenta no disponible' });
     }
     const jwtToken = signToken(usuario);
@@ -137,19 +158,24 @@ router.post('/google', async (req, res) => {
       require_company_info: !usuario.id_empresa 
     });
 
-  } catch (error) {
+  }
+ catch(error) 
+{
     console.error('[Autenticación Google] Error crítico durante la autenticación:', error.message || error);
     res.status(500).json({ message: 'Error en autenticación Google' });
   }
 });
 
 // POST /api/auth/complete-profile
-router.post('/complete-profile', authenticate, async (req, res) => {
-  try {
+router.post('/complete-profile', authenticate, async (req, res) => 
+{
+  try 
+{
     const { nombre_empresa, ciudad, estado, rfc } = req.body;
     const idUsuario = req.user.id_usuario;
 
-    if (!nombre_empresa || !ciudad || !estado) {
+    if(!nombre_empresa || !ciudad || !estado) 
+{
       return res.status(400).json({ message: 'Faltan datos obligatorios' });
     }
 
@@ -179,7 +205,8 @@ router.post('/complete-profile', authenticate, async (req, res) => {
 
     // Asociar empresa al usuario
     const usuarioIdx = usuarios.findIndex(u => u.id_usuario === idUsuario);
-    if (usuarioIdx !== -1) {
+    if(usuarioIdx !== -1) 
+{
       usuarios[usuarioIdx].id_empresa = idEmpresa;
       await saveRows('usuarios', usuarios);
     }
@@ -192,7 +219,9 @@ router.post('/complete-profile', authenticate, async (req, res) => {
       id_empresa: idEmpresa
     });
 
-  } catch (error) {
+  }
+ catch(error) 
+{
     console.error(error);
     res.status(500).json({ message: 'Error completando perfil' });
   }

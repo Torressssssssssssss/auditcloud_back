@@ -6,8 +6,10 @@ const {
   safeElasticOperation
 } = require('../utils/elasticsearch');
 
-function getEstadoAuditoriaNombre(idEstado) {
-  switch (Number(idEstado)) {
+function getEstadoAuditoriaNombre(idEstado) 
+{
+  switch(Number(idEstado)) 
+{
     case 1:
       return 'CREADA';
     case 2:
@@ -19,8 +21,10 @@ function getEstadoAuditoriaNombre(idEstado) {
   }
 }
 
-function toNumberOrNull(value) {
-  if (value === undefined || value === null || value === '') {
+function toNumberOrNull(value) 
+{
+  if(value === undefined || value === null || value === '') 
+{
     return null;
   }
 
@@ -28,7 +32,8 @@ function toNumberOrNull(value) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-function buildAuditoriaDocument(auditoria = {}) {
+function buildAuditoriaDocument(auditoria = {}) 
+{
   const idEstado = toNumberOrNull(auditoria.id_estado) || 0;
   const estadoNombre = getEstadoAuditoriaNombre(idEstado);
 
@@ -46,15 +51,18 @@ function buildAuditoriaDocument(auditoria = {}) {
     estado_actualizado_en: auditoria.estado_actualizado_en || new Date().toISOString()
   };
 
-  if (auditoria.id_empresa_cliente !== undefined) {
+  if(auditoria.id_empresa_cliente !== undefined) 
+{
     document.id_empresa_cliente = toNumberOrNull(auditoria.id_empresa_cliente);
   }
 
-  if (auditoria.objetivo !== undefined) {
+  if(auditoria.objetivo !== undefined) 
+{
     document.objetivo = auditoria.objetivo || null;
   }
 
-  if (auditoria.activo !== undefined) {
+  if(auditoria.activo !== undefined) 
+{
     document.activo = Boolean(auditoria.activo);
   }
 
@@ -62,12 +70,15 @@ function buildAuditoriaDocument(auditoria = {}) {
 }
 
 
-async function ensureAuditoriasIndex() {
-  return safeElasticOperation('ensureAuditoriasIndex', async (client) => {
+async function ensureAuditoriasIndex() 
+{
+  return safeElasticOperation('ensureAuditoriasIndex', async (client) => 
+{
     const index = getAuditoriasIndex();
     const exists = await client.indices.exists({ index });
 
-    if (!exists) {
+    if(!exists) 
+{
       return client.indices.create({
         index,
         mappings: {
@@ -103,18 +114,22 @@ async function ensureAuditoriasIndex() {
   });
 }
 
-async function indexAuditoria(auditoria) {
+async function indexAuditoria(auditoria) 
+{
   const { transactionContext, afterCommit } = require('../utils/db');
-  if (transactionContext.getStore()) {
+  if(transactionContext.getStore()) 
+{
     const copy = {...auditoria};
     afterCommit(() => indexAuditoriaNow(copy));
     return { deferred: true };
   }
   return indexAuditoriaNow(auditoria);
 }
-async function indexAuditoriaNow(auditoria) {
+async function indexAuditoriaNow(auditoria) 
+{
   const document = buildAuditoriaDocument(auditoria);
-  if (!document.id_auditoria) {
+  if(!document.id_auditoria) 
+{
     return { enabled: isElasticsearchEnabled(), ok: false, skipped: true };
   }
 
@@ -130,11 +145,13 @@ async function indexAuditoriaNow(auditoria) {
   );
 }
 
-async function updateAuditoria(auditoria) {
+async function updateAuditoria(auditoria) 
+{
   return indexAuditoria(auditoria);
 }
 
-async function updateEstadoAuditoria(idAuditoria, idEstado) {
+async function updateEstadoAuditoria(idAuditoria, idEstado) 
+{
   const estadoNombre = getEstadoAuditoriaNombre(idEstado);
   const estadoActualizadoEn = new Date().toISOString();
 
@@ -156,15 +173,21 @@ async function updateEstadoAuditoria(idAuditoria, idEstado) {
   );
 }
 
-async function deleteAuditoria(idAuditoria) {
-  return safeElasticOperation('deleteAuditoria', async (client) => {
-    try {
+async function deleteAuditoria(idAuditoria) 
+{
+  return safeElasticOperation('deleteAuditoria', async (client) => 
+{
+    try 
+{
       return await client.delete({
         index: getAuditoriasIndex(),
         id: String(idAuditoria)
       });
-    } catch (error) {
-      if (error?.meta?.statusCode === 404) {
+    }
+ catch(error) 
+{
+      if(error?.meta?.statusCode === 404) 
+{
         return { notFound: true };
       }
       throw error;
@@ -172,8 +195,10 @@ async function deleteAuditoria(idAuditoria) {
   });
 }
 
-async function pingElasticsearch() {
-  if (!isElasticsearchEnabled()) {
+async function pingElasticsearch() 
+{
+  if(!isElasticsearchEnabled()) 
+{
     return {
       enabled: false,
       node: getElasticsearchNode(),
@@ -182,7 +207,8 @@ async function pingElasticsearch() {
     };
   }
 
-  try {
+  try 
+{
     await getElasticsearchClient().ping();
     return {
       enabled: true,
@@ -190,7 +216,9 @@ async function pingElasticsearch() {
       index: getAuditoriasIndex(),
       connected: true
     };
-  } catch (error) {
+  }
+ catch(error) 
+{
     console.warn('[Elasticsearch] ping fallo:', {
       message: error?.message,
       statusCode: error?.meta?.statusCode

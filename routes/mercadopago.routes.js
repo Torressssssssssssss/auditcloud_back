@@ -7,20 +7,24 @@ const { query, afterCommit } = require('../utils/db');
 const { listRows, saveRows } = require('../utils/mysqlStore');
 const { authenticate, authorize } = require('../utils/auth');
 
-function getMercadoPagoAccessToken() {
+function getMercadoPagoAccessToken() 
+{
   return String(process.env.MERCADOPAGO_ACCESS_TOKEN || '').trim();
 }
 
-function getFrontendUrl() {
+function getFrontendUrl() 
+{
   return String(process.env.FRONTEND_URL || 'http://localhost:4200')
     .trim()
     .replace(/^['"]|['"]$/g, '')
     .replace(/\/$/, '');
 }
 
-function getMercadoPagoClient() {
+function getMercadoPagoClient() 
+{
   const accessToken = getMercadoPagoAccessToken();
-  if (!accessToken) {
+  if(!accessToken) 
+{
     const error = new Error('Mercado Pago no esta configurado en el servidor');
     error.statusCode = 500;
     throw error;
@@ -29,15 +33,18 @@ function getMercadoPagoClient() {
   return new MercadoPagoConfig({ accessToken });
 }
 
-function getPreferenceClient() {
+function getPreferenceClient() 
+{
   return new Preference(getMercadoPagoClient());
 }
 
-function getPaymentClient() {
+function getPaymentClient() 
+{
   return new Payment(getMercadoPagoClient());
 }
 
-function construirBackUrls(baseUrl) {
+function construirBackUrls(baseUrl) 
+{
   const fallback = 'http://localhost:4200';
   const base = String(baseUrl || fallback).trim().replace(/\/$/, '') || fallback;
 
@@ -48,26 +55,35 @@ function construirBackUrls(baseUrl) {
   };
 }
 
-function esLocalhost(baseUrl) {
-  try {
+function esLocalhost(baseUrl) 
+{
+  try 
+{
     const parsed = new URL(baseUrl);
     const host = String(parsed.hostname || '').toLowerCase();
     return host === 'localhost' || host === '127.0.0.1' || host === '::1';
-  } catch {
+  }
+ catch
+{
     return true;
   }
 }
 
-function permiteAutoReturn(baseUrl) {
-  try {
+function permiteAutoReturn(baseUrl) 
+{
+  try 
+{
     const parsed = new URL(baseUrl);
     return parsed.protocol === 'https:' && !esLocalhost(baseUrl);
-  } catch {
+  }
+ catch
+{
     return false;
   }
 }
 
-function normalizarSolicitud(solicitud = {}) {
+function normalizarSolicitud(solicitud = {}) 
+{
   return {
     ...solicitud,
     id_solicitud: Number(solicitud.id_solicitud),
@@ -80,9 +96,11 @@ function normalizarSolicitud(solicitud = {}) {
   };
 }
 
-function esSolicitudPendiente(solicitud = {}) {
+function esSolicitudPendiente(solicitud = {}) 
+{
   const estadoNumerico = Number(solicitud.id_estado);
-  if (estadoNumerico === 1) {
+  if(estadoNumerico === 1) 
+{
     return true;
   }
 
@@ -90,26 +108,31 @@ function esSolicitudPendiente(solicitud = {}) {
   return estadoTexto === 'pendiente';
 }
 
-function obtenerIdSolicitudDesdeBody(body = {}) {
+function obtenerIdSolicitudDesdeBody(body = {}) 
+{
   return body.id_solicitud_pago || body.id_solicitud || body.idSolicitudPago || body.idSolicitud;
 }
 
-function validarMonto(solicitud) {
+function validarMonto(solicitud) 
+{
   const monto = Number(solicitud.monto);
   return Number.isFinite(monto) && monto > 0;
 }
 
-function montosCoinciden(a, b) {
+function montosCoinciden(a, b) 
+{
   const montoA = Number(a);
   const montoB = Number(b);
-  if (!Number.isFinite(montoA) || !Number.isFinite(montoB)) {
+  if(!Number.isFinite(montoA) || !Number.isFinite(montoB)) 
+{
     return false;
   }
 
   return Math.abs(montoA - montoB) < 0.01;
 }
 
-function sanitizeMercadoPagoError(error) {
+function sanitizeMercadoPagoError(error) 
+{
   return {
     message: error?.message || 'Error de Mercado Pago',
     status: error?.status || error?.statusCode || error?.cause?.status,
@@ -119,14 +142,16 @@ function sanitizeMercadoPagoError(error) {
   };
 }
 
-async function obtenerSolicitudPago(idSolicitud) {
+async function obtenerSolicitudPago(idSolicitud) 
+{
   const id = Number(idSolicitud);
-  if (!Number.isInteger(id) || id <= 0) return null;
+  if(!Number.isInteger(id) || id <= 0) return null;
   const [row] = await query('SELECT * FROM solicitudes_pago WHERE id_solicitud=?',[id]);
   return row ? {fuente:'mysql',solicitud:normalizarSolicitud(row)} : null;
 }
 
-function construirDatosMercadoPago(paymentData = {}) {
+function construirDatosMercadoPago(paymentData = {}) 
+{
   return {
     mercadopago_payment_id: paymentData?.id ? String(paymentData.id) : null,
     id_pago_mercadopago: paymentData?.id ? String(paymentData.id) : null,
@@ -143,12 +168,14 @@ function construirDatosMercadoPago(paymentData = {}) {
   };
 }
 
-function obtenerIdNumerico(candidato) {
+function obtenerIdNumerico(candidato) 
+{
   const id = Number(candidato);
   return Number.isInteger(id) && id > 0 ? id : null;
 }
 
-function obtenerIdsSolicitudDesdeMetadata(paymentData = {}) {
+function obtenerIdsSolicitudDesdeMetadata(paymentData = {}) 
+{
   const metadata = paymentData?.metadata || {};
   return [
     metadata.id_solicitud_pago,
@@ -160,12 +187,15 @@ function obtenerIdsSolicitudDesdeMetadata(paymentData = {}) {
     .filter(Boolean);
 }
 
-function obtenerPreferenceIdDesdePayment(paymentData = {}) {
+function obtenerPreferenceIdDesdePayment(paymentData = {}) 
+{
   return paymentData?.preference_id || paymentData?.order?.id || null;
 }
 
-function buscarSqlPorIdMercadoPago(solicitudes, paymentId) {
-  if (!paymentId) {
+function buscarSqlPorIdMercadoPago(solicitudes, paymentId) 
+{
+  if(!paymentId) 
+{
     return null;
   }
 
@@ -175,24 +205,29 @@ function buscarSqlPorIdMercadoPago(solicitudes, paymentId) {
   )) || null;
 }
 
-function buscarSqlPorPreferenceId(solicitudes, preferenceId) {
-  if (!preferenceId) {
+function buscarSqlPorPreferenceId(solicitudes, preferenceId) 
+{
+  if(!preferenceId) 
+{
     return null;
   }
 
   return solicitudes.find(s => String(s.id_preferencia || s.preference_id || '') === String(preferenceId)) || null;
 }
 
-async function buscarSolicitudPorIdConMonto(idSolicitud, montoPago, match) {
+async function buscarSolicitudPorIdConMonto(idSolicitud, montoPago, match) 
+{
   const resultado = await obtenerSolicitudPago(idSolicitud);
-  if (resultado && montosCoinciden(resultado.solicitud.monto, montoPago)) {
+  if(resultado && montosCoinciden(resultado.solicitud.monto, montoPago)) 
+{
     return { ...resultado, match: `${resultado.fuente}_${match}` };
   }
 
   return null;
 }
 
-async function buscarSolicitudPorMercadoPago(paymentData = {}) {
+async function buscarSolicitudPorMercadoPago(paymentData = {}) 
+{
   const montoPago = Number(paymentData?.transaction_amount);
   const paymentId = paymentData?.id ? String(paymentData.id) : null;
   const preferenceId = obtenerPreferenceIdDesdePayment(paymentData);
@@ -201,25 +236,31 @@ async function buscarSolicitudPorMercadoPago(paymentData = {}) {
   const solicitudes = await listRows('solicitudes_pago');
 
   const solicitudPorPaymentId = buscarSqlPorIdMercadoPago(solicitudes, paymentId);
-  if (solicitudPorPaymentId && montosCoinciden(solicitudPorPaymentId.monto, montoPago)) {
+  if(solicitudPorPaymentId && montosCoinciden(solicitudPorPaymentId.monto, montoPago)) 
+{
     return { fuente: 'mysql', solicitud: normalizarSolicitud(solicitudPorPaymentId), match: 'mysql_payment_id' };
   }
 
   const solicitudPorPreferencia = buscarSqlPorPreferenceId(solicitudes, preferenceId);
-  if (solicitudPorPreferencia && montosCoinciden(solicitudPorPreferencia.monto, montoPago)) {
+  if(solicitudPorPreferencia && montosCoinciden(solicitudPorPreferencia.monto, montoPago)) 
+{
     return { fuente: 'mysql', solicitud: normalizarSolicitud(solicitudPorPreferencia), match: 'mysql_preference_id' };
   }
 
-  if (externalReferenceId) {
+  if(externalReferenceId) 
+{
     const resultado = await buscarSolicitudPorIdConMonto(externalReferenceId, montoPago, 'external_reference');
-    if (resultado) {
+    if(resultado) 
+{
       return resultado;
     }
   }
 
-  for (const metadataId of metadataIds) {
+  for(const metadataId of metadataIds) 
+{
     const resultado = await buscarSolicitudPorIdConMonto(metadataId, montoPago, 'metadata_id');
-    if (resultado) {
+    if(resultado) 
+{
       return resultado;
     }
   }
@@ -227,13 +268,16 @@ async function buscarSolicitudPorMercadoPago(paymentData = {}) {
   return null;
 }
 
-async function guardarDatosMercadoPago(solicitud, paymentData = {}) {
+async function guardarDatosMercadoPago(solicitud, paymentData = {}) 
+{
   const solicitudes = await listRows('solicitudes_pago');
   const idx = solicitudes.findIndex(s=>s.id_solicitud===Number(solicitud.id_solicitud));
-  if (idx === -1) throw new Error('Solicitud no encontrada');
+  if(idx === -1) throw new Error('Solicitud no encontrada');
   const updated = {...solicitudes[idx],...construirDatosMercadoPago(paymentData)};
-  if (paymentData.status === 'approved') {
-    if (!montosCoinciden(updated.monto,paymentData.transaction_amount) || paymentData.currency_id !== 'MXN') {
+  if(paymentData.status === 'approved') 
+{
+    if(!montosCoinciden(updated.monto,paymentData.transaction_amount) || paymentData.currency_id !== 'MXN') 
+{
       throw new Error('Monto o moneda de pago no coincide');
     }
     updated.id_estado=2;
@@ -242,10 +286,10 @@ async function guardarDatosMercadoPago(solicitud, paymentData = {}) {
   solicitudes[idx]=updated;
   await saveRows('solicitudes_pago',solicitudes);
   await require('../services/paymentPersistence').ensurePaidAudit(updated);
-  if (Number(solicitud.id_estado) !== 2 && Number(updated.id_estado) === 2)
+  if(Number(solicitud.id_estado) !== 2 && Number(updated.id_estado) === 2)
   {
     const [cliente] = await query('SELECT nombre,correo FROM usuarios WHERE id_usuario=?', [Number(updated.id_cliente)]);
-    if (cliente?.correo)
+    if(cliente?.correo)
     {
       afterCommit(() => require('../utils/email.service').enviarAlertaNotificacion(
         cliente.correo, cliente.nombre, 'Pago confirmado',
@@ -256,12 +300,14 @@ async function guardarDatosMercadoPago(solicitud, paymentData = {}) {
   return {solicitud:normalizarSolicitud(updated),mysqlActualizado:true};
 }
 
-async function guardarPreferenciaSolicitud(idSolicitud, data = {}) {
+async function guardarPreferenciaSolicitud(idSolicitud, data = {}) 
+{
   const idBuscado = Number(idSolicitud);
   const solicitudes = await listRows('solicitudes_pago');
   const idx = solicitudes.findIndex(s => Number(s.id_solicitud) === idBuscado);
 
-  if (idx !== -1) {
+  if(idx !== -1) 
+{
     solicitudes[idx] = {
       ...solicitudes[idx],
       id_preferencia: data.id || solicitudes[idx].id_preferencia || null,
@@ -272,7 +318,8 @@ async function guardarPreferenciaSolicitud(idSolicitud, data = {}) {
   }
 }
 
-async function procesarPagoMercadoPago(paymentOrId) {
+async function procesarPagoMercadoPago(paymentOrId) 
+{
   const paymentData = typeof paymentOrId === 'object' && paymentOrId !== null
     ? paymentOrId
     : await obtenerPaymentMercadoPago(paymentOrId);
@@ -282,7 +329,8 @@ async function procesarPagoMercadoPago(paymentOrId) {
   const statusDetail = paymentData?.status_detail || null;
   const resultadoSolicitud = await buscarSolicitudPorMercadoPago(paymentData);
 
-  if (!resultadoSolicitud) {
+  if(!resultadoSolicitud) 
+{
     return {
       procesado: false,
       payment: paymentData,
@@ -313,7 +361,8 @@ async function procesarPagoMercadoPago(paymentOrId) {
   };
 }
 
-function extraerPaymentIdMercadoPago(req) {
+function extraerPaymentIdMercadoPago(req) 
+{
   const candidatos = [
     req.query?.['data.id'],
     req.body?.data?.id,
@@ -323,16 +372,20 @@ function extraerPaymentIdMercadoPago(req) {
     req.body?.payment_id
   ];
 
-  for (const candidato of candidatos) {
-    if (candidato) {
+  for(const candidato of candidatos) 
+{
+    if(candidato) 
+{
       return String(candidato);
     }
   }
 
   const resource = req.body?.resource || req.query?.resource;
-  if (resource) {
+  if(resource) 
+{
     const match = String(resource).match(/\/payments\/(\d+)/);
-    if (match) {
+    if(match) 
+{
       return match[1];
     }
   }
@@ -340,34 +393,41 @@ function extraerPaymentIdMercadoPago(req) {
   return null;
 }
 
-function obtenerTipoWebhookMercadoPago(req) {
+function obtenerTipoWebhookMercadoPago(req) 
+{
   return req.query.type || req.body?.type || req.body?.topic || req.query.topic || req.body?.action || null;
 }
 
-function construirMensajeEstado(solicitud = {}) {
-  if (Number(solicitud.id_estado) === 2 || solicitud.mercadopago_status === 'approved') {
+function construirMensajeEstado(solicitud = {}) 
+{
+  if(Number(solicitud.id_estado) === 2 || solicitud.mercadopago_status === 'approved') 
+{
     return 'Pago confirmado.';
   }
 
-  if (solicitud.mercadopago_status === 'pending' || solicitud.mercadopago_status === 'in_process') {
+  if(solicitud.mercadopago_status === 'pending' || solicitud.mercadopago_status === 'in_process') 
+{
     return 'El pago aun esta pendiente de confirmacion.';
   }
 
-  if (['rejected', 'cancelled', 'refunded', 'charged_back'].includes(String(solicitud.mercadopago_status || ''))) {
+  if(['rejected', 'cancelled', 'refunded', 'charged_back'].includes(String(solicitud.mercadopago_status || ''))) 
+{
     return 'El pago no se completo en Mercado Pago.';
   }
 
   return 'Aun no se confirma el pago.';
 }
 
-async function validarPermisoCliente(solicitud, req) {
+async function validarPermisoCliente(solicitud, req) 
+{
   const idUsuario = Number(req.user.id_usuario);
   const idEmpresa = Number(req.user.id_empresa);
 
   return Number(solicitud.id_cliente) === idUsuario || Number(solicitud.id_empresa_cliente) === idEmpresa;
 }
 
-function construirPreferencePayload(solicitud) {
+function construirPreferencePayload(solicitud) 
+{
   const frontendUrl = getFrontendUrl();
   const backUrls = construirBackUrls(frontendUrl);
   const payload = {
@@ -388,21 +448,25 @@ function construirPreferencePayload(solicitud) {
     back_urls: backUrls
   };
 
-  if (permiteAutoReturn(frontendUrl)) {
+  if(permiteAutoReturn(frontendUrl)) 
+{
     payload.auto_return = 'approved';
   }
 
   return payload;
 }
 
-async function obtenerPaymentMercadoPago(paymentId) {
+async function obtenerPaymentMercadoPago(paymentId) 
+{
   const payment = getPaymentClient();
   return payment.get({ id: String(paymentId) });
 }
 
-async function buscarPaymentMercadoPagoPorSolicitud(solicitud) {
+async function buscarPaymentMercadoPagoPorSolicitud(solicitud) 
+{
   const accessToken = getMercadoPagoAccessToken();
-  if (!accessToken) {
+  if(!accessToken) 
+{
     return null;
   }
 
@@ -416,7 +480,8 @@ async function buscarPaymentMercadoPagoPorSolicitud(solicitud) {
     headers: { Authorization: `Bearer ${accessToken}` }
   });
 
-  if (!response.ok) {
+  if(!response.ok) 
+{
     return null;
   }
 
@@ -425,35 +490,45 @@ async function buscarPaymentMercadoPagoPorSolicitud(solicitud) {
   return pagos.find(payment => montosCoinciden(payment?.transaction_amount, solicitud.monto)) || null;
 }
 
-async function sincronizarEstadoDesdeMercadoPago(solicitud) {
-  if (Number(solicitud.id_estado) === 2) {
+async function sincronizarEstadoDesdeMercadoPago(solicitud) 
+{
+  if(Number(solicitud.id_estado) === 2) 
+{
     return solicitud;
   }
 
-  try {
+  try 
+{
     let paymentData = null;
     const paymentId = solicitud.mercadopago_payment_id || solicitud.id_pago_mercadopago;
 
-    if (paymentId) {
+    if(paymentId) 
+{
       paymentData = await obtenerPaymentMercadoPago(paymentId);
-    } else {
+    }
+ else 
+{
       paymentData = await buscarPaymentMercadoPagoPorSolicitud(solicitud);
     }
 
-    if (!paymentData) {
+    if(!paymentData) 
+{
       return solicitud;
     }
 
     const resultado = await procesarPagoMercadoPago(paymentData);
     return resultado.solicitud || solicitud;
-  } catch (error) {
+  }
+ catch(error) 
+{
     console.warn('No fue posible sincronizar estado Mercado Pago:', sanitizeMercadoPagoError(error));
     return solicitud;
   }
 }
 
 // GET /api/mercadopago/status y /api/pagos/mercadopago/status
-router.get('/status', (req, res) => {
+router.get('/status', (req, res) => 
+{
   const accessTokenConfigured = Boolean(getMercadoPagoAccessToken());
   const frontendUrlConfigured = Boolean(getFrontendUrl());
 
@@ -468,31 +543,38 @@ router.get('/status', (req, res) => {
 });
 
 // POST /api/mercadopago/preferencia y /api/pagos/mercadopago/preferencia
-router.post('/preferencia', authenticate, authorize([3]), async (req, res) => {
-  try {
+router.post('/preferencia', authenticate, authorize([3]), async (req, res) => 
+{
+  try 
+{
     const idSolicitud = obtenerIdSolicitudDesdeBody(req.body);
 
-    if (!idSolicitud) {
+    if(!idSolicitud) 
+{
       return res.status(400).json({ message: 'id_solicitud_pago o id_solicitud es obligatorio' });
     }
 
     const resultado = await obtenerSolicitudPago(idSolicitud);
-    if (!resultado) {
+    if(!resultado) 
+{
       return res.status(404).json({ message: 'Solicitud de pago no encontrada' });
     }
 
     const solicitud = resultado.solicitud;
 
-    if (!esSolicitudPendiente(solicitud)) {
+    if(!esSolicitudPendiente(solicitud)) 
+{
       return res.status(400).json({ message: 'La solicitud ya fue pagada o no esta pendiente' });
     }
 
-    if (!validarMonto(solicitud)) {
+    if(!validarMonto(solicitud)) 
+{
       return res.status(400).json({ message: 'La solicitud no tiene un monto valido para Mercado Pago' });
     }
 
     const autorizado = await validarPermisoCliente(solicitud, req);
-    if (!autorizado) {
+    if(!autorizado) 
+{
       return res.status(403).json({ message: 'No tienes permiso para pagar esta solicitud' });
     }
 
@@ -506,7 +588,9 @@ router.post('/preferencia', authenticate, authorize([3]), async (req, res) => {
       init_point: data.init_point,
       sandbox_init_point: data.sandbox_init_point
     });
-  } catch (error) {
+  }
+ catch(error) 
+{
     const safeError = sanitizeMercadoPagoError(error);
     console.error('Error creando preferencia Mercado Pago:', safeError);
     res.status(error.statusCode || error.status || 500).json({
@@ -517,7 +601,8 @@ router.post('/preferencia', authenticate, authorize([3]), async (req, res) => {
 });
 
 // POST /api/mercadopago/webhook y /api/pagos/mercadopago/webhook
-router.post('/webhook', async (req, res) => {
+router.post('/webhook', async (req, res) => 
+{
   const type = obtenerTipoWebhookMercadoPago(req);
   const paymentId = extraerPaymentIdMercadoPago(req);
 
@@ -526,8 +611,10 @@ router.post('/webhook', async (req, res) => {
     id: paymentId ? String(paymentId) : null
   });
 
-  if (paymentId) {
-    try {
+  if(paymentId) 
+{
+    try 
+{
       const resultado = await procesarPagoMercadoPago(paymentId);
       console.info('Pago Mercado Pago procesado:', {
         id: resultado.payment_id,
@@ -537,7 +624,9 @@ router.post('/webhook', async (req, res) => {
         match: resultado.match || null,
         mysqlActualizado: resultado.mysqlActualizado || false
       });
-    } catch (error) {
+    }
+ catch(error) 
+{
       console.warn('No fue posible procesar webhook Mercado Pago:', sanitizeMercadoPagoError(error));
     }
   }
@@ -546,16 +635,20 @@ router.post('/webhook', async (req, res) => {
 });
 
 // GET /api/pagos/mercadopago/estado/:id_solicitud_pago
-router.get('/estado/:id_solicitud_pago', authenticate, authorize([3]), async (req, res) => {
-  try {
+router.get('/estado/:id_solicitud_pago', authenticate, authorize([3]), async (req, res) => 
+{
+  try 
+{
     const resultado = await obtenerSolicitudPago(req.params.id_solicitud_pago);
-    if (!resultado) {
+    if(!resultado) 
+{
       return res.status(404).json({ message: 'Solicitud de pago no encontrada' });
     }
 
     let solicitud = resultado.solicitud;
     const autorizado = await validarPermisoCliente(solicitud, req);
-    if (!autorizado) {
+    if(!autorizado) 
+{
       return res.status(403).json({ message: 'No tienes permiso para consultar esta solicitud' });
     }
 
@@ -578,7 +671,9 @@ router.get('/estado/:id_solicitud_pago', authenticate, authorize([3]), async (re
       mensaje: construirMensajeEstado(solicitud),
       solicitud
     });
-  } catch (error) {
+  }
+ catch(error) 
+{
     const safeError = sanitizeMercadoPagoError(error);
     console.error('Error consultando estado Mercado Pago:', safeError);
     res.status(error.statusCode || error.status || 500).json({ message: safeError.message || 'Error al consultar estado de pago' });
@@ -586,27 +681,36 @@ router.get('/estado/:id_solicitud_pago', authenticate, authorize([3]), async (re
 });
 
 // POST /api/pagos/mercadopago/confirmar
-router.post('/confirmar', authenticate, authorize([3]), async (req, res) => {
-  try {
+router.post('/confirmar', authenticate, authorize([3]), async (req, res) => 
+{
+  try 
+{
     const { payment_id, id_solicitud, id_solicitud_pago } = req.body;
     const idSolicitud = id_solicitud || id_solicitud_pago;
 
-    if (!payment_id && !idSolicitud) {
+    if(!payment_id && !idSolicitud) 
+{
       return res.status(400).json({ message: 'payment_id o id_solicitud son obligatorios' });
     }
 
     let resultado;
-    if (payment_id) {
+    if(payment_id) 
+{
       resultado = await procesarPagoMercadoPago(payment_id);
-      if (!resultado.procesado && idSolicitud) {
+      if(!resultado.procesado && idSolicitud) 
+{
         const fallback = await obtenerSolicitudPago(idSolicitud);
-        if (fallback) {
+        if(fallback) 
+{
           resultado.solicitud = fallback.solicitud;
         }
       }
-    } else {
+    }
+ else 
+{
       const solicitudResultado = await obtenerSolicitudPago(idSolicitud);
-      if (!solicitudResultado) {
+      if(!solicitudResultado) 
+{
         return res.status(404).json({ message: 'Solicitud de pago no encontrada' });
       }
       resultado = {
@@ -619,12 +723,14 @@ router.post('/confirmar', authenticate, authorize([3]), async (req, res) => {
       };
     }
 
-    if (!resultado.solicitud) {
+    if(!resultado.solicitud) 
+{
       return res.status(404).json({ message: resultado.message || 'Solicitud de pago no encontrada' });
     }
 
     const autorizado = await validarPermisoCliente(resultado.solicitud, req);
-    if (!autorizado) {
+    if(!autorizado) 
+{
       return res.status(403).json({ message: 'No tienes permiso para confirmar esta solicitud' });
     }
 
@@ -637,7 +743,9 @@ router.post('/confirmar', authenticate, authorize([3]), async (req, res) => {
       id_preferencia: resultado.solicitud.id_preferencia || resultado.solicitud.preference_id || null,
       message: resultado.message || construirMensajeEstado(resultado.solicitud)
     });
-  } catch (error) {
+  }
+ catch(error) 
+{
     const safeError = sanitizeMercadoPagoError(error);
     console.error('Error confirmando pago Mercado Pago:', safeError);
     res.status(error.statusCode || error.status || 500).json({ message: safeError.message || 'Error al confirmar el pago en Mercado Pago' });

@@ -1,5 +1,6 @@
 // Rutas de cliente: registro, conversaciones, mensajes y acciones del cliente.
 const express = require('express');
+const bcrypt = require('bcrypt');
 const router = express.Router();
 const path = require('path');
 const fs = require('fs');
@@ -10,12 +11,15 @@ const { normalizeConversation, isCommercialConversation, isAuditConversation } =
 
 // POST /api/cliente/registro
 // Registro de nuevo cliente (no requiere autenticación)
-router.post('/registro', async (req, res) => {
-  try {
+router.post('/registro', async (req, res) => 
+{
+  try 
+{
     const { nombre, correo, password, nombre_empresa, ciudad, estado, rfc } = req.body;
 
     // Validar campos requeridos
-    if (!nombre || !correo || !password || !nombre_empresa) {
+    if(!nombre || !correo || !password || !nombre_empresa) 
+{
       return res.status(400).json({ 
         message: 'nombre, correo, password y nombre_empresa son obligatorios' 
       });
@@ -26,7 +30,8 @@ router.post('/registro', async (req, res) => {
 
     // Validar correo unico
     const correoExistente = usuarios.find(u => u.correo === correo && u.activo);
-    if (correoExistente) {
+    if(correoExistente) 
+{
       return res.status(400).json({
         message: 'El correo ya está registrado'
       });
@@ -54,12 +59,13 @@ router.post('/registro', async (req, res) => {
 
     // Crear usuario cliente
     const idUsuario = await nextId('usuarios', 'id_usuario');
+    const contrasenaHash = await bcrypt.hash(password, 10);
     const nuevoUsuario = {
       id_usuario: idUsuario,
       id_empresa: idEmpresa,
       nombre: nombre,
       correo: correo,
-      password_hash: password,
+      password_hash: contrasenaHash,
       id_rol: 3, // Rol de cliente
       activo: true,
       creado_en: new Date().toISOString()
@@ -80,7 +86,9 @@ router.post('/registro', async (req, res) => {
         correo: nuevoUsuario.correo
       }
     });
-  } catch (error) {
+  }
+ catch(error) 
+{
     console.error('Error en registro de cliente:', error);
     res.status(500).json({ 
       message: error.message || 'No se pudo registrar.' 
@@ -90,8 +98,10 @@ router.post('/registro', async (req, res) => {
 
 // GET /api/auditor/conversaciones
 // Obtiene conversaciones de clientes ASIGNADOS a este auditor
-router.get('/conversaciones', authenticate, authorize([2]), async (req, res) => {
-  try {
+router.get('/conversaciones', authenticate, authorize([2]), async (req, res) => 
+{
+  try 
+{
     const idAuditor = req.user.id_usuario;
     const idEmpresa = req.user.id_empresa;
 
@@ -123,7 +133,8 @@ router.get('/conversaciones', authenticate, authorize([2]), async (req, res) => 
     );
 
     // Enriquecer respuesta
-    const listaFinal = misConversaciones.map(conv => {
+    const listaFinal = misConversaciones.map(conv => 
+{
       const msgs = mensajes.filter(m => m.id_conversacion === conv.id_conversacion);
       const ultimoMensaje = msgs.length > 0 ? msgs[msgs.length - 1] : null;
       
@@ -144,14 +155,17 @@ router.get('/conversaciones', authenticate, authorize([2]), async (req, res) => 
       };
     });
 
-    listaFinal.sort((a, b) => {
+    listaFinal.sort((a, b) => 
+{
       const fechaA = a.ultimo_mensaje ? new Date(a.ultimo_mensaje.creado_en) : new Date(a.creado_en);
       const fechaB = b.ultimo_mensaje ? new Date(b.ultimo_mensaje.creado_en) : new Date(b.creado_en);
       return fechaB - fechaA;
     });
 
     res.json(listaFinal);
-  } catch (error) {
+  }
+ catch(error) 
+{
     console.error(error);
     res.status(500).json({ message: 'Error cargando conversaciones' });
   }
@@ -160,7 +174,8 @@ router.get('/conversaciones', authenticate, authorize([2]), async (req, res) => 
 
 // GET /api/cliente/mensajes/:idConversacion
 // Carga el historial de un chat específico
-router.get('/mensajes/:idConversacion', authenticate, authorize([3]), async (req, res) => {
+router.get('/mensajes/:idConversacion', authenticate, authorize([3]), async (req, res) => 
+{
   const idConversacion = Number(req.params.idConversacion);
   const mensajes = await listRows('mensajes');
   const conversaciones = (await listRows('conversaciones')).map(normalizeConversation);
@@ -169,15 +184,18 @@ router.get('/mensajes/:idConversacion', authenticate, authorize([3]), async (req
   const usuarios = await listRows('usuarios');
   
   const conversacion = conversaciones.find(c => c.id_conversacion === idConversacion && c.activo);
-  if (!conversacion || conversacion.id_cliente !== req.user.id_usuario) {
+  if(!conversacion || conversacion.id_cliente !== req.user.id_usuario) 
+{
     return res.status(403).json({ message: 'No tienes permiso' });
   }
 
-  if (isAuditConversation(conversacion) && conversacion.id_auditoria) {
+  if(isAuditConversation(conversacion) && conversacion.id_auditoria) 
+{
     const auditoria = auditorias.find(a => a.id_auditoria === conversacion.id_auditoria);
     const asignacion = participantes.find(p => p.id_auditoria === auditoria?.id_auditoria);
     const auditor = asignacion ? usuarios.find(u => u.id_usuario === asignacion.id_auditor) : null;
-    if (!asignacion || !auditor) {
+    if(!asignacion || !auditor) 
+{
       return res.status(404).json({ message: 'Chat de auditoría no disponible todavía' });
     }
   }
@@ -193,12 +211,14 @@ router.get('/mensajes/:idConversacion', authenticate, authorize([3]), async (req
 
 
 // POST /api/cliente/mensajes
-router.post('/mensajes', authenticate, authorize([3]), async (req, res) => {
-  try {
+router.post('/mensajes', authenticate, authorize([3]), async (req, res) => 
+{
+  try 
+{
     const { id_empresa_auditora, id_conversacion, contenido } = req.body;
     const idUsuario = req.user.id_usuario;
 
-    if (!contenido) return res.status(400).json({ message: 'Contenido obligatorio' });
+    if(!contenido) return res.status(400).json({ message: 'Contenido obligatorio' });
 
     const conversaciones = (await listRows('conversaciones')).map(normalizeConversation);
     const mensajes = await listRows('mensajes');
@@ -206,8 +226,9 @@ router.post('/mensajes', authenticate, authorize([3]), async (req, res) => {
     let conversacionId = id_conversacion;
 
     // Si no hay conversacion, crearla
-    if (!conversacionId) {
-      if (!id_empresa_auditora) return res.status(400).json({ message: 'Falta id_empresa_auditora' });
+    if(!conversacionId) 
+{
+      if(!id_empresa_auditora) return res.status(400).json({ message: 'Falta id_empresa_auditora' });
 
       // Evitar duplicados
       const existe = conversaciones.find(c => 
@@ -217,9 +238,12 @@ router.post('/mensajes', authenticate, authorize([3]), async (req, res) => {
         c.activo
       );
 
-      if (existe) {
+      if(existe) 
+{
         conversacionId = existe.id_conversacion;
-      } else {
+      }
+ else 
+{
         // Crear conversacion
         conversacionId = await nextId('conversaciones', 'id_conversacion');
         const nueva = {
@@ -242,7 +266,8 @@ router.post('/mensajes', authenticate, authorize([3]), async (req, res) => {
     }
 
     const conversacionActual = conversaciones.find(c => c.id_conversacion === Number(conversacionId) && c.activo);
-    if (!conversacionActual || conversacionActual.id_cliente !== idUsuario) {
+    if(!conversacionActual || conversacionActual.id_cliente !== idUsuario) 
+{
       return res.status(403).json({ message: 'No tienes permisos para enviar mensajes en esta conversación' });
     }
 
@@ -261,7 +286,8 @@ router.post('/mensajes', authenticate, authorize([3]), async (req, res) => {
     
     // Actualizar fecha del ultimo mensaje
     const idx = conversaciones.findIndex(c => c.id_conversacion === Number(conversacionId));
-    if(idx !== -1) {
+    if(idx !== -1) 
+{
         conversaciones[idx].ultimo_mensaje_fecha = nuevoMensaje.creado_en;
         await saveRows('conversaciones', conversaciones);
     }
@@ -270,7 +296,9 @@ router.post('/mensajes', authenticate, authorize([3]), async (req, res) => {
 
     res.status(201).json(nuevoMensaje);
 
-  } catch (error) {
+  }
+ catch(error) 
+{
     console.error(error);
     res.status(500).json({ message: 'Error interno' });
   }
@@ -279,9 +307,11 @@ router.post('/mensajes', authenticate, authorize([3]), async (req, res) => {
 
 // POST /api/cliente/conversaciones
 // Crea una conversación nueva entre cliente y empresa auditora
-router.post('/conversaciones', authenticate, authorize([3]), async (req, res) => {
+router.post('/conversaciones', authenticate, authorize([3]), async (req, res) => 
+{
   const { id_cliente, id_empresa_auditora, asunto, primer_mensaje } = req.body;
-  if (!id_cliente || !id_empresa_auditora || !asunto || !primer_mensaje) {
+  if(!id_cliente || !id_empresa_auditora || !asunto || !primer_mensaje) 
+{
     return res.status(400).json({ message: 'id_cliente, id_empresa_auditora, asunto y primer_mensaje son obligatorios' });
   }
 
@@ -289,9 +319,10 @@ router.post('/conversaciones', authenticate, authorize([3]), async (req, res) =>
   const mensajes = await listRows('mensajes');
   const empresas = await listRows('empresas');
   const empresaValida = empresas.some(e => e.id_empresa === Number(id_empresa_auditora) && (e.activo ?? e.activa));
-  if (!empresaValida) return res.status(404).json({ message: 'Empresa auditora no encontrada o inactiva' });
+  if(!empresaValida) return res.status(404).json({ message: 'Empresa auditora no encontrada o inactiva' });
 
-  if (Number(id_cliente) !== req.user.id_usuario) {
+  if(Number(id_cliente) !== req.user.id_usuario) 
+{
     return res.status(403).json({ message: 'No tienes permisos para crear una conversación para otro cliente' });
   }
 
@@ -302,7 +333,8 @@ router.post('/conversaciones', authenticate, authorize([3]), async (req, res) =>
     c.activo
   );
 
-  if (existente) {
+  if(existente) 
+{
     const idMensaje = await nextId('mensajes', 'id_mensaje');
     const mensajeInicial = {
       id_mensaje: idMensaje,
@@ -362,12 +394,15 @@ router.post('/conversaciones', authenticate, authorize([3]), async (req, res) =>
 
 
 // GET /api/cliente/conversaciones/:idCliente
-router.get('/conversaciones/:idCliente', authenticate, authorize([3]), async (req, res) => {
-  try {
+router.get('/conversaciones/:idCliente', authenticate, authorize([3]), async (req, res) => 
+{
+  try 
+{
     const idCliente = Number(req.params.idCliente);
 
     const idToken = req.user?.id_usuario || req.user?.id;
-    if (!idToken || idCliente !== idToken) {
+    if(!idToken || idCliente !== idToken) 
+{
       console.log('[cliente/conversaciones] acceso denegado por identidad del token');
       return res.status(403).json({ message: 'No tienes permisos para ver las conversaciones de otro cliente' });
     }
@@ -382,7 +417,8 @@ router.get('/conversaciones/:idCliente', authenticate, authorize([3]), async (re
     // Filtrar conversaciones de este cliente
     const misConversaciones = conversaciones.filter(c => c.id_cliente === idCliente && c.activo);
 
-    const listaFinal = misConversaciones.map(conv => {
+    const listaFinal = misConversaciones.map(conv => 
+{
       const msgsDeChat = mensajes.filter(m => m.id_conversacion === conv.id_conversacion);
       const ultimoMensaje = msgsDeChat.length > 0 ? msgsDeChat[msgsDeChat.length - 1] : null;
       const empresa = empresas.find(e => e.id_empresa === conv.id_empresa_auditora);
@@ -409,13 +445,17 @@ router.get('/conversaciones/:idCliente', authenticate, authorize([3]), async (re
     });
 
     res.json(listaFinal); // Devuelve [] si no hay datos, NO devuelve 404
-  } catch (error) {
+  }
+ catch(error) 
+{
     res.status(500).json({ message: 'Error interno' });
   }
 });
 
-router.get('/auditorias/:idCliente', authenticate, authorize([3]), async (req, res) => {
-  try {
+router.get('/auditorias/:idCliente', authenticate, authorize([3]), async (req, res) => 
+{
+  try 
+{
     const idCliente = Number(req.params.idCliente);
     
     // Leemos todas las tablas necesarias
@@ -427,7 +467,8 @@ router.get('/auditorias/:idCliente', authenticate, authorize([3]), async (req, r
     const misAuditorias = auditorias.filter(a => a.id_cliente === idCliente);
 
     // 2. Enriquecer los datos
-    const resultado = misAuditorias.map(audit => {
+    const resultado = misAuditorias.map(audit => 
+{
       // Buscar nombre de la empresa auditora
       const empresa = empresas.find(e => e.id_empresa === audit.id_empresa_auditora);
       
@@ -457,7 +498,9 @@ router.get('/auditorias/:idCliente', authenticate, authorize([3]), async (req, r
 
     res.json(resultado); // Enviamos el array directo (sin paginación compleja por ahora)
 
-  } catch (error) {
+  }
+ catch(error) 
+{
     console.error(error);
     res.status(500).json({ message: 'Error cargando auditorías' });
   }
@@ -465,21 +508,24 @@ router.get('/auditorias/:idCliente', authenticate, authorize([3]), async (req, r
 
 // --- Solicitudes de pago del cliente ---
 // GET /api/cliente/solicitudes-pago/:idCliente
-router.get('/solicitudes-pago/:idCliente', authenticate, authorize([3]), async (req, res) => {
+router.get('/solicitudes-pago/:idCliente', authenticate, authorize([3]), async (req, res) => 
+{
   const idCliente = Number(req.params.idCliente);
   const solicitudes = await listRows('solicitudes_pago');
   res.json(solicitudes.filter(s => s.id_cliente === idCliente));
 });
 // POST /api/auditor/solicitudes-pago
 // El AUDITOR (Rol 2) genera una solicitud de cobro para un cliente
-router.post('/solicitudes-pago', authenticate, authorize([2]), async (req, res) => {
+router.post('/solicitudes-pago', authenticate, authorize([2]), async (req, res) => 
+{
   const { id_cliente, monto, concepto } = req.body;
   
   // El ID de la empresa sale del usuario auditor logueado (req.user)
   // No necesitamos pedirlo en el body por seguridad
   const id_empresa_auditora = req.user.id_empresa;
 
-  if (!id_cliente || !monto || !concepto) {
+  if(!id_cliente || !monto || !concepto) 
+{
     return res.status(400).json({ message: 'id_cliente, monto y concepto son obligatorios' });
   }
 
@@ -488,7 +534,7 @@ router.post('/solicitudes-pago', authenticate, authorize([2]), async (req, res) 
 
   // Validar que el cliente exista
   const clienteValido = usuarios.some(u => u.id_usuario === Number(id_cliente) && u.id_rol === 3 && u.activo);
-  if (!clienteValido) return res.status(404).json({ message: 'Cliente no encontrado o inactivo' });
+  if(!clienteValido) return res.status(404).json({ message: 'Cliente no encontrado o inactivo' });
 
   const idSolicitud = await nextId('solicitudes_pago', 'id_solicitud');
   
@@ -512,8 +558,10 @@ router.post('/solicitudes-pago', authenticate, authorize([2]), async (req, res) 
 
 // GET /api/cliente/empresas-auditoras
 // Lista empresas auditoras activas desde MySQL.
-router.get('/empresas-auditoras', authenticate, authorize([3]), async (req, res) => {
-  try {
+router.get('/empresas-auditoras', authenticate, authorize([3]), async (req, res) => 
+{
+  try 
+{
     const rows = await query(
       `SELECT
         e.id_empresa,
@@ -542,8 +590,10 @@ router.get('/empresas-auditoras', authenticate, authorize([3]), async (req, res)
 
     const empresasMap = new Map();
 
-    for (const row of rows) {
-      if (!empresasMap.has(row.id_empresa)) {
+    for(const row of rows) 
+{
+      if(!empresasMap.has(row.id_empresa)) 
+{
         empresasMap.set(row.id_empresa, {
           id_empresa: row.id_empresa,
           nombre: row.nombre,
@@ -562,7 +612,8 @@ router.get('/empresas-auditoras', authenticate, authorize([3]), async (req, res)
         });
       }
 
-      if (row.id_modulo !== null && row.id_modulo !== undefined) {
+      if(row.id_modulo !== null && row.id_modulo !== undefined) 
+{
         const empresa = empresasMap.get(row.id_empresa);
         empresa.modulos.push({
           id_modulo: row.id_modulo,
@@ -573,7 +624,9 @@ router.get('/empresas-auditoras', authenticate, authorize([3]), async (req, res)
     }
 
     res.json(Array.from(empresasMap.values()));
-  } catch (error) {
+  }
+ catch(error) 
+{
     console.error('Error al obtener empresas auditoras:', error);
     res.status(500).json({ message: error.message || 'Error al obtener empresas auditoras' });
   }
@@ -581,8 +634,10 @@ router.get('/empresas-auditoras', authenticate, authorize([3]), async (req, res)
 
 // GET /api/cliente/empresas-auditoras/:id
 // Obtener detalle de una empresa auditora específica
-router.get('/empresas-auditoras/:id', authenticate, authorize([3]), async (req, res) => {
-  try {
+router.get('/empresas-auditoras/:id', authenticate, authorize([3]), async (req, res) => 
+{
+  try 
+{
     const idEmpresa = Number(req.params.id);
 
     const rows = await query(
@@ -610,7 +665,8 @@ router.get('/empresas-auditoras/:id', authenticate, authorize([3]), async (req, 
       [idEmpresa]
     );
 
-    if (!rows || rows.length === 0) {
+    if(!rows || rows.length === 0) 
+{
       return res.status(404).json({ message: 'Empresa auditora no encontrada' });
     }
 
@@ -618,9 +674,12 @@ router.get('/empresas-auditoras/:id', authenticate, authorize([3]), async (req, 
     const modulosIds = [];
     const modulosDetalle = [];
 
-    for (const r of rows) {
-      if (r.id_modulo !== null && r.id_modulo !== undefined) {
-        if (!modulosIds.includes(r.id_modulo)) {
+    for(const r of rows) 
+{
+      if(r.id_modulo !== null && r.id_modulo !== undefined) 
+{
+        if(!modulosIds.includes(r.id_modulo)) 
+{
           modulosIds.push(r.id_modulo);
           modulosDetalle.push({
             id_modulo: r.id_modulo,
@@ -645,7 +704,9 @@ router.get('/empresas-auditoras/:id', authenticate, authorize([3]), async (req, 
       modulos_detalle: modulosDetalle,
       descripcion: row.giro || null
     });
-  } catch (error) {
+  }
+ catch(error) 
+{
     console.error('Error al obtener detalle de empresa:', error);
     res.status(500).json({ message: error.message || 'Error al obtener detalle de empresa' });
   }
@@ -653,8 +714,10 @@ router.get('/empresas-auditoras/:id', authenticate, authorize([3]), async (req, 
 
 // GET /api/cliente/mensajes/:idConversacion
 // Obtener mensajes de una conversación específica
-router.get('/mensajes/:idConversacion', authenticate, authorize([3]), async (req, res) => {
-  try {
+router.get('/mensajes/:idConversacion', authenticate, authorize([3]), async (req, res) => 
+{
+  try 
+{
     const idConversacion = Number(req.params.idConversacion);
     const idUsuario = req.user.id_usuario;
 
@@ -662,12 +725,14 @@ router.get('/mensajes/:idConversacion', authenticate, authorize([3]), async (req
     const mensajes = await listRows('mensajes');
 
     const conversacion = conversaciones.find(c => c.id_conversacion === idConversacion && c.activo);
-    if (!conversacion) {
+    if(!conversacion) 
+{
       return res.status(404).json({ message: 'Conversación no encontrada' });
     }
 
     // Verificar que el cliente pertenece a esta conversación
-    if (conversacion.id_cliente !== idUsuario) {
+    if(conversacion.id_cliente !== idUsuario) 
+{
       return res.status(403).json({ message: 'No tienes permisos para ver esta conversación' });
     }
 
@@ -689,7 +754,9 @@ router.get('/mensajes/:idConversacion', authenticate, authorize([3]), async (req
         fecha_envio: m.creado_en
       }))
     });
-  } catch (error) {
+  }
+ catch(error) 
+{
     console.error('Error al obtener mensajes:', error);
     res.status(500).json({ message: error.message || 'Error al obtener mensajes' });
   }
@@ -697,12 +764,15 @@ router.get('/mensajes/:idConversacion', authenticate, authorize([3]), async (req
 
 // POST /api/cliente/mensajes
 // Enviar un mensaje (crear conversación o responder)
-router.post('/mensajes', authenticate, authorize([3]), async (req, res) => {
-  try {
+router.post('/mensajes', authenticate, authorize([3]), async (req, res) => 
+{
+  try 
+{
     const { id_empresa_auditora, id_conversacion, contenido } = req.body;
     const idUsuario = req.user.id_usuario;
 
-    if (!contenido) {
+    if(!contenido) 
+{
       return res.status(400).json({ message: 'contenido es obligatorio' });
     }
 
@@ -714,18 +784,22 @@ router.post('/mensajes', authenticate, authorize([3]), async (req, res) => {
     let conversacionId = id_conversacion;
 
     // Si no hay id_conversacion, crear una nueva conversación
-    if (!conversacionId) {
-      if (!id_empresa_auditora) {
+    if(!conversacionId) 
+{
+      if(!id_empresa_auditora) 
+{
         return res.status(400).json({ message: 'id_empresa_auditora es obligatorio si no hay id_conversacion' });
       }
 
       const empresaValida = empresas.find(e => e.id_empresa === Number(id_empresa_auditora) && (e.activo ?? e.activa));
-      if (!empresaValida) {
+      if(!empresaValida) 
+{
         return res.status(404).json({ message: 'Empresa auditora no encontrada o inactiva' });
       }
 
       const cliente = usuarios.find(u => u.id_usuario === idUsuario && u.id_rol === 3 && u.activo);
-      if (!cliente) {
+      if(!cliente) 
+{
         return res.status(404).json({ message: 'Cliente no encontrado o inactivo' });
       }
 
@@ -740,13 +814,17 @@ router.post('/mensajes', authenticate, authorize([3]), async (req, res) => {
       };
       conversaciones.push(nuevaConversacion);
       await saveRows('conversaciones', conversaciones);
-    } else {
+    }
+ else 
+{
       // Verificar que la conversación existe y pertenece al cliente
       const conversacion = conversaciones.find(c => c.id_conversacion === Number(conversacionId) && c.activo);
-      if (!conversacion) {
+      if(!conversacion) 
+{
         return res.status(404).json({ message: 'Conversación no encontrada' });
       }
-      if (conversacion.id_cliente !== idUsuario) {
+      if(conversacion.id_cliente !== idUsuario) 
+{
         return res.status(403).json({ message: 'No tienes permisos para enviar mensajes en esta conversación' });
       }
     }
@@ -771,7 +849,9 @@ router.post('/mensajes', authenticate, authorize([3]), async (req, res) => {
       contenido: nuevoMensaje.contenido,
       fecha_envio: nuevoMensaje.creado_en
     });
-  } catch (error) {
+  }
+ catch(error) 
+{
     console.error('Error al enviar mensaje:', error);
     res.status(500).json({ message: error.message || 'Error al enviar mensaje' });
   }
@@ -779,8 +859,10 @@ router.post('/mensajes', authenticate, authorize([3]), async (req, res) => {
 
 // GET /api/cliente/auditorias/:idAuditoria/detalle
 // Obtener detalle de una auditoría específica
-router.get('/auditorias/:idAuditoria/detalle', authenticate, authorize([3]), async (req, res) => {
-  try {
+router.get('/auditorias/:idAuditoria/detalle', authenticate, authorize([3]), async (req, res) => 
+{
+  try 
+{
     const idAuditoria = Number(req.params.idAuditoria);
     const idUsuario = req.user.id_usuario;
 
@@ -791,12 +873,14 @@ router.get('/auditorias/:idAuditoria/detalle', authenticate, authorize([3]), asy
     const modulosAmbientales = await listRows('modulos_ambientales');
 
     const auditoria = auditorias.find(a => a.id_auditoria === idAuditoria);
-    if (!auditoria) {
+    if(!auditoria) 
+{
       return res.status(404).json({ message: 'Auditoría no encontrada' });
     }
 
     // Verificar que el cliente pertenece a esta auditoría
-    if (auditoria.id_cliente !== idUsuario) {
+    if(auditoria.id_cliente !== idUsuario) 
+{
       return res.status(403).json({ message: 'No tienes permisos para ver esta auditoría' });
     }
 
@@ -808,7 +892,8 @@ router.get('/auditorias/:idAuditoria/detalle', authenticate, authorize([3]), asy
       .filter(am => am.id_auditoria === idAuditoria)
       .map(am => am.id_modulo);
 
-    const modulos = modulosIds.map(id => {
+    const modulos = modulosIds.map(id => 
+{
       const modulo = modulosAmbientales.find(m => m.id_modulo === id);
       return modulo ? { id_modulo: modulo.id_modulo, nombre: modulo.nombre, clave: modulo.clave } : null;
     }).filter(m => m !== null);
@@ -832,7 +917,9 @@ router.get('/auditorias/:idAuditoria/detalle', authenticate, authorize([3]), asy
         nombre: estado.nombre || estado.clave
       } : null
     });
-  } catch (error) {
+  }
+ catch(error) 
+{
     console.error('Error al obtener detalle de auditoría:', error);
     res.status(500).json({ message: error.message || 'Error al obtener detalle de auditoría' });
   }
@@ -844,13 +931,16 @@ router.get('/auditorias/:idAuditoria/detalle', authenticate, authorize([3]), asy
 
 // GET /api/cliente/notificaciones/:idCliente
 // Obtener todas las notificaciones del cliente
-router.get('/notificaciones/:idCliente', authenticate, authorize([3]), async (req, res) => {
-  try {
+router.get('/notificaciones/:idCliente', authenticate, authorize([3]), async (req, res) => 
+{
+  try 
+{
     const idCliente = Number(req.params.idCliente);
     const idUsuario = req.user.id_usuario;
 
     // Verificar que el cliente está pidiendo sus propias notificaciones
-    if (idCliente !== idUsuario) {
+    if(idCliente !== idUsuario) 
+{
       return res.status(403).json({ message: 'No tienes permisos para ver estas notificaciones' });
     }
 
@@ -861,12 +951,15 @@ router.get('/notificaciones/:idCliente', authenticate, authorize([3]), async (re
     // Filtrar notificaciones del cliente y enriquecer con datos de auditoría
     const notificacionesCliente = notificaciones
       .filter(n => n.id_cliente === idCliente)
-      .map(notificacion => {
+      .map(notificacion => 
+{
         let auditoriaData = null;
         
-        if (notificacion.id_auditoria) {
+        if(notificacion.id_auditoria) 
+{
           const auditoria = auditorias.find(a => a.id_auditoria === notificacion.id_auditoria);
-          if (auditoria) {
+          if(auditoria) 
+{
             const empresa = empresas.find(e => e.id_empresa === auditoria.id_empresa_auditora);
             auditoriaData = {
               id_auditoria: auditoria.id_auditoria,
@@ -893,7 +986,9 @@ router.get('/notificaciones/:idCliente', authenticate, authorize([3]), async (re
       .sort((a, b) => new Date(b.fecha) - new Date(a.fecha)); // Más recientes primero
 
     res.json(notificacionesCliente);
-  } catch (error) {
+  }
+ catch(error) 
+{
     console.error('Error al obtener notificaciones:', error);
     res.status(500).json({ message: error.message || 'Error al obtener notificaciones' });
   }
@@ -901,20 +996,24 @@ router.get('/notificaciones/:idCliente', authenticate, authorize([3]), async (re
 
 // PUT /api/cliente/notificaciones/:idNotificacion/leer
 // Marcar una notificación como leída
-router.put('/notificaciones/:idNotificacion/leer', authenticate, authorize([3]), async (req, res) => {
-  try {
+router.put('/notificaciones/:idNotificacion/leer', authenticate, authorize([3]), async (req, res) => 
+{
+  try 
+{
     const idNotificacion = Number(req.params.idNotificacion);
     const idUsuario = req.user.id_usuario;
 
     const notificaciones = await listRows('notificaciones');
     const notificacionIdx = notificaciones.findIndex(n => n.id_notificacion === idNotificacion);
 
-    if (notificacionIdx === -1) {
+    if(notificacionIdx === -1) 
+{
       return res.status(404).json({ message: 'Notificación no encontrada' });
     }
 
     // Verificar que la notificación pertenece al cliente
-    if (notificaciones[notificacionIdx].id_cliente !== idUsuario) {
+    if(notificaciones[notificacionIdx].id_cliente !== idUsuario) 
+{
       return res.status(403).json({ message: 'No tienes permisos para marcar esta notificación como leída' });
     }
 
@@ -926,7 +1025,9 @@ router.put('/notificaciones/:idNotificacion/leer', authenticate, authorize([3]),
       message: 'Notificación marcada como leída',
       notificacion: notificaciones[notificacionIdx]
     });
-  } catch (error) {
+  }
+ catch(error) 
+{
     console.error('Error al marcar notificación como leída:', error);
     res.status(500).json({ message: error.message || 'Error al marcar notificación como leída' });
   }
@@ -934,13 +1035,16 @@ router.put('/notificaciones/:idNotificacion/leer', authenticate, authorize([3]),
 
 // PUT /api/cliente/notificaciones/:idCliente/leer-todas
 // Marcar todas las notificaciones del cliente como leídas
-router.put('/notificaciones/:idCliente/leer-todas', authenticate, authorize([3]), async (req, res) => {
-  try {
+router.put('/notificaciones/:idCliente/leer-todas', authenticate, authorize([3]), async (req, res) => 
+{
+  try 
+{
     const idCliente = Number(req.params.idCliente);
     const idUsuario = req.user.id_usuario;
 
     // Verificar que el cliente está marcando sus propias notificaciones
-    if (idCliente !== idUsuario) {
+    if(idCliente !== idUsuario) 
+{
       return res.status(403).json({ message: 'No tienes permisos para marcar estas notificaciones' });
     }
 
@@ -948,8 +1052,10 @@ router.put('/notificaciones/:idCliente/leer-todas', authenticate, authorize([3])
     
     // Contar y marcar todas las notificaciones no leídas del cliente
     let contador = 0;
-    notificaciones.forEach(notificacion => {
-      if (notificacion.id_cliente === idCliente && !notificacion.leida) {
+    notificaciones.forEach(notificacion => 
+{
+      if(notificacion.id_cliente === idCliente && !notificacion.leida) 
+{
         notificacion.leida = true;
         contador++;
       }
@@ -961,7 +1067,9 @@ router.put('/notificaciones/:idCliente/leer-todas', authenticate, authorize([3])
       message: `${contador} notificaciones marcadas como leídas`,
       cantidad_actualizadas: contador
     });
-  } catch (error) {
+  }
+ catch(error) 
+{
     console.error('Error al marcar todas las notificaciones como leídas:', error);
     res.status(500).json({ message: error.message || 'Error al marcar notificaciones como leídas' });
   }
@@ -974,13 +1082,16 @@ router.put('/notificaciones/:idCliente/leer-todas', authenticate, authorize([3])
 
 // GET /api/cliente/reportes/:idCliente
 // Obtener todos los reportes de las auditorías del cliente
-router.get('/reportes/:idCliente', authenticate, authorize([3]), async (req, res) => {
-  try {
+router.get('/reportes/:idCliente', authenticate, authorize([3]), async (req, res) => 
+{
+  try 
+{
     const idCliente = Number(req.params.idCliente);
     const idUsuario = req.user.id_usuario;
 
     // Verificar que el cliente está pidiendo sus propios reportes
-    if (idCliente !== idUsuario) {
+    if(idCliente !== idUsuario) 
+{
       return res.status(403).json({ message: 'No tienes permisos para ver estos reportes' });
     }
 
@@ -990,11 +1101,13 @@ router.get('/reportes/:idCliente', authenticate, authorize([3]), async (req, res
 
     // Filtrar reportes de auditorías del cliente
     const reportesCliente = reportes
-      .filter(reporte => {
+      .filter(reporte => 
+{
         const auditoria = auditorias.find(a => a.id_auditoria === reporte.id_auditoria);
         return auditoria && auditoria.id_cliente === idCliente;
       })
-      .map(reporte => {
+      .map(reporte => 
+{
         const auditoria = auditorias.find(a => a.id_auditoria === reporte.id_auditoria);
         const empresa = auditoria ? empresas.find(e => e.id_empresa === auditoria.id_empresa_auditora) : null;
 
@@ -1015,7 +1128,8 @@ router.get('/reportes/:idCliente', authenticate, authorize([3]), async (req, res
           } : null
         };
       })
-      .sort((a, b) => {
+      .sort((a, b) => 
+{
         // Ordenar por fecha_elaboracion DESC (más recientes primero)
         const fechaA = new Date(a.fecha_elaboracion);
         const fechaB = new Date(b.fecha_elaboracion);
@@ -1023,7 +1137,9 @@ router.get('/reportes/:idCliente', authenticate, authorize([3]), async (req, res
       });
 
     res.json(reportesCliente);
-  } catch (error) {
+  }
+ catch(error) 
+{
     console.error('Error al obtener reportes:', error);
     res.status(500).json({ message: error.message || 'Error al obtener reportes' });
   }
@@ -1031,8 +1147,10 @@ router.get('/reportes/:idCliente', authenticate, authorize([3]), async (req, res
 
 // GET /api/cliente/auditorias/:idAuditoria/reporte
 // Descargar el reporte de una auditoría específica
-router.get('/auditorias/:idAuditoria/reporte', authenticate, authorize([3]), async (req, res) => {
-  try {
+router.get('/auditorias/:idAuditoria/reporte', authenticate, authorize([3]), async (req, res) => 
+{
+  try 
+{
     const idAuditoria = Number(req.params.idAuditoria);
     const idUsuario = req.user.id_usuario;
 
@@ -1041,23 +1159,27 @@ router.get('/auditorias/:idAuditoria/reporte', authenticate, authorize([3]), asy
 
     // Verificar que la auditoría existe y pertenece al cliente
     const auditoria = auditorias.find(a => a.id_auditoria === idAuditoria);
-    if (!auditoria) {
+    if(!auditoria) 
+{
       return res.status(404).json({ message: 'Auditoría no encontrada' });
     }
 
-    if (auditoria.id_cliente !== idUsuario) {
+    if(auditoria.id_cliente !== idUsuario) 
+{
       return res.status(403).json({ message: 'No tienes permisos para ver este reporte' });
     }
 
     // Buscar el reporte de esta auditoría
     const reporte = reportes.find(r => r.id_auditoria === idAuditoria);
-    if (!reporte) {
+    if(!reporte) 
+{
       return res.status(404).json({ message: 'No hay reporte disponible para esta auditoría' });
     }
 
     // Obtener la URL del archivo
     const fileUrl = reporte.url || reporte.archivo_url;
-    if (!fileUrl) {
+    if(!fileUrl) 
+{
       return res.status(404).json({ message: 'Archivo de reporte no encontrado' });
     }
 
@@ -1067,9 +1189,12 @@ router.get('/auditorias/:idAuditoria/reporte', authenticate, authorize([3]), asy
     const filePath = path.join(__dirname, '..', 'data', 'uploads', fileName);
 
     // Verificar que el archivo existe
-    try {
+    try 
+{
       await fs.promises.access(filePath);
-    } catch (err) {
+    }
+ catch(err) 
+{
       return res.status(404).json({ message: 'Archivo de reporte no encontrado en el servidor' });
     }
 
@@ -1077,7 +1202,9 @@ router.get('/auditorias/:idAuditoria/reporte', authenticate, authorize([3]), asy
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `inline; filename="${reporte.nombre_archivo || fileName}"`);
     res.sendFile(filePath);
-  } catch (error) {
+  }
+ catch(error) 
+{
     console.error('Error al descargar reporte:', error);
     res.status(500).json({ message: error.message || 'Error al descargar reporte' });
   }

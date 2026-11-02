@@ -5,28 +5,39 @@ require('dotenv').config();
 
 let firebaseEnabled = false;
 
-try {
+try 
+{
   let serviceAccount = null;
 
-  if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
+  if(process.env.FIREBASE_SERVICE_ACCOUNT_KEY) 
+{
     serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
-  } else if (process.env.FIREBASE_SERVICE_ACCOUNT_PATH && fs.existsSync(process.env.FIREBASE_SERVICE_ACCOUNT_PATH)) {
+  }
+ else if(process.env.FIREBASE_SERVICE_ACCOUNT_PATH && fs.existsSync(process.env.FIREBASE_SERVICE_ACCOUNT_PATH)) 
+{
     serviceAccount = require(process.env.FIREBASE_SERVICE_ACCOUNT_PATH);
-  } else if (fs.existsSync(__dirname + '/../serviceAccountKey.json')) {
+  }
+ else if(fs.existsSync(__dirname + '/../serviceAccountKey.json')) 
+{
     serviceAccount = require('../serviceAccountKey.json');
   }
 
-  if (serviceAccount) {
+  if(serviceAccount) 
+{
     admin.initializeApp({
       credential: admin.credential.cert(serviceAccount),
       storageBucket: process.env.FIREBASE_STORAGE_BUCKET || `${serviceAccount.project_id}.appspot.com`
     });
     firebaseEnabled = true;
     console.log('✅ Firebase Admin inicializado');
-  } else {
+  }
+ else 
+{
     console.warn('⚠️ Firebase deshabilitado: no hay credenciales configuradas');
   }
-} catch (err) {
+}
+ catch(err) 
+{
   // No mostrar stacktrace; solo advertir que Firebase quedó deshabilitado.
   console.warn('⚠️ Firebase deshabilitado: no hay credenciales configuradas');
   firebaseEnabled = false;

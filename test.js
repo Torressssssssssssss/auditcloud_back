@@ -12,8 +12,10 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-async function main() {
-  try {
+async function main() 
+{
+  try 
+{
     console.log('Intentando enviar correo de prueba...');
     console.log('Usuario:', process.env.EMAIL_USER);
     // Solo validar que exista password
@@ -27,7 +29,9 @@ async function main() {
     });
 
     console.log("Mensaje enviado: %s", info.messageId);
-  } catch (error) {
+  }
+ catch(error) 
+{
     console.error("Error:", error);
   }
 }

@@ -2,24 +2,30 @@ const { Client } = require('@elastic/elasticsearch');
 
 let client = null;
 
-function isElasticsearchEnabled() {
+function isElasticsearchEnabled() 
+{
   return String(process.env.ELASTICSEARCH_ENABLED || 'false').toLowerCase() === 'true';
 }
 
-function getElasticsearchNode() {
+function getElasticsearchNode() 
+{
   return String(process.env.ELASTICSEARCH_NODE || 'http://127.0.0.1:9200').trim();
 }
 
-function getAuditoriasIndex() {
+function getAuditoriasIndex() 
+{
   return String(process.env.ELASTICSEARCH_INDEX_AUDITORIAS || 'auditcloud_auditorias').trim();
 }
 
-function getElasticsearchClient() {
-  if (!isElasticsearchEnabled()) {
+function getElasticsearchClient() 
+{
+  if(!isElasticsearchEnabled()) 
+{
     return null;
   }
 
-  if (client) {
+  if(client) 
+{
     return client;
   }
 
@@ -29,7 +35,8 @@ function getElasticsearchClient() {
 
   const username = String(process.env.ELASTICSEARCH_USERNAME || '').trim();
   const password = String(process.env.ELASTICSEARCH_PASSWORD || '').trim();
-  if (username && password) {
+  if(username && password) 
+{
     options.auth = { username, password };
   }
 
@@ -37,15 +44,20 @@ function getElasticsearchClient() {
   return client;
 }
 
-async function safeElasticOperation(operationName, operation) {
-  if (!isElasticsearchEnabled()) {
+async function safeElasticOperation(operationName, operation) 
+{
+  if(!isElasticsearchEnabled()) 
+{
     return { enabled: false, ok: false, skipped: true };
   }
 
-  try {
+  try 
+{
     const result = await operation(getElasticsearchClient());
     return { enabled: true, ok: true, result };
-  } catch (error) {
+  }
+ catch(error) 
+{
     console.warn(`[Elasticsearch] ${operationName} fallo:`, {
       message: error?.message,
       statusCode: error?.meta?.statusCode

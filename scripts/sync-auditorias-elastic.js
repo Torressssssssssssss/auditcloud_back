@@ -3,7 +3,8 @@ require('dotenv').config();
 const { query, getPool } = require('../utils/db');
 const { indexAuditoria, pingElasticsearch } = require('../services/elasticsearchAuditorias.service');
 
-async function cargarAuditoriasMysql() {
+async function cargarAuditoriasMysql() 
+{
   return query(
     `SELECT
       a.id_auditoria,
@@ -23,16 +24,19 @@ async function cargarAuditoriasMysql() {
   );
 }
 
-async function main() {
+async function main() 
+{
   const health = await pingElasticsearch();
   console.log(`Elasticsearch enabled=${health.enabled} connected=${health.connected} index=${health.index}`);
 
-  if (!health.enabled) {
+  if(!health.enabled) 
+{
     console.log('Sincronizacion omitida: ELASTICSEARCH_ENABLED=false');
     return;
   }
 
-  if (!health.connected) {
+  if(!health.connected) 
+{
     console.log('Sincronizacion omitida: Elasticsearch no esta conectado. MySQL no se modifica.');
     return;
   }
@@ -41,11 +45,15 @@ async function main() {
   let ok = 0;
   let failed = 0;
 
-  for (const auditoria of auditorias) {
+  for(const auditoria of auditorias) 
+{
     const result = await indexAuditoria(auditoria);
-    if (result.ok) {
+    if(result.ok) 
+{
       ok += 1;
-    } else {
+    }
+ else 
+{
       failed += 1;
     }
   }
@@ -56,17 +64,22 @@ async function main() {
 }
 
 main()
-  .catch((error) => {
+  .catch((error) => 
+{
     console.error('Error sincronizando auditorias a Elasticsearch:', {
       message: error?.message,
       code: error?.code
     });
     process.exitCode = 1;
   })
-  .finally(async () => {
-    try {
+  .finally(async () => 
+{
+    try 
+{
       await getPool().end();
-    } catch {
+    }
+ catch
+{
       // No hay pool abierto o MySQL no estaba configurado.
     }
   });

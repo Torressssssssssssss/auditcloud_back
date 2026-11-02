@@ -4,10 +4,12 @@ const router = express.Router();
 
 const { query } = require('../utils/db');
 
-function sendMysqlError(res, err, context) {
+function sendMysqlError(res, err, context) 
+{
   const safeContext = context ? ` (${context})` : '';
 
-  if (err && err.code === 'DB_NOT_CONFIGURED') {
+  if(err && err.code === 'DB_NOT_CONFIGURED') 
+{
     return res.status(500).json({
       message:
         'MySQL no configurado: define DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME en el archivo .env'
@@ -28,11 +30,15 @@ function sendMysqlError(res, err, context) {
 }
 
 // GET /api/mysql/health
-router.get('/health', async (req, res) => {
-  try {
+router.get('/health', async (req, res) => 
+{
+  try 
+{
     const rows = await query('SELECT 1 AS ok;');
     res.json(rows[0] || { ok: 1 });
-  } catch (err) {
+  }
+ catch(err) 
+{
     sendMysqlError(res, err, 'health');
   }
 });
@@ -43,18 +49,24 @@ router.use((req, res, next) => process.env.NODE_ENV === 'production'
 router.use(require('../utils/auth').authenticate);
 
 // GET /api/mysql/empresas
-router.get('/empresas', async (req, res) => {
-  try {
+router.get('/empresas', async (req, res) => 
+{
+  try 
+{
     const rows = await query('SELECT * FROM empresas ORDER BY id_empresa LIMIT 50;');
     res.json(rows);
-  } catch (err) {
+  }
+ catch(err) 
+{
     sendMysqlError(res, err, 'empresas');
   }
 });
 
 // GET /api/mysql/usuarios
-router.get('/usuarios', async (req, res) => {
-  try {
+router.get('/usuarios', async (req, res) => 
+{
+  try 
+{
     const rows = await query(
       `SELECT
         u.id_usuario,
@@ -78,14 +90,18 @@ router.get('/usuarios', async (req, res) => {
     );
 
     res.json(rows);
-  } catch (err) {
+  }
+ catch(err) 
+{
     sendMysqlError(res, err, 'usuarios');
   }
 });
 
 // GET /api/mysql/auditorias
-router.get('/auditorias', async (req, res) => {
-  try {
+router.get('/auditorias', async (req, res) => 
+{
+  try 
+{
     const rows = await query(
       `SELECT
         a.id_auditoria,
@@ -117,14 +133,18 @@ router.get('/auditorias', async (req, res) => {
     );
 
     res.json(rows);
-  } catch (err) {
+  }
+ catch(err) 
+{
     sendMysqlError(res, err, 'auditorias');
   }
 });
 
 // GET /api/mysql/resumen
-router.get('/resumen', async (req, res) => {
-  try {
+router.get('/resumen', async (req, res) => 
+{
+  try 
+{
     const rows = await query(
       `SELECT 'empresas' AS clave, COUNT(*) AS total FROM empresas
       UNION ALL SELECT 'usuarios', COUNT(*) FROM usuarios
@@ -137,12 +157,15 @@ router.get('/resumen', async (req, res) => {
     );
 
     const resumen = {};
-    for (const row of rows) {
+    for(const row of rows) 
+{
       resumen[row.clave] = Number(row.total);
     }
 
     res.json(resumen);
-  } catch (err) {
+  }
+ catch(err) 
+{
     sendMysqlError(res, err, 'resumen');
   }
 });

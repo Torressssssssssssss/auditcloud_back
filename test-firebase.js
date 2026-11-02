@@ -5,10 +5,12 @@ require('dotenv').config();
 const admin = require('./utils/firebase');
 const { uploadFileToFirebase } = require('./utils/firebaseStorage');
 
-async function testFirebase() {
+async function testFirebase() 
+{
   console.log('🔥 Probando conexión a Firebase Storage...\n');
 
-  try {
+  try 
+{
     // 1) Verificar inicializacion
     console.log('1️⃣ Verificando inicialización de Firebase...');
     const bucket = admin.storage().bucket();
@@ -36,9 +38,12 @@ async function testFirebase() {
     const file = bucket.file(result.path);
     const [exists] = await file.exists();
     
-    if (exists) {
+    if(exists) 
+{
       console.log('✅ El archivo existe en Firebase Storage\n');
-    } else {
+    }
+ else 
+{
       console.log('⚠️ El archivo no se encontró (puede ser un problema de permisos)\n');
     }
 
@@ -54,21 +59,30 @@ async function testFirebase() {
     console.log('   - Reportes: gs://' + bucket.name + '/reportes/');
     console.log('   - Puedes verlos en: https://console.firebase.google.com/project/' + bucket.name.split('.')[0] + '/storage\n');
 
-  } catch (error) {
+  }
+ catch(error) 
+{
     console.error('\n❌ Error conectando a Firebase:\n');
     console.error('Mensaje:', error.message);
     console.error('\n💡 Posibles soluciones:');
     
-    if (error.message.includes('serviceAccountKey.json')) {
+    if(error.message.includes('serviceAccountKey.json')) 
+{
       console.error('   1. Verifica que el archivo serviceAccountKey.json existe en la raíz del proyecto');
       console.error('   2. O configura las variables de entorno en .env');
-    } else if (error.message.includes('Permission')) {
+    }
+ else if(error.message.includes('Permission')) 
+{
       console.error('   1. Verifica que la Service Account tiene rol "Storage Admin"');
       console.error('   2. Ve a Google Cloud Console > IAM & Admin > Service Accounts');
-    } else if (error.message.includes('Bucket')) {
+    }
+ else if(error.message.includes('Bucket')) 
+{
       console.error('   1. Verifica que Firebase Storage está habilitado');
       console.error('   2. Ve a Firebase Console > Storage y habilítalo');
-    } else {
+    }
+ else 
+{
       console.error('   1. Revisa la configuracion de credenciales');
       console.error('   2. Verifica que las credenciales son correctas');
     }

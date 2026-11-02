@@ -6,10 +6,14 @@ let transporter = null;
 let emailEnabled = false;
 let verificacion = Promise.resolve();
 
-if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+if(!process.env.EMAIL_USER || !process.env.EMAIL_PASS) 
+{
   console.warn('⚠️ Email Service deshabilitado: faltan EMAIL_USER o EMAIL_PASS');
-} else {
-  try {
+}
+ else 
+{
+  try 
+{
     transporter = nodemailer.createTransport({
       host: 'smtp.gmail.com',
       port: 465,
@@ -24,33 +28,41 @@ if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
 
     // Intentar verificar conexión, pero manejar fallos sin detener el backend
     verificacion = transporter.verify()
-      .then(() => {
+      .then(() => 
+{
         emailEnabled = true;
         console.log('✅ Servidor de correos listo para enviar mensajes');
       })
-      .catch(() => {
+      .catch(() => 
+{
         // No mostrar stacktrace; marcar como deshabilitado
         emailEnabled = false;
         console.warn('⚠️ Email Service deshabilitado: no fue posible verificar el servidor SMTP');
       });
-  } catch (err) {
+  }
+ catch(err) 
+{
     transporter = null;
     emailEnabled = false;
     console.warn('⚠️ Email Service deshabilitado: error al configurar el transporte SMTP');
   }
 }
 
-const enviarNotificacionFinalizacion = async (correoCliente, nombreCliente, nombreEmpresa, nombreReporte) => {
+const enviarNotificacionFinalizacion = async (correoCliente, nombreCliente, nombreEmpresa, nombreReporte) => 
+{
   // Pendiente implementar plantilla de finalizacion
 };
 
-const enviarAlertaNotificacion = async (correoDestino, nombreUsuario, titulo, mensaje) => {
+const enviarAlertaNotificacion = async (correoDestino, nombreUsuario, titulo, mensaje) => 
+{
   await verificacion;
-  if (!emailEnabled || !transporter) {
+  if(!emailEnabled || !transporter) 
+{
     return false;
   }
 
-  try {
+  try 
+{
     console.log(`[Email Service] Intentando enviar a: ${correoDestino}`);
 
     const info = await transporter.sendMail({
@@ -83,7 +95,9 @@ const enviarAlertaNotificacion = async (correoDestino, nombreUsuario, titulo, me
     });
     console.log('📧 Email enviado ID:', info.messageId);
     return true;
-  } catch (error) {
+  }
+ catch(error) 
+{
     console.warn('❌ Error enviando alerta de correo: se maneja sin detener la app');
     return false;
   }

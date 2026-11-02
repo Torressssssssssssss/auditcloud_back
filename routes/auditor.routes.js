@@ -18,10 +18,12 @@ fs.mkdirSync(uploadDir, { recursive: true });
 
 // Guardar archivo local
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
+  destination: (req, file, cb) => 
+{
     cb(null, uploadDir);
   },
-  filename: (req, file, cb) => {
+  filename: (req, file, cb) => 
+{
     const timestamp = Date.now();
     const randomStr = Math.random().toString(36).substring(2, 8);
     const ext = path.extname(file.originalname);
@@ -31,11 +33,15 @@ const storage = multer.diskStorage({
 });
 
 // Tipos permitidos
-const fileFilter = (req, file, cb) => {
+const fileFilter = (req, file, cb) => 
+{
   const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
-  if (allowedTypes.includes(file.mimetype)) {
+  if(allowedTypes.includes(file.mimetype)) 
+{
     cb(null, true);
-  } else {
+  }
+ else 
+{
     cb(new Error('Tipo de archivo no soportado. Solo PDF, JPG y PNG.'), false);
   }
 };
@@ -46,13 +52,15 @@ const upload = multer({
   fileFilter: fileFilter
 });
 
-async function cargarClienteAuditoria(idCliente, usuarios, empresas) {
+async function cargarClienteAuditoria(idCliente, usuarios, empresas) 
+{
   const usuarioSql = usuarios.find(u => Number(u.id_usuario) === Number(idCliente));
   const empresaSql = usuarioSql?.id_empresa
     ? empresas.find(e => Number(e.id_empresa) === Number(usuarioSql.id_empresa))
     : null;
 
-  if (usuarioSql) {
+  if(usuarioSql) 
+{
     return {
       id_usuario: usuarioSql.id_usuario,
       nombre: usuarioSql.nombre,
@@ -60,7 +68,8 @@ async function cargarClienteAuditoria(idCliente, usuarios, empresas) {
     };
   }
 
-  try {
+  try 
+{
     const rows = await query(
       `SELECT u.id_usuario, u.nombre, u.id_empresa, e.nombre AS nombre_empresa
        FROM usuarios u
@@ -70,15 +79,19 @@ async function cargarClienteAuditoria(idCliente, usuarios, empresas) {
       [Number(idCliente)]
     );
     const row = rows[0];
-    if (row) {
+    if(row) 
+{
       return {
         id_usuario: Number(row.id_usuario),
         nombre: row.nombre,
         nombre_empresa: row.nombre_empresa || null
       };
     }
-  } catch (error) {
-    if (error?.code !== 'DB_NOT_CONFIGURED') {
+  }
+ catch(error) 
+{
+    if(error?.code !== 'DB_NOT_CONFIGURED') 
+{
       console.warn('No fue posible enriquecer cliente desde MySQL:', error?.code || error?.message || error);
     }
   }
@@ -88,18 +101,21 @@ async function cargarClienteAuditoria(idCliente, usuarios, empresas) {
 
 // Rutas de auditorias
 
-async function assignedAudit(id, user) {
+async function assignedAudit(id, user) 
+{
   const [row] = await query('SELECT a.id_auditoria FROM auditorias a JOIN auditoria_participantes p ON p.id_auditoria=a.id_auditoria WHERE a.id_auditoria=? AND p.id_auditor=? AND a.id_empresa_auditora=?',[Number(id),user.id_usuario,user.id_empresa]);
   return Boolean(row);
 }
 
 // GET /api/auditor/auditorias-asignadas/:idAuditor
 // Lista auditorias asignadas
-router.get('/auditorias-asignadas/:idAuditor', authenticate, authorize([2]), async (req, res) => {
+router.get('/auditorias-asignadas/:idAuditor', authenticate, authorize([2]), async (req, res) => 
+{
   const idAuditor = Number(req.params.idAuditor);
   
   // El auditor solo puede pedir sus datos
-  if (req.user.id_usuario !== idAuditor) {
+  if(req.user.id_usuario !== idAuditor) 
+{
     return res.status(403).json({ message: 'No puedes ver auditorías de otro usuario.' });
   }
 
@@ -115,7 +131,8 @@ router.get('/auditorias-asignadas/:idAuditor', authenticate, authorize([2]), asy
 
   const rawAuditorias = auditorias.filter(a => idsAuditorias.includes(a.id_auditoria));
 
-  const resultado = await Promise.all(rawAuditorias.map(async (auditoria) => {
+  const resultado = await Promise.all(rawAuditorias.map(async (auditoria) => 
+{
     const cliente = await cargarClienteAuditoria(auditoria.id_cliente, usuarios, empresas);
     const modulos = auditoriaModulos
       .filter(am => am.id_auditoria === auditoria.id_auditoria)
@@ -134,7 +151,8 @@ router.get('/auditorias-asignadas/:idAuditor', authenticate, authorize([2]), asy
 
 // GET /api/auditor/auditorias/:id
 // Detalle de auditoria validando asignacion
-router.get('/auditorias/:id', authenticate, authorize([2]), async (req, res) => {
+router.get('/auditorias/:id', authenticate, authorize([2]), async (req, res) => 
+{
   const idAuditoria = Number(req.params.id);
   const idAuditor = req.user.id_usuario;
 
@@ -147,13 +165,14 @@ router.get('/auditorias/:id', authenticate, authorize([2]), async (req, res) => 
   // Verificar asignacion
   const isAsignado = participantes.some(p => p.id_auditoria === idAuditoria && p.id_auditor === idAuditor);
   
-  if (!isAsignado) {
+  if(!isAsignado) 
+{
     return res.status(403).json({ message: 'No tienes permiso para ver esta auditoría (no estás asignado).' });
   }
 
   // Buscar auditoria
   const auditoria = auditorias.find(a => a.id_auditoria === idAuditoria);
-  if (!auditoria) return res.status(404).json({ message: 'Auditoría no encontrada' });
+  if(!auditoria) return res.status(404).json({ message: 'Auditoría no encontrada' });
 
   // Enriquecer datos
   const cliente = await cargarClienteAuditoria(auditoria.id_cliente, usuarios, empresas);
@@ -172,19 +191,22 @@ router.get('/auditorias/:id', authenticate, authorize([2]), async (req, res) => 
 
 // PATCH /api/auditor/auditorias/:id/objetivo
 // Actualiza objetivo de auditoria
-router.patch('/auditorias/:id/objetivo', authenticate, authorize([2]), async (req, res) => {
+router.patch('/auditorias/:id/objetivo', authenticate, authorize([2]), async (req, res) => 
+{
   const idAuditoria = Number(req.params.id);
   const { objetivo } = req.body;
 
-  try {
+  try 
+{
     const auditorias = await listRows('auditorias');
     const index = auditorias.findIndex(a => a.id_auditoria === idAuditoria);
 
-    if (index === -1) {
+    if(index === -1) 
+{
       return res.status(404).json({ message: 'Auditoría no encontrada' });
     }
 
-    if (!await assignedAudit(idAuditoria,req.user)) return res.status(403).json({message:'Auditor no asignado'});
+    if(!await assignedAudit(idAuditoria,req.user)) return res.status(403).json({message:'Auditor no asignado'});
 
     // Actualizar objetivo
     const auditoriaActual = auditorias[index];
@@ -198,7 +220,9 @@ router.patch('/auditorias/:id/objetivo', authenticate, authorize([2]), async (re
 
     res.json(auditoriaActual);
 
-  } catch (error) {
+  }
+ catch(error) 
+{
     console.error(error);
     res.status(500).json({ message: 'Error al actualizar la auditoría' });
   }
@@ -208,23 +232,27 @@ router.patch('/auditorias/:id/objetivo', authenticate, authorize([2]), async (re
 
 // POST /api/auditor/evidencias
 // Sube evidencia y crea registro
-router.post('/evidencias', authenticate, authorize([2]), upload.single('archivo'), async (req, res) => {
-  try {
+router.post('/evidencias', authenticate, authorize([2]), upload.single('archivo'), async (req, res) => 
+{
+  try 
+{
     const { id_auditoria, id_modulo, tipo, descripcion } = req.body;
     
     // Validaciones
-    if (!id_auditoria || !id_modulo || !tipo || !descripcion) {
+    if(!id_auditoria || !id_modulo || !tipo || !descripcion) 
+{
       return res.status(400).json({ message: 'id_auditoria, id_modulo, tipo y descripcion son obligatorios' });
     }
 
     // Solo comentario puede ir sin archivo
-    if (tipo !== 'COMENTARIO' && !req.file) {
+    if(tipo !== 'COMENTARIO' && !req.file) 
+{
       return res.status(400).json({ message: 'Debes subir un archivo de evidencia (PDF o Imagen)' });
     }
 
-    if (!await assignedAudit(id_auditoria,req.user)) return res.status(403).json({message:'Auditor no asignado'});
+    if(!await assignedAudit(id_auditoria,req.user)) return res.status(403).json({message:'Auditor no asignado'});
     const [modulo] = await query('SELECT id_modulo FROM auditoria_modulos WHERE id_auditoria=? AND id_modulo=?',[Number(id_auditoria),Number(id_modulo)]);
-    if (!modulo) return res.status(400).json({message:'Módulo no asignado a la auditoría'});
+    if(!modulo) return res.status(400).json({message:'Módulo no asignado a la auditoría'});
     const evidencias = await listRows('evidencias');
     const idEvidencia = await nextId('evidencias', 'id_evidencia');
 
@@ -244,11 +272,13 @@ router.post('/evidencias', authenticate, authorize([2]), upload.single('archivo'
     await saveRows('evidencias', evidencias);
 
     // Notificar al cliente
-    try {
+    try 
+{
       const auditorias = await listRows('auditorias');
       const auditoria = auditorias.find(a => a.id_auditoria === Number(id_auditoria));
       
-      if (auditoria && auditoria.id_cliente) {
+      if(auditoria && auditoria.id_cliente) 
+{
         await crearNotificacion({
           id_cliente: auditoria.id_cliente,
           id_auditoria: auditoria.id_auditoria,
@@ -257,13 +287,17 @@ router.post('/evidencias', authenticate, authorize([2]), upload.single('archivo'
           mensaje: `El auditor ha subido una nueva evidencia para la auditoría #${auditoria.id_auditoria}`
         });
       }
-    } catch (notifError) {
+    }
+ catch(notifError) 
+{
       // No bloquear por error de notificacion
       console.error('Error al crear notificación de evidencia:', notifError);
     }
 
     res.status(201).json({ message: 'Evidencia subida correctamente', evidencia: nueva });
-  } catch (error) {
+  }
+ catch(error) 
+{
     console.error('Error al subir evidencia:', error);
     res.status(500).json({ message: error.message || 'Error interno al procesar el archivo' });
   }
@@ -271,15 +305,19 @@ router.post('/evidencias', authenticate, authorize([2]), upload.single('archivo'
 
 // GET /api/auditor/evidencias/:idAuditoria
 // Lista evidencias (0 = todas del auditor)
-router.get('/evidencias/:idAuditoria', authenticate, authorize([2]), async (req, res) => {
+router.get('/evidencias/:idAuditoria', authenticate, authorize([2]), async (req, res) => 
+{
   const idAuditoria = Number(req.params.idAuditoria);
   const evidencias = await listRows('evidencias');
   
   let resultado = [];
-  if (idAuditoria > 0) {
-    if (!await assignedAudit(idAuditoria,req.user)) return res.status(403).json({message:'Auditor no asignado'});
+  if(idAuditoria > 0) 
+{
+    if(!await assignedAudit(idAuditoria,req.user)) return res.status(403).json({message:'Auditor no asignado'});
     resultado = evidencias.filter(e => e.id_auditoria === idAuditoria);
-  } else {
+  }
+ else 
+{
     // Todas del auditor
     const idAuditor = req.user.id_usuario;
     resultado = evidencias.filter(e => e.id_auditor === idAuditor);
@@ -290,18 +328,19 @@ router.get('/evidencias/:idAuditoria', authenticate, authorize([2]), async (req,
 
 // PUT /api/auditor/evidencias/:idEvidencia
 // Actualiza metadatos de evidencia
-router.put('/evidencias/:idEvidencia', authenticate, authorize([2]), async (req, res) => {
+router.put('/evidencias/:idEvidencia', authenticate, authorize([2]), async (req, res) => 
+{
   const idEvidencia = Number(req.params.idEvidencia);
   const { tipo, descripcion } = req.body;
 
   const evidencias = await listRows('evidencias');
   const idx = evidencias.findIndex(e => e.id_evidencia === idEvidencia);
   
-  if (idx === -1) return res.status(404).json({ message: 'Evidencia no encontrada' });
-  if (evidencias[idx].id_auditor !== req.user.id_usuario) return res.status(403).json({ message: 'No es tu evidencia' });
+  if(idx === -1) return res.status(404).json({ message: 'Evidencia no encontrada' });
+  if(evidencias[idx].id_auditor !== req.user.id_usuario) return res.status(403).json({ message: 'No es tu evidencia' });
 
-  if (tipo !== undefined) evidencias[idx].tipo = tipo;
-  if (descripcion !== undefined) evidencias[idx].descripcion = descripcion;
+  if(tipo !== undefined) evidencias[idx].tipo = tipo;
+  if(descripcion !== undefined) evidencias[idx].descripcion = descripcion;
   evidencias[idx].actualizado_en = new Date().toISOString();
 
   await saveRows('evidencias', evidencias);
@@ -309,14 +348,16 @@ router.put('/evidencias/:idEvidencia', authenticate, authorize([2]), async (req,
 });
 
 // DELETE /api/auditor/evidencias/:idEvidencia
-router.delete('/evidencias/:idEvidencia', authenticate, authorize([2]), async (req, res) => {
+router.delete('/evidencias/:idEvidencia', authenticate, authorize([2]), async (req, res) => 
+{
   const idEvidencia = Number(req.params.idEvidencia);
   let evidencias = await listRows('evidencias');
   
   const evidencia = evidencias.find(e => e.id_evidencia === idEvidencia);
-  if (!evidencia) return res.status(404).json({ message: 'Evidencia no encontrada' });
+  if(!evidencia) return res.status(404).json({ message: 'Evidencia no encontrada' });
   
-  if (evidencia.id_auditor !== req.user.id_usuario) {
+  if(evidencia.id_auditor !== req.user.id_usuario) 
+{
     return res.status(403).json({ message: 'No puedes borrar evidencias de otros' });
   }
 
@@ -331,11 +372,13 @@ router.delete('/evidencias/:idEvidencia', authenticate, authorize([2]), async (r
 
 // POST /api/auditor/solicitudes-pago
 // Crea solicitud de cobro
-router.post('/solicitudes-pago', authenticate, authorize([2]), async (req, res) => {
+router.post('/solicitudes-pago', authenticate, authorize([2]), async (req, res) => 
+{
   const { id_empresa, monto, concepto } = req.body;
   const id_empresa_auditora = req.user.id_empresa;
 
-  if (!id_empresa || !monto || !concepto) {
+  if(!id_empresa || !monto || !concepto) 
+{
     return res.status(400).json({ message: 'id_empresa, monto y concepto son obligatorios' });
   }
 
@@ -345,13 +388,15 @@ router.post('/solicitudes-pago', authenticate, authorize([2]), async (req, res) 
 
   // Validar empresa cliente
   const empresaObjetivo = empresas.find(e => e.id_empresa === Number(id_empresa) && e.activo);
-  if (!empresaObjetivo || empresaObjetivo.id_tipo_empresa !== 2) {
+  if(!empresaObjetivo || empresaObjetivo.id_tipo_empresa !== 2) 
+{
     return res.status(400).json({ message: 'El ID proporcionado no es una empresa Cliente válida.' });
   }
 
   // Buscar usuario destino
   const usuarioPrincipal = usuarios.find(u => u.id_empresa === Number(id_empresa) && u.id_rol === 3 && u.activo);
-  if (!usuarioPrincipal) {
+  if(!usuarioPrincipal) 
+{
     return res.status(400).json({ message: 'La empresa existe, pero no tiene usuario administrador para recibir el cobro.' });
   }
 
@@ -381,19 +426,23 @@ router.post('/solicitudes-pago', authenticate, authorize([2]), async (req, res) 
 
 // GET /api/auditor/solicitudes-pago
 // Lista historial de cobros
-router.get('/solicitudes-pago', authenticate, authorize([2]), async (req, res) => {
-  try {
+router.get('/solicitudes-pago', authenticate, authorize([2]), async (req, res) => 
+{
+  try 
+{
     const idEmpresaAuditora = req.user.id_empresa;
     const solicitudes = await listRows('solicitudes_pago');
     const empresas = await listRows('empresas');
 
     const misSolicitudes = solicitudes.filter(s => s.id_empresa_auditora === idEmpresaAuditora || s.id_empresa === idEmpresaAuditora);
 
-    const data = misSolicitudes.map(s => {
+    const data = misSolicitudes.map(s => 
+{
       let nombreCliente = 'Desconocido';
-      if (s.id_empresa_cliente) {
+      if(s.id_empresa_cliente) 
+{
         const empresa = empresas.find(e => e.id_empresa === s.id_empresa_cliente);
-        if (empresa) nombreCliente = empresa.nombre;
+        if(empresa) nombreCliente = empresa.nombre;
       }
       return {
         ...s,
@@ -403,13 +452,16 @@ router.get('/solicitudes-pago', authenticate, authorize([2]), async (req, res) =
     });
 
     // Pendientes primero, luego fecha
-    data.sort((a, b) => {
-      if (a.id_estado === b.id_estado) return new Date(b.creado_en) - new Date(a.creado_en);
+    data.sort((a, b) => 
+{
+      if(a.id_estado === b.id_estado) return new Date(b.creado_en) - new Date(a.creado_en);
       return a.id_estado - b.id_estado;
     });
 
     res.json(data);
-  } catch (error) {
+  }
+ catch(error) 
+{
     console.error('Error al obtener solicitudes:', error);
     res.status(500).json({ message: 'Error interno' });
   }
@@ -419,8 +471,10 @@ router.get('/solicitudes-pago', authenticate, authorize([2]), async (req, res) =
 
 // GET /api/auditor/conversaciones
 // Conversaciones de la empresa auditora
-router.get('/conversaciones', authenticate, authorize([2]), async (req, res) => {
-  try {
+router.get('/conversaciones', authenticate, authorize([2]), async (req, res) => 
+{
+  try 
+{
     const idEmpresaAuditora = req.user.id_empresa;
     
     const conversaciones = (await listRows('conversaciones')).map(normalizeConversation);
@@ -438,7 +492,8 @@ router.get('/conversaciones', authenticate, authorize([2]), async (req, res) => 
     );
 
     // Agregar ultimo mensaje y datos del cliente
-    const listaFinal = misConversaciones.map(conv => {
+    const listaFinal = misConversaciones.map(conv => 
+{
       // Mensajes
       const msgs = mensajes.filter(m => m.id_conversacion === conv.id_conversacion);
       const ultimoMensaje = msgs.length > 0 ? msgs[msgs.length - 1] : null;
@@ -465,21 +520,25 @@ router.get('/conversaciones', authenticate, authorize([2]), async (req, res) => 
     });
 
     // Ordenar por fecha
-    listaFinal.sort((a, b) => {
+    listaFinal.sort((a, b) => 
+{
       const fechaA = a.ultimo_mensaje ? new Date(a.ultimo_mensaje.creado_en) : new Date(a.creado_en);
       const fechaB = b.ultimo_mensaje ? new Date(b.ultimo_mensaje.creado_en) : new Date(b.creado_en);
       return fechaB - fechaA;
     });
 
     res.json(listaFinal);
-  } catch (error) {
+  }
+ catch(error) 
+{
     console.error(error);
     res.status(500).json({ message: 'Error cargando conversaciones' });
   }
 });
 
 // GET /api/auditor/mensajes/:idConversacion
-router.get('/mensajes/:idConversacion', authenticate, authorize([2]), async (req, res) => {
+router.get('/mensajes/:idConversacion', authenticate, authorize([2]), async (req, res) => 
+{
   const idConversacion = Number(req.params.idConversacion);
   const mensajes = await listRows('mensajes');
   const conversaciones = (await listRows('conversaciones')).map(normalizeConversation);
@@ -487,13 +546,16 @@ router.get('/mensajes/:idConversacion', authenticate, authorize([2]), async (req
 
   // Validar acceso
   const conversacion = conversaciones.find(c => c.id_conversacion === idConversacion && c.activo);
-  if (!conversacion || !isAuditConversation(conversacion) || conversacion.id_empresa_auditora !== req.user.id_empresa) {
+  if(!conversacion || !isAuditConversation(conversacion) || conversacion.id_empresa_auditora !== req.user.id_empresa) 
+{
     return res.status(403).json({ message: 'No tienes permiso para ver esta conversación' });
   }
 
-  if (conversacion.id_auditoria) {
+  if(conversacion.id_auditoria) 
+{
     const tieneParticipacion = participantes.some(p => p.id_auditoria === conversacion.id_auditoria && p.id_auditor === req.user.id_usuario);
-    if (!tieneParticipacion) {
+    if(!tieneParticipacion) 
+{
       return res.status(403).json({ message: 'No tienes permiso para ver esta conversación' });
     }
   }
@@ -506,12 +568,15 @@ router.get('/mensajes/:idConversacion', authenticate, authorize([2]), async (req
 
 // POST /api/auditor/mensajes
 // Enviar mensaje de auditor
-router.post('/mensajes', authenticate, authorize([2]), async (req, res) => {
-  try {
+router.post('/mensajes', authenticate, authorize([2]), async (req, res) => 
+{
+  try 
+{
     const { id_conversacion, contenido } = req.body;
     const idUsuario = req.user.id_usuario;
 
-    if (!id_conversacion || !contenido) {
+    if(!id_conversacion || !contenido) 
+{
       return res.status(400).json({ message: 'id_conversacion y contenido son obligatorios' });
     }
 
@@ -523,33 +588,40 @@ router.post('/mensajes', authenticate, authorize([2]), async (req, res) => {
     const participantes = await listRows('auditoria_participantes');
 
     const conversacion = conversacionesNormalizadas.find(c => c.id_conversacion === Number(id_conversacion) && c.activo);
-    if (!conversacion || !isAuditConversation(conversacion)) {
+    if(!conversacion || !isAuditConversation(conversacion)) 
+{
       return res.status(404).json({ message: 'Conversación no encontrada' });
     }
 
     // Verificar empresa del auditor
     const usuario = usuarios.find(u => u.id_usuario === idUsuario && u.id_rol === 2 && u.activo);
-    if (!usuario) {
+    if(!usuario) 
+{
       return res.status(403).json({ message: 'Usuario no válido' });
     }
 
     const empresaAuditora = empresas.find(e => e.id_empresa === usuario.id_empresa);
-    if (!empresaAuditora || empresaAuditora.id_empresa !== conversacion.id_empresa_auditora) {
+    if(!empresaAuditora || empresaAuditora.id_empresa !== conversacion.id_empresa_auditora) 
+{
       return res.status(403).json({ message: 'No tienes permisos para enviar mensajes en esta conversación' });
     }
 
-    if (conversacion.id_auditoria) {
+    if(conversacion.id_auditoria) 
+{
       const tieneParticipacion = participantes.some(p => p.id_auditoria === conversacion.id_auditoria && p.id_auditor === idUsuario);
-      if (!tieneParticipacion) {
+      if(!tieneParticipacion) 
+{
         return res.status(403).json({ message: 'No tienes permisos para enviar mensajes en esta conversación' });
       }
     }
 
-    if (!conversacion.id_auditor) {
+    if(!conversacion.id_auditor) 
+{
       conversacion.id_auditor = idUsuario;
       conversacion.id_usuario_auditor = idUsuario;
       const idxConv = conversacionesNormalizadas.findIndex(c => c.id_conversacion === Number(id_conversacion));
-      if (idxConv !== -1) {
+      if(idxConv !== -1) 
+{
         conversacionesNormalizadas[idxConv] = conversacion;
         await saveRows('conversaciones', conversacionesNormalizadas);
       }
@@ -570,13 +642,15 @@ router.post('/mensajes', authenticate, authorize([2]), async (req, res) => {
 
     // Actualizar fecha de conversacion
     const idxConv = conversacionesNormalizadas.findIndex(c => c.id_conversacion === Number(id_conversacion));
-    if (idxConv !== -1) {
+    if(idxConv !== -1) 
+{
       conversacionesNormalizadas[idxConv].ultimo_mensaje_fecha = nuevoMensaje.creado_en;
       await saveRows('conversaciones', conversacionesNormalizadas);
     }
 
     // Notificar al cliente
-    try {
+    try 
+{
       const nombreEmpresa = empresaAuditora ? empresaAuditora.nombre : 'Empresa auditora';
 
       await crearNotificacion({
@@ -586,13 +660,17 @@ router.post('/mensajes', authenticate, authorize([2]), async (req, res) => {
         titulo: 'Nuevo mensaje',
         mensaje: `Tienes un nuevo mensaje de ${nombreEmpresa}`
       });
-    } catch (notifError) {
+    }
+ catch(notifError) 
+{
       // No bloquear por error de notificacion
       console.error('Error al crear notificación de mensaje:', notifError);
     }
 
     res.status(201).json(nuevoMensaje);
-  } catch (error) {
+  }
+ catch(error) 
+{
     console.error('Error al enviar mensaje:', error);
     res.status(500).json({ message: error.message || 'Error al enviar mensaje' });
   }
@@ -604,8 +682,10 @@ router.post('/mensajes', authenticate, authorize([2]), async (req, res) => {
 
 // GET /api/auditor/reportes
 // Lista reportes finales de auditorias asignadas al auditor autenticado.
-router.get('/reportes', authenticate, authorize([2]), async (req, res) => {
-  try {
+router.get('/reportes', authenticate, authorize([2]), async (req, res) => 
+{
+  try 
+{
     const idAuditor = Number(req.user.id_usuario);
     const reportes = await listRows('reportes');
     const auditorias = await listRows('auditorias');
@@ -622,7 +702,8 @@ router.get('/reportes', authenticate, authorize([2]), async (req, res) => {
     const resultado = await Promise.all(
       reportes
         .filter(r => Number(r.creado_por) === idAuditor || idsAsignadas.has(Number(r.id_auditoria)))
-        .map(async (reporte) => {
+        .map(async (reporte) => 
+{
           const auditoria = auditorias.find(a => Number(a.id_auditoria) === Number(reporte.id_auditoria));
           const cliente = auditoria ? await cargarClienteAuditoria(auditoria.id_cliente, usuarios, empresas) : null;
           return {
@@ -639,7 +720,9 @@ router.get('/reportes', authenticate, authorize([2]), async (req, res) => {
 
     resultado.sort((a, b) => new Date(b.fecha_creacion || b.creado_en || 0) - new Date(a.fecha_creacion || a.creado_en || 0));
     res.json(resultado);
-  } catch (error) {
+  }
+ catch(error) 
+{
     console.error('Error listando reportes de auditor:', error);
     res.status(500).json({ message: 'Error interno al obtener reportes.' });
   }
@@ -647,24 +730,29 @@ router.get('/reportes', authenticate, authorize([2]), async (req, res) => {
 
 // POST /api/auditor/reportes
 // Sube PDF final y finaliza auditoria
-router.post('/reportes', authenticate, authorize([2]), upload.single('archivo'), async (req, res) => {
-  try {
+router.post('/reportes', authenticate, authorize([2]), upload.single('archivo'), async (req, res) => 
+{
+  try 
+{
     const { id_auditoria, nombre, observaciones } = req.body;
 
-    if (!req.file) {
+    if(!req.file) 
+{
       return res.status(400).json({ message: 'Debes subir el archivo PDF del reporte.' });
     }
-    if (!id_auditoria || !nombre) {
+    if(!id_auditoria || !nombre) 
+{
       return res.status(400).json({ message: 'id_auditoria y nombre del reporte son obligatorios.' });
     }
 
-    if (!await assignedAudit(id_auditoria,req.user)) return res.status(403).json({message:'Auditor no asignado'});
+    if(!await assignedAudit(id_auditoria,req.user)) return res.status(403).json({message:'Auditor no asignado'});
     const reportes = await listRows('reportes');
     const auditorias = await listRows('auditorias');
 
     // Verificar auditoria
     const idxAudit = auditorias.findIndex(a => a.id_auditoria === Number(id_auditoria));
-    if (idxAudit === -1) {
+    if(idxAudit === -1) 
+{
       return res.status(404).json({ message: 'Auditoría no encontrada.' });
     }
 
@@ -688,7 +776,8 @@ router.post('/reportes', authenticate, authorize([2]), upload.single('archivo'),
     await saveRows('reportes', reportes);
 
     // Actualizar estado a finalizada (3) si aplica
-    if (auditorias[idxAudit].id_estado !== 3) {
+    if(auditorias[idxAudit].id_estado !== 3) 
+{
       auditorias[idxAudit].id_estado = 3; 
       auditorias[idxAudit].estado_actualizado_en = new Date().toISOString();
       await saveRows('auditorias', auditorias);
@@ -702,7 +791,9 @@ router.post('/reportes', authenticate, authorize([2]), upload.single('archivo'),
       reporte: nuevoReporte 
     });
 
-  } catch (error) {
+  }
+ catch(error) 
+{
     console.error('Error al subir reporte:', error);
     res.status(500).json({ message: 'Error interno al procesar el reporte.' });
   }

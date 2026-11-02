@@ -57,45 +57,53 @@ const EVIDENCE_NAMES = [
   ['registro_mantenimiento.pdf', 'DOC', 'Registro demo de mantenimiento preventivo ambiental.']
 ];
 
-function isoDaysAgo(days, hour = 12) {
+function isoDaysAgo(days, hour = 12) 
+{
   const d = new Date();
   d.setUTCDate(d.getUTCDate() - days);
   d.setUTCHours(hour, 0, 0, 0);
   return d.toISOString();
 }
 
-function mysqlDate(value) {
+function mysqlDate(value) 
+{
   return new Date(value).toISOString().slice(0, 19).replace('T', ' ');
 }
 
-function dateOnly(value) {
+function dateOnly(value) 
+{
   return new Date(value).toISOString().slice(0, 10);
 }
 
-function nextId(items, field, min = 1) {
+function nextId(items, field, min = 1) 
+{
   return Math.max(min - 1, ...items.map((item) => Number(item[field]) || 0)) + 1;
 }
 
-function pushIfMissing(items, field, value, item) {
+function pushIfMissing(items, field, value, item) 
+{
   const existing = items.find((row) => Number(row[field]) === Number(value));
-  if (existing) return { item: existing, created: false };
+  if(existing) return { item: existing, created: false };
   items.push(item);
   return { item, created: true };
 }
 
-async function nextMysqlId(table, field, min = 1) {
+async function nextMysqlId(table, field, min = 1) 
+{
   const rows = await query(`SELECT MAX(${field}) AS max_id FROM ${table}`);
   return Math.max(min - 1, Number(rows[0]?.max_id) || 0) + 1;
 }
 
-async function findOne(sql, params) {
+async function findOne(sql, params) 
+{
   const rows = await query(sql, params);
   return rows[0] || null;
 }
 
-async function ensureMysqlEmpresa(def) {
+async function ensureMysqlEmpresa(def) 
+{
   const existing = await findOne('SELECT id_empresa FROM empresas WHERE nombre = ? LIMIT 1', [def.nombre]);
-  if (existing) return { id: Number(existing.id_empresa), created: false };
+  if(existing) return { id: Number(existing.id_empresa), created: false };
 
   const id = await nextMysqlId('empresas', 'id_empresa', 20002);
   await query(
@@ -119,9 +127,10 @@ async function ensureMysqlEmpresa(def) {
   return { id, created: true };
 }
 
-async function ensureMysqlUsuario(def) {
+async function ensureMysqlUsuario(def) 
+{
   const existing = await findOne('SELECT id_usuario FROM usuarios WHERE correo = ? LIMIT 1', [def.correo]);
-  if (existing) return { id: Number(existing.id_usuario), created: false };
+  if(existing) return { id: Number(existing.id_usuario), created: false };
 
   const id = await nextMysqlId('usuarios', 'id_usuario', 1001);
   await query(
@@ -133,12 +142,13 @@ async function ensureMysqlUsuario(def) {
   return { id, created: true };
 }
 
-async function ensureMysqlSolicitud(def) {
+async function ensureMysqlSolicitud(def) 
+{
   const existing = await findOne(
     'SELECT id_solicitud FROM solicitudes_pago WHERE id_empresa_auditora = ? AND concepto = ? LIMIT 1',
     [def.id_empresa_auditora, def.concepto]
   );
-  if (existing) return { id: Number(existing.id_solicitud), created: false };
+  if(existing) return { id: Number(existing.id_solicitud), created: false };
 
   const id = await nextMysqlId('solicitudes_pago', 'id_solicitud', 501);
   await query(
@@ -164,12 +174,13 @@ async function ensureMysqlSolicitud(def) {
   return { id, created: true };
 }
 
-async function ensureMysqlAuditoria(def) {
+async function ensureMysqlAuditoria(def) 
+{
   const existing = await findOne(
     'SELECT id_auditoria FROM auditorias WHERE id_empresa_auditora = ? AND objetivo = ? LIMIT 1',
     [def.id_empresa_auditora, def.objetivo]
   );
-  if (existing) return { id: Number(existing.id_auditoria), created: false };
+  if(existing) return { id: Number(existing.id_auditoria), created: false };
 
   const id = await nextMysqlId('auditorias', 'id_auditoria', 501);
   await query(
@@ -193,17 +204,19 @@ async function ensureMysqlAuditoria(def) {
   return { id, created: true };
 }
 
-async function ensureMysqlSimple(table, idField, lookupSql, lookupParams, insertSql, insertParams, minId) {
+async function ensureMysqlSimple(table, idField, lookupSql, lookupParams, insertSql, insertParams, minId) 
+{
   const existing = await findOne(lookupSql, lookupParams);
-  if (existing) return { id: Number(existing[idField]), created: false };
+  if(existing) return { id: Number(existing[idField]), created: false };
 
   const id = await nextMysqlId(table, idField, minId);
   await query(insertSql, [id, ...insertParams]);
   return { id, created: true };
 }
 
-function writePdf(filePath, title, lines) {
-  if (fs.existsSync(filePath)) return false;
+function writePdf(filePath, title, lines) 
+{
+  if(fs.existsSync(filePath)) return false;
   const text = [title, ...lines].join('\\n');
   const escaped = text.replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)');
   const pdf = `%PDF-1.4
@@ -247,8 +260,9 @@ startxref
   return true;
 }
 
-function writePng(filePath) {
-  if (fs.existsSync(filePath)) return false;
+function writePng(filePath) 
+{
+  if(fs.existsSync(filePath)) return false;
   const png = Buffer.from(
     'iVBORw0KGgoAAAANSUhEUgAAAMgAAABkCAIAAAD2HxkiAAAAGXRFWHRTb2Z0d2FyZQBBdWRpdENsb3VkIERlbW9cAB6aAAABXUlEQVR4nO3SwQ3AIAwEwYz//7MGEgqpgCu0gkmnZXtdAAD8ztsBAPxGSAiChCBICIKEXJ4Or38awXEmo0d0jWm+ZxW1Nq5Y71Jt7xw9c9q9sH3fX9gqVd9r5b2eQ0iAIBIgiAQIIgGCSIAgEiCIBAgigYbq4J5nZgAA+I0QEgIhIRASAiEhEBICISEQEgIhIRASAiEhEBICISEQEgIhIRASAiEhEBICISEQEgIhIRASAiEhEBICISEQEgIhIRASAiEhEBICISEQEgIhIRASAiEhEBICISEQEgIhIRASAiEhEBICISEQEgIhIRASAiEhEBICISEQEgIhIRASAiEhEBICISEQEgIhIRASAiEhEBICISEQEgIhIRASAiEhEBICISEQEgIhIRASAiEhEBICISEQEgIhIRASAiEhEBICISEQEgIhIRASAiEhEBICISEQEgIhIRASAiEhEBICISEQEgIhIRASAiEhEBICISEQEgIhIRASAiEhEBICISEQEgIhIRASAiEhEBICISEQEgIhIRASAiEhEBICISEQEgIhIRASAiEhEBICISEQEgIh8QJYSwHMYk1VnAAAAABJRU5ErkJggg==',
     'base64'
@@ -257,7 +271,8 @@ function writePng(filePath) {
   return true;
 }
 
-async function loadJsonState() {
+async function loadJsonState() 
+{
   const files = [
     'usuarios',
     'empresas',
@@ -274,20 +289,24 @@ async function loadJsonState() {
     'modulos_ambientales'
   ];
   const state = {};
-  for (const name of files) {
+  for(const name of files) 
+{
     state[name] = await readJson(`${name}.json`);
   }
   return state;
 }
 
-async function saveJsonState(state) {
+async function saveJsonState(state) 
+{
   const files = Object.keys(state).filter((name) => name !== 'modulos_ambientales');
-  for (const name of files) {
+  for(const name of files) 
+{
     await writeJson(`${name}.json`, state[name]);
   }
 }
 
-async function main() {
+async function main() 
+{
   fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 
   const state = await loadJsonState();
@@ -315,11 +334,13 @@ async function main() {
     [AUDITOR_EMAIL]
   );
 
-  if (!supervisor || !auditor) {
+  if(!supervisor || !auditor) 
+{
     throw new Error('No se encontraron supervisor/auditor demo en MySQL.');
   }
 
-  if (!state.usuarios.some((u) => Number(u.id_usuario) === Number(auditor.id_usuario))) {
+  if(!state.usuarios.some((u) => Number(u.id_usuario) === Number(auditor.id_usuario))) 
+{
     state.usuarios.push({
       id_usuario: Number(auditor.id_usuario),
       id_empresa: Number(auditor.id_empresa),
@@ -338,7 +359,8 @@ async function main() {
     : [1, 2, 3];
 
   const companyRefs = [];
-  for (let i = 0; i < EMPRESAS.length; i += 1) {
+  for(let i = 0; i < EMPRESAS.length; i += 1) 
+{
     const [baseName, giro] = EMPRESAS[i];
     const nombre = `${DEMO_PREFIX} ${baseName}`;
     const estado = ESTADOS_MEXICO[i % ESTADOS_MEXICO.length];
@@ -357,7 +379,7 @@ async function main() {
       contacto_correo: contactoCorreo,
       contacto_telefono: `555-010-${String(i + 1).padStart(4, '0')}`
     });
-    if (mysqlEmpresa.created) summary.empresas += 1;
+    if(mysqlEmpresa.created) summary.empresas += 1;
 
     const mysqlUsuario = await ensureMysqlUsuario({
       id_empresa: mysqlEmpresa.id,
@@ -366,7 +388,7 @@ async function main() {
       id_rol: 3,
       creado_en: creadoEn
     });
-    if (mysqlUsuario.created) summary.usuariosCliente += 1;
+    if(mysqlUsuario.created) summary.usuariosCliente += 1;
 
     pushIfMissing(state.empresas, 'id_empresa', mysqlEmpresa.id, {
       id_empresa: mysqlEmpresa.id,
@@ -398,7 +420,8 @@ async function main() {
     companyRefs.push({ empresaId: mysqlEmpresa.id, usuarioId: mysqlUsuario.id, nombre, contactoCorreo });
   }
 
-  for (let i = 0; i < ESTADOS.length; i += 1) {
+  for(let i = 0; i < ESTADOS.length; i += 1) 
+{
     const idx = i + 1;
     const ref = companyRefs[i % companyRefs.length];
     const estado = ESTADOS[i];
@@ -425,7 +448,7 @@ async function main() {
       creado_por_supervisor: Number(supervisor.id_usuario),
       pagada_en: pagadaEn
     });
-    if (mysqlSolicitud.created) summary.solicitudesPago += 1;
+    if(mysqlSolicitud.created) summary.solicitudesPago += 1;
 
     const mysqlAuditoria = await ensureMysqlAuditoria({
       id_empresa_auditora: empresaAuditoraId,
@@ -438,7 +461,7 @@ async function main() {
       estado_actualizado_en: estadoActualizado,
       fecha_inicio: fechaInicio
     });
-    if (mysqlAuditoria.created) summary.auditorias += 1;
+    if(mysqlAuditoria.created) summary.auditorias += 1;
 
     pushIfMissing(state.solicitudes_pago, 'id_solicitud', mysqlSolicitud.id, {
       id_solicitud: mysqlSolicitud.id,
@@ -475,7 +498,8 @@ async function main() {
       id_auditor: Number(auditor.id_usuario),
       asignado_en: isoDaysAgo(Math.max(createdDaysAgo - 1, 1), 14)
     });
-    if (participante.created) {
+    if(participante.created) 
+{
       await ensureMysqlSimple(
         'auditoria_participantes',
         'id_participante',
@@ -488,11 +512,13 @@ async function main() {
     }
 
     const selectedModules = moduloIds.slice(0, 1 + (i % Math.min(3, moduloIds.length)));
-    for (const idModulo of selectedModules) {
+    for(const idModulo of selectedModules) 
+{
       const existsJsonModulo = state.auditoria_modulos.some(
         (m) => Number(m.id_auditoria) === mysqlAuditoria.id && Number(m.id_modulo) === idModulo
       );
-      if (!existsJsonModulo) {
+      if(!existsJsonModulo) 
+{
         state.auditoria_modulos.push({
           id_auditoria_modulo: nextId(state.auditoria_modulos, 'id_auditoria_modulo', 1001),
           id_auditoria: mysqlAuditoria.id,
@@ -513,7 +539,8 @@ async function main() {
 
     const convSubject = `${DEMO_PREFIX} Auditoria ${auditLabel} - ${ref.nombre.replace(`${DEMO_PREFIX} `, '')}`;
     let conv = state.conversaciones.find((c) => c.asunto === convSubject && Number(c.id_cliente) === ref.usuarioId);
-    if (!conv) {
+    if(!conv) 
+{
       conv = {
         id_conversacion: nextId(state.conversaciones, 'id_conversacion', 251),
         id_cliente: ref.usuarioId,
@@ -547,17 +574,20 @@ async function main() {
       ['SUPERVISOR', Number(supervisor.id_usuario), 'Gracias. La solicitud quedo registrada y asignaremos seguimiento.'],
       ['AUDITOR', Number(auditor.id_usuario), 'Ya revise el alcance y agregue las evidencias iniciales al expediente.']
     ];
-    if (estado === 3) {
+    if(estado === 3) 
+{
       messageTemplates.push(['SUPERVISOR', Number(supervisor.id_usuario), 'El reporte final quedo disponible para revision.']);
     }
-    for (let m = 0; m < messageTemplates.length; m += 1) {
+    for(let m = 0; m < messageTemplates.length; m += 1) 
+{
       const [tipo, emisorId, contenidoBase] = messageTemplates[m];
       const contenido = `${DEMO_PREFIX} ${contenidoBase}`;
       const existsMsg = state.mensajes.some(
         (msg) => Number(msg.id_conversacion) === mysqlConv.id && msg.contenido === contenido
       );
       const msgDate = isoDaysAgo(Math.max(createdDaysAgo - 5 - m * 6, 1), 10 + m);
-      if (!existsMsg) {
+      if(!existsMsg) 
+{
         const idMensaje = nextId(state.mensajes, 'id_mensaje', 501);
         state.mensajes.push({
           id_mensaje: idMensaje,
@@ -585,7 +615,8 @@ async function main() {
     let auditConv = state.conversaciones.find(
       (c) => c.asunto === auditSubject && Number(c.id_auditoria) === mysqlAuditoria.id
     );
-    if (!auditConv) {
+    if(!auditConv) 
+{
       auditConv = {
         id_conversacion: nextId(state.conversaciones, "id_conversacion", 251),
         id_cliente: ref.usuarioId,
@@ -620,14 +651,16 @@ async function main() {
       ["CLIENTE", ref.usuarioId, "Se cargaron documentos solicitados para revision del auditor."],
       ["AUDITOR", Number(auditor.id_usuario), estado === 3 ? "Hallazgos cerrados y reporte final preparado." : "Seguimiento en curso con evidencias documentales."]
     ];
-    for (let m = 0; m < auditMessages.length; m += 1) {
+    for(let m = 0; m < auditMessages.length; m += 1) 
+{
       const [tipo, emisorId, contenidoBase] = auditMessages[m];
       const contenido = DEMO_PREFIX + " " + contenidoBase;
       const existsMsg = state.mensajes.some(
         (msg) => Number(msg.id_conversacion) === mysqlAuditConv.id && msg.contenido === contenido
       );
       const msgDate = isoDaysAgo(Math.max(createdDaysAgo - 7 - m * 7, 1), 13 + m);
-      if (!existsMsg) {
+      if(!existsMsg) 
+{
         state.mensajes.push({
           id_mensaje: nextId(state.mensajes, "id_mensaje", 501),
           id_conversacion: mysqlAuditConv.id,
@@ -654,12 +687,14 @@ async function main() {
       `${DEMO_PREFIX} Alcance validado con cliente y auditor asignado.`,
       `${DEMO_PREFIX} Seguimiento documental registrado en expediente.`
     ];
-    for (let c = 0; c < comments.length; c += 1) {
+    for(let c = 0; c < comments.length; c += 1) 
+{
       const existsComment = state.comentarios.some(
         (comment) => Number(comment.id_auditoria) === mysqlAuditoria.id && comment.mensaje === comments[c]
       );
       const commentDate = isoDaysAgo(Math.max(createdDaysAgo - 8 - c * 8, 1), 11);
-      if (!existsComment) {
+      if(!existsComment) 
+{
         state.comentarios.push({
           id_comentario: nextId(state.comentarios, 'id_comentario', 501),
           id_auditoria: mysqlAuditoria.id,
@@ -680,17 +715,22 @@ async function main() {
       );
     }
 
-    if (estado !== 1) {
+    if(estado !== 1) 
+{
       const evidenceCount = estado === 2 ? 3 : 5;
-      for (let e = 0; e < evidenceCount; e += 1) {
+      for(let e = 0; e < evidenceCount; e += 1) 
+{
         const [baseFileName, tipo, descripcionBase] = EVIDENCE_NAMES[e];
         const ext = path.extname(baseFileName);
         const safeBase = path.basename(baseFileName, ext);
         const fileName = `demo_auditoria_${mysqlAuditoria.id}_${safeBase}${ext}`;
         const filePath = path.join(UPLOAD_DIR, fileName);
-        if (ext === '.pdf') {
-          if (writePdf(filePath, 'Evidencia demo AuditCloud', [objetivo, descripcionBase])) summary.archivosGenerados += 1;
-        } else if (writePng(filePath)) {
+        if(ext === '.pdf') 
+{
+          if(writePdf(filePath, 'Evidencia demo AuditCloud', [objetivo, descripcionBase])) summary.archivosGenerados += 1;
+        }
+ else if(writePng(filePath)) 
+{
           summary.archivosGenerados += 1;
         }
         const evidenceDescription = `${DEMO_PREFIX} ${descripcionBase}`;
@@ -699,7 +739,8 @@ async function main() {
         );
         const evidenciaFecha = isoDaysAgo(Math.max(createdDaysAgo - 12 - e * 5, 1), 12);
         const modulo = selectedModules[e % selectedModules.length];
-        if (!existsEvidence) {
+        if(!existsEvidence) 
+{
           state.evidencias.push({
             id_evidencia: nextId(state.evidencias, 'id_evidencia', 501),
             id_auditoria: mysqlAuditoria.id,
@@ -725,16 +766,19 @@ async function main() {
       }
     }
 
-    if (estado === 3) {
+    if(estado === 3) 
+{
       const reportFile = `demo_auditoria_${mysqlAuditoria.id}_reporte_final.pdf`;
       const reportPath = path.join(UPLOAD_DIR, reportFile);
-      if (writePdf(reportPath, 'Reporte final demo AuditCloud', [objetivo, 'Conclusiones y hallazgos ficticios para entorno demo.'])) {
+      if(writePdf(reportPath, 'Reporte final demo AuditCloud', [objetivo, 'Conclusiones y hallazgos ficticios para entorno demo.'])) 
+{
         summary.archivosGenerados += 1;
       }
       const reportName = `${DEMO_PREFIX} Reporte final auditoria ${auditLabel}`;
       const existsReport = state.reportes.some((r) => Number(r.id_auditoria) === mysqlAuditoria.id && r.nombre === reportName);
       const reportDate = isoDaysAgo(Math.max(createdDaysAgo - 48, 1), 18);
-      if (!existsReport) {
+      if(!existsReport) 
+{
         state.reportes.push({
           id_reporte: nextId(state.reportes, 'id_reporte', 501),
           id_auditoria: mysqlAuditoria.id,
@@ -781,10 +825,12 @@ async function main() {
   );
 
   const elasticHealth = await pingElasticsearch();
-  if (elasticHealth.enabled && elasticHealth.connected) {
-    for (const auditoria of auditoriasMysql) {
+  if(elasticHealth.enabled && elasticHealth.connected) 
+{
+    for(const auditoria of auditoriasMysql) 
+{
       const result = await indexAuditoria(auditoria);
-      if (result.ok) summary.elasticIndexados += 1;
+      if(result.ok) summary.elasticIndexados += 1;
       else summary.elasticErrores += 1;
     }
   }
@@ -806,17 +852,22 @@ async function main() {
 }
 
 main()
-  .catch((error) => {
+  .catch((error) => 
+{
     console.error('Error ejecutando seed demo:', {
       message: error?.message,
       code: error?.code
     });
     process.exitCode = 1;
   })
-  .finally(async () => {
-    try {
+  .finally(async () => 
+{
+    try 
+{
       await getPool().end();
-    } catch {
+    }
+ catch
+{
       // noop
     }
   });
