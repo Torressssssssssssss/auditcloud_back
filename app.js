@@ -5,6 +5,8 @@ const express = require('express');
 const path = require('path');
 const cors = require('cors');
 const fs = require('fs');
+const casco = require('helmet');
+const limitarPeticiones = require('express-rate-limit');
 
 const authRoutes = require('./routes/auth.routes');
 const supervisorRoutes = require('./routes/supervisor.routes');
@@ -16,6 +18,18 @@ const timelineRoutes = require('./routes/timeline.routes');
 const mysqlRoutes = require('./routes/mysql.routes');
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
+
+//Configurar protección global mediante cabeceras HTTP
+app.use(casco());
+
+//Configurar limitador de peticiones
+const limitador = limitarPeticiones(
+{
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  message: 'Demasiadas peticiones desde esta IP, por favor intente más tarde.'
+});
+app.use(limitador);
 
 function normalizeOrigin(origin) 
 {
