@@ -40,7 +40,7 @@ describir('Integración HTTP en memoria: supervisores y Firebase', { concurrency
     const reporte = respuesta.cuerpo.reporte;
     afirmar.equal(reporte.id_auditoria, 20);
     afirmar.equal(reporte.creado_por, 5);
-    afirmar.match(reporte.url, /^https:\/\/storage.googleapis.com\/integracion.example.test\/reportes\/20\//);
+    afirmar.match(reporte.url, /^https:\/\/storage\.googleapis\.com\/integracion\.example\.test\/reportes\/20\//);
     afirmar.deepEqual(escenario.tablas.reportes, [reporte]);
     afirmar.ok(escenario.cambios.some(sentencia => sentencia.startsWith('INSERT INTO `reportes`')));
     afirmar.equal(escenario.connection.commit.mock.callCount(), 1);
