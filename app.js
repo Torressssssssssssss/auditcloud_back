@@ -27,6 +27,10 @@ const limitador = limitarPeticiones(
 {
   windowMs: 15 * 60 * 1000,
   max: 100,
+  validate:
+  {
+    ip: false
+  },
   message: 'Demasiadas peticiones desde esta IP, por favor intente más tarde.'
 });
 app.use(limitador);
