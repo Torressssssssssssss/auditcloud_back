@@ -102,7 +102,25 @@ app.use('/uploads', require('./utils/auth').authenticate, async (req, res, next)
       return next();
     }
     
-    const filePath = path.join(__dirname, 'data', 'uploads', fileName);
+    //Validar nombre de archivo
+if(fileName !== path.basename(fileName) || fileName === '.' || fileName === '..')
+{
+  return res.status(400).json({ message: 'Nombre de archivo inválido' });
+}
+
+if(!/^[a-zA-Z0-9._-]+$/.test(fileName))
+{
+  return res.status(400).json({ message: 'Nombre de archivo inválido' });
+}
+
+const directorioSubidas = path.resolve(__dirname, 'data', 'uploads');
+const filePath = path.resolve(directorioSubidas, fileName);
+
+//Verificar confinamiento de ruta
+if(!filePath.startsWith(directorioSubidas + path.sep))
+{
+  return res.status(403).json({ message: 'Acceso denegado' });
+}
     
     // Validar que el archivo exista
     try 
