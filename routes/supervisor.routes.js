@@ -842,7 +842,7 @@ router.put('/auditorias/:idAuditoria/estado', authenticate, authorize([1]), asyn
   const idAuditoria = Number(req.params.idAuditoria);
   const { id_estado } = req.body;
   
-  if(!id_estado) return res.status(400).json({ message: 'Falta id_estado' });
+  if(![1, 2, 3].includes(Number(id_estado))) return res.status(400).json({ message: 'id_estado debe ser 1, 2 o 3' });
 
   const auditorias = await listRows('auditorias');
   const idx = auditorias.findIndex(a => a.id_auditoria === idAuditoria);
@@ -1364,4 +1364,6 @@ router.get('/usuarios-empresa/:idEmpresa', authenticate, authorize([1]), async (
   }
 });
 
-module.exports = require('../utils/sqlRouter').transactionalRouter(router);
+module.exports = require('../utils/sqlRouter').transactionalRouter(router, {
+  verificarEscritura: require('../middleware/verificarInmutabilidad').verificarInmutabilidad
+});

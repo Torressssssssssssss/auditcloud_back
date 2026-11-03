@@ -35,7 +35,7 @@ function fixture(t)
   // Recargamos solo módulos de aplicación para que capturen el driver simulado.
   const root = path.resolve(__dirname, '../..');
   const isApplication = filename => filename === path.join(root, 'app.js') ||
-    ['routes', 'utils', 'services'].some(dir => filename.startsWith(path.join(root, dir) + path.sep));
+    ['routes', 'controllers', 'utils', 'services', 'middleware'].some(dir => filename.startsWith(path.join(root, dir) + path.sep));
   const cached = Object.entries(require.cache).filter(([filename]) => isApplication(filename));
   for(const [filename] of cached) delete require.cache[filename];
   t.after(() => 

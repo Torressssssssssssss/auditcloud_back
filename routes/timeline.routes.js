@@ -65,4 +65,6 @@ router.post('/comentarios',authenticate,async(req,res)=>
   await query('INSERT INTO comentarios (id_comentario,id_auditoria,id_usuario,mensaje,creado_en) VALUES (?,?,?,?,UTC_TIMESTAMP())',[comment.id_comentario,id,req.user.id_usuario,mensaje]);
   res.status(201).json(comment);
 });
-module.exports=require('../utils/sqlRouter').transactionalRouter(router);
+module.exports=require('../utils/sqlRouter').transactionalRouter(router, {
+  verificarEscritura: require('../middleware/verificarInmutabilidad').verificarInmutabilidad
+});

@@ -7,7 +7,7 @@ function publicBody(body)
   return JSON.parse(JSON.stringify(body, (key, value) =>
     ['password_hash', 'password'].includes(key) ? undefined : value));
 }
-function transactionalRouter(router) 
+function transactionalRouter(router, { verificarEscritura } = {})
 {
   for(const layer of router.stack) 
 {
@@ -31,6 +31,7 @@ function transactionalRouter(router)
 {
         await withTransaction(async () => 
 {
+          if(verificarEscritura) await verificarEscritura(req);
           await handler(req, res, next);
           if(res.statusCode >= 400) throw rollbackResponse;
         }, { write: !['GET', 'HEAD'].includes(req.method) || req.baseUrl.includes('mercadopago') });
@@ -39,9 +40,12 @@ function transactionalRouter(router)
 {
         if(error !== rollbackResponse) 
 {
-          console.error('[MySQL operation failed]', error.code || error.name);
           res.statusCode = error.statusCode || 500;
-          response = { kind: 'json', body: { message: res.statusCode === 409 ? 'Los datos cambiaron; vuelve a intentar.' : 'No se pudo completar la operación' } };
+          const reglaInmutabilidad = ['AUDITORIA_FINALIZADA', 'AUDITORIA_SIN_ACCESO', 'RECURSO_AUDITORIA_INVALIDO'].includes(error.code);
+          if(!reglaInmutabilidad) console.error('[MySQL operation failed]', error.code || error.name);
+          response = { kind: 'json', body: reglaInmutabilidad
+            ? { code: error.code, message: error.message }
+            : { message: res.statusCode === 409 ? 'Los datos cambiaron; vuelve a intentar.' : 'No se pudo completar la operación' } };
         }
       }
  finally 

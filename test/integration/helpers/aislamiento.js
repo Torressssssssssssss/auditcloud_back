@@ -11,7 +11,7 @@ function prepararAplicacion(prueba)
 {
   const raiz = ruta.resolve(__dirname, '../../..');
   const esAplicacion = archivo => archivo === ruta.join(raiz, 'app.js') ||
-    ['routes', 'controllers', 'utils', 'services'].some(carpeta => archivo.startsWith(ruta.join(raiz, carpeta) + ruta.sep));
+    ['routes', 'controllers', 'utils', 'services', 'middleware'].some(carpeta => archivo.startsWith(ruta.join(raiz, carpeta) + ruta.sep));
   const anteriores = Object.entries(require.cache).filter(([archivo]) => esAplicacion(archivo));
   for(const [archivo] of anteriores)
   {
@@ -105,6 +105,22 @@ function prepararAplicacion(prueba)
     execute(sentencia, parametros)
     {
       let coincidencia;
+      if(sentencia.startsWith('SELECT a.id_auditoria, a.id_estado FROM auditorias a'))
+      {
+        let auditoria;
+        if(sentencia.includes('JOIN evidencias'))
+        {
+          const evidencia = (tablas.evidencias || []).find(fila => fila.id_evidencia === parametros[0]);
+          auditoria = tablas.auditorias.find(fila => fila.id_auditoria === evidencia?.id_auditoria);
+        }
+        else
+        {
+          const campo = sentencia.includes('a.id_solicitud_pago=?') ? 'id_solicitud_pago' : 'id_auditoria';
+          auditoria = tablas.auditorias.find(fila => fila[campo] === parametros[0]);
+        }
+        const propietario = sentencia.includes('a.id_cliente=?') ? auditoria?.id_cliente : auditoria?.id_empresa_auditora;
+        return auditoria && propietario === parametros[1] ? [{ id_auditoria: auditoria.id_auditoria, id_estado: auditoria.id_estado }] : [];
+      }
       if((coincidencia = /^SELECT \* FROM `(\w+)`$/.exec(sentencia)))
       {
         afirmar.ok(Object.hasOwn(tablas, coincidencia[1]), sentencia);

@@ -861,4 +861,6 @@ router.post('/reportes', authenticate, authorize([2]), upload.single('archivo'),
   }
 });
 
-module.exports = require('../utils/sqlRouter').transactionalRouter(router);
+module.exports = require('../utils/sqlRouter').transactionalRouter(router, {
+  verificarEscritura: require('../middleware/verificarInmutabilidad').verificarInmutabilidad
+});
