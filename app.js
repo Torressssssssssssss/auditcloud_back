@@ -19,6 +19,7 @@ const mercadopagoRoutes = require('./routes/mercadopago.routes');
 const timelineRoutes = require('./routes/timeline.routes');
 const mysqlRoutes = require('./routes/mysql.routes');
 const direccionRoutes = require('./routes/direccion.routes');
+const reportesRoutes = require('./routes/reportes.routes');
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
 
@@ -94,6 +95,7 @@ app.use('/api/paypal', paypalRoutes);
 app.use('/api/pagos/mercadopago', mercadopagoRoutes);
 app.use('/api/mercadopago', mercadopagoRoutes);
 app.use('/api/direccion', direccionRoutes);
+app.use('/api/reportes', reportesRoutes);
 
 // Servir uploads directos
 app.use('/uploads', require('./utils/auth').authenticate, async (req, res, next) => 

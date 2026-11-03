@@ -29,6 +29,7 @@
     "mysql2": "^3.11.0",
     "node-fetch": "^2.6.7",
     "nodemailer": "^10.3.1",
+    "pdfkit": "0.17.2",
     "socket.io": "^4.8.1"
   },
   "devDependencies": {

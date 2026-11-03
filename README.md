@@ -181,6 +181,9 @@ Nota adicional: el login usa MySQL; los usuarios demo ya existen en `auditcloud_
 
 ## Rutas Base
 
+AC-05: `GET /api/reportes/generar/:id_auditoria` descarga el resumen de hallazgos
+en PDF. Ver [instalación, permisos y pruebas](docs/AC-05-reportes.md).
+
 ```
 /api/auth
 /api/supervisor

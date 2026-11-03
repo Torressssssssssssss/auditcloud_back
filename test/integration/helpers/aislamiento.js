@@ -11,7 +11,7 @@ function prepararAplicacion(prueba)
 {
   const raiz = ruta.resolve(__dirname, '../../..');
   const esAplicacion = archivo => archivo === ruta.join(raiz, 'app.js') ||
-    ['routes', 'utils', 'services'].some(carpeta => archivo.startsWith(ruta.join(raiz, carpeta) + ruta.sep));
+    ['routes', 'controllers', 'utils', 'services'].some(carpeta => archivo.startsWith(ruta.join(raiz, carpeta) + ruta.sep));
   const anteriores = Object.entries(require.cache).filter(([archivo]) => esAplicacion(archivo));
   for(const [archivo] of anteriores)
   {
@@ -209,7 +209,7 @@ async function solicitar(aplicacion, metodo, destino, { token, cuerpo, contenido
           const texto = Buffer.concat(fragmentos).toString('utf8').split('\r\n\r\n').slice(1).join('\r\n\r\n');
           const tipoRespuesta = String(respuesta.getHeader('content-type') || '');
           resolver({ estado: respuesta.statusCode, cuerpo: tipoRespuesta.includes('application/json') ? JSON.parse(texto) : texto,
-            texto, tipo: tipoRespuesta });
+            texto, tipo: tipoRespuesta, headers: respuesta.getHeaders() });
         }
         catch(error)
         {
