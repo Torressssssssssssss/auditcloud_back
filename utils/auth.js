@@ -59,4 +59,9 @@ const authorize = (rolesPermitidos = []) =>
   };
 };
 
-module.exports = { signToken, authenticate, authorize };
+function verificarToken(token)
+{
+  return jwt.verify(token, SECRET_KEY);
+}
+
+module.exports = { signToken, authenticate, authorize, verificarToken };

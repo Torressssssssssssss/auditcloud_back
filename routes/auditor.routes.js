@@ -6,6 +6,8 @@ const path = require('path');
 const fs = require('fs');
 const { listRows, saveRows, nextId, crearNotificacion } = require('../utils/mysqlStore');
 const { query } = require('../utils/db');
+const { validarConsumo, insertarConsumo, agregarConsumos } = require('../utils/consumos');
+const { programarNuevoConsumo } = require('../services/websocket.service');
 const { authenticate, authorize } = require('../utils/auth');
 const { normalizeConversation, isAuditConversation } = require('../utils/conversationContext');
 const { updateAuditoria } = require('../services/elasticsearchAuditorias.service');
@@ -51,6 +53,22 @@ const upload = multer({
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
   fileFilter: fileFilter
 });
+
+// El formulario de evidencias y la API comparten el máximo de 5 MiB.
+// Los reportes conservan su límite independiente de 10 MiB.
+const subirEvidencia = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 }, fileFilter }).single('archivo');
+function recibirEvidencia(req, res, next)
+{
+  subirEvidencia(req, res, error =>
+  {
+    if(error)
+    {
+      return res.status(400).json({ message: error.code === 'LIMIT_FILE_SIZE'
+        ? 'El archivo supera el máximo de 5 MB.' : 'Sube un solo archivo JPG, PNG o PDF válido.' });
+    }
+    next();
+  });
+}
 
 async function cargarClienteAuditoria(idCliente, usuarios, empresas) 
 {
@@ -232,10 +250,29 @@ router.patch('/auditorias/:id/objetivo', authenticate, authorize([2]), async (re
 
 // POST /api/auditor/evidencias
 // Sube evidencia y crea registro
-router.post('/evidencias', authenticate, authorize([2]), upload.single('archivo'), async (req, res) => 
+router.post('/evidencias', authenticate, authorize([2]), recibirEvidencia, (req, res, next) =>
+{
+  // Multer escribe antes de abrir la transacción. Retirar archivos rechazados,
+  // incluyendo fallos de commit detectados por transactionalRouter.
+  res.once('finish', () =>
+  {
+    if(res.statusCode >= 400 && req.file)
+    {
+      fs.promises.unlink(req.file.path).catch(error =>
+      {
+        if(error.code !== 'ENOENT') console.error('No se pudo retirar archivo rechazado:', error.code);
+      });
+    }
+  });
+  next();
+}, async (req, res) =>
 {
   try 
 {
+    if(!req.body || typeof req.body !== 'object' || Array.isArray(req.body))
+    {
+      return res.status(400).json({ message: 'Envía los datos de la evidencia.' });
+    }
     const { id_auditoria, id_modulo, tipo, descripcion } = req.body;
     
     // Validaciones
@@ -243,6 +280,16 @@ router.post('/evidencias', authenticate, authorize([2]), upload.single('archivo'
 {
       return res.status(400).json({ message: 'id_auditoria, id_modulo, tipo y descripcion son obligatorios' });
     }
+
+    const positiveId = value => ['string', 'number'].includes(typeof value) &&
+      /^[1-9]\d*$/.test(String(value)) && Number(value) <= 2147483647;
+    if(!positiveId(id_auditoria) || !positiveId(id_modulo) ||
+      !['FOTO', 'DOC', 'COMENTARIO'].includes(tipo) ||
+      typeof descripcion !== 'string' || descripcion.trim().length < 5 || descripcion.trim().length > 5000)
+    {
+      return res.status(400).json({ message: 'Usa IDs válidos, tipo FOTO/DOC/COMENTARIO y una descripción de 5 a 5000 caracteres.' });
+    }
+    const consumo = validarConsumo(req.body);
 
     // Solo comentario puede ir sin archivo
     if(tipo !== 'COMENTARIO' && !req.file) 
@@ -262,7 +309,7 @@ router.post('/evidencias', authenticate, authorize([2]), upload.single('archivo'
       id_modulo: Number(id_modulo),
       id_auditor: req.user.id_usuario,
       tipo,
-      descripcion,
+      descripcion: descripcion.trim(),
       nombre_archivo: req.file ? req.file.originalname : null,
       url_archivo: req.file ? `/uploads/${req.file.filename}` : null,
       creado_en: new Date().toISOString()
@@ -270,6 +317,15 @@ router.post('/evidencias', authenticate, authorize([2]), upload.single('archivo'
 
     evidencias.push(nueva);
     await saveRows('evidencias', evidencias);
+    // query() reutiliza la conexión de transactionalRouter: ambas inserciones
+    // se confirman juntas o se revierten, sin abrir una transacción independiente.
+    if(consumo)
+    {
+      await insertarConsumo(idEvidencia, consumo);
+      programarNuevoConsumo(req.app, req.user.id_empresa, {
+        id_evidencia: idEvidencia, id_auditoria: Number(id_auditoria), ...consumo
+      });
+    }
 
     // Notificar al cliente
     try 
@@ -294,12 +350,18 @@ router.post('/evidencias', authenticate, authorize([2]), upload.single('archivo'
       console.error('Error al crear notificación de evidencia:', notifError);
     }
 
-    res.status(201).json({ message: 'Evidencia subida correctamente', evidencia: nueva });
+    res.status(201).json({ message: 'Evidencia subida correctamente', evidencia: {
+      ...nueva, consumo: consumo ? { id_evidencia: idEvidencia, ...consumo } : null
+    } });
   }
  catch(error) 
 {
-    console.error('Error al subir evidencia:', error);
-    res.status(500).json({ message: error.message || 'Error interno al procesar el archivo' });
+    if(error.statusCode === 400 && error.fields)
+    {
+      return res.status(400).json({ message: error.message, errors: error.fields });
+    }
+    console.error('Error al subir evidencia:', error.code || error.name);
+    res.status(500).json({ message: 'Error interno al procesar la evidencia' });
   }
 });
 
@@ -323,7 +385,7 @@ router.get('/evidencias/:idAuditoria', authenticate, authorize([2]), async (req,
     resultado = evidencias.filter(e => e.id_auditor === idAuditor);
   }
   
-  res.json(resultado);
+  res.json(await agregarConsumos(resultado));
 });
 
 // PUT /api/auditor/evidencias/:idEvidencia

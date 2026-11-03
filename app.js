@@ -5,6 +5,8 @@ const express = require('express');
 const path = require('path');
 const cors = require('cors');
 const fs = require('fs');
+const { createServer: crearServidorHttp } = require('node:http');
+const { configurarWebsocket } = require('./services/websocket.service');
 const casco = require('helmet');
 const limitarPeticiones = require('express-rate-limit');
 
@@ -16,6 +18,7 @@ const paypalRoutes = require('./routes/paypal.routes');
 const mercadopagoRoutes = require('./routes/mercadopago.routes');
 const timelineRoutes = require('./routes/timeline.routes');
 const mysqlRoutes = require('./routes/mysql.routes');
+const direccionRoutes = require('./routes/direccion.routes');
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
 
@@ -90,6 +93,7 @@ app.use('/api/auditor', auditorRoutes);
 app.use('/api/paypal', paypalRoutes);
 app.use('/api/pagos/mercadopago', mercadopagoRoutes);
 app.use('/api/mercadopago', mercadopagoRoutes);
+app.use('/api/direccion', direccionRoutes);
 
 // Servir uploads directos
 app.use('/uploads', require('./utils/auth').authenticate, async (req, res, next) => 
@@ -181,9 +185,21 @@ app.use((error, solicitud, respuesta, siguiente) =>
   });
 });
 
-if(require.main === module) app.listen(PORT, '127.0.0.1', () => 
+function crearServidor()
 {
-  console.log(`🚀 Servidor backend corriendo en http://127.0.0.1:${PORT}`);
-});
+  const servidor = crearServidorHttp(app);
+  const conexion = configurarWebsocket(servidor, corsOptions);
+  app.set('socketio', conexion);
+  return servidor;
+}
+
+if(require.main === module)
+{
+  crearServidor().listen(PORT, '127.0.0.1', () =>
+  {
+    console.log(`Servidor AuditCloud en http://127.0.0.1:${PORT}`);
+  });
+}
 
 module.exports = app;
+module.exports.crearServidor = crearServidor;

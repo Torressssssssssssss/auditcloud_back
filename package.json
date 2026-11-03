@@ -6,7 +6,8 @@
   "scripts": {
     "lint": "eslint .",
     "dev": "nodemon app.js",
-    "test:unit": "node --test test/unit/*.test.js"
+    "test:unit": "node --test test/unit/*.test.js",
+    "start": "node app.js"
   },
   "keywords": [],
   "author": "",
@@ -27,7 +28,8 @@
     "multer": "^2.5.0",
     "mysql2": "^3.11.0",
     "node-fetch": "^2.6.7",
-    "nodemailer": "^10.3.1"
+    "nodemailer": "^10.3.1",
+    "socket.io": "^4.8.1"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
