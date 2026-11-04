@@ -52,15 +52,22 @@ jobs:
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         uses: appleboy/ssh-action@v1.0.3
         env:
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
           MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
         with:
           host: ${{ secrets.DO_HOST }}
           username: ${{ secrets.DO_USERNAME }}
           key: ${{ secrets.DO_SSH_KEY }}
-          envs: MYSQL_ROOT_PASSWORD
+          envs: DB_USER,DB_PASSWORD,MYSQL_ROOT_PASSWORD,JWT_SECRET
           script: |
+            set -eu
             cd ~/auditcloud/stable/auditcloud_back
             git pull origin main
+            export DB_USER=$DB_USER
+            export DB_PASSWORD=$DB_PASSWORD
             export MYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASSWORD
-            docker compose up -d --build
+            export JWT_SECRET=$JWT_SECRET
+            docker compose up -d --build --wait
             docker system prune -f
