@@ -51,12 +51,16 @@ jobs:
       - name: Desplegar en DigitalOcean
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         uses: appleboy/ssh-action@v1.0.3
+        env:
+          MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
         with:
           host: ${{ secrets.DO_HOST }}
           username: ${{ secrets.DO_USERNAME }}
           key: ${{ secrets.DO_SSH_KEY }}
+          envs: MYSQL_ROOT_PASSWORD
           script: |
             cd ~/auditcloud/stable/auditcloud_back
             git pull origin main
+            export MYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASSWORD
             docker compose up -d --build
             docker system prune -f
