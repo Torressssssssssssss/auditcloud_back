@@ -22,6 +22,7 @@ const direccionRoutes = require('./routes/direccion.routes');
 const reportesRoutes = require('./routes/reportes.routes');
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
+const interfazEscucha = process.env.HOST || '127.0.0.1';
 
 //Configurar protección global mediante cabeceras HTTP
 app.use(casco());
@@ -197,9 +198,9 @@ function crearServidor()
 
 if(require.main === module)
 {
-  crearServidor().listen(PORT, '127.0.0.1', () =>
+  crearServidor().listen(PORT, interfazEscucha, () =>
   {
-    console.log(`Servidor AuditCloud en http://127.0.0.1:${PORT}`);
+    console.log(`Servidor AuditCloud en http://${interfazEscucha}:${PORT}`);
   });
 }
 

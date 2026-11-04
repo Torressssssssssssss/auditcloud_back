@@ -10,3 +10,11 @@ Dockerfile
 coverage
 tmp
 uploads
+data
+backups
+serviceAccountKey*.json
+**/serviceAccountKey*.json
+*.serviceAccountKey.json
+.agents
+.aws
+.codex

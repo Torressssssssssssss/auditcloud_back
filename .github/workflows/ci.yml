@@ -47,3 +47,16 @@ jobs:
         
       - name: Empaquetar proyecto en contenedor Docker
         run: docker build -t auditcloud-back:${{ github.sha }} .
+      
+      - name: Desplegar en DigitalOcean
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DO_HOST }}
+          username: ${{ secrets.DO_USERNAME }}
+          key: ${{ secrets.DO_SSH_KEY }}
+          script: |
+            cd ~/auditcloud/stable/auditcloud_back
+            git pull origin main
+            docker compose up -d --build
+            docker system prune -f
