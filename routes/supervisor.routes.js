@@ -6,6 +6,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const { query } = require('../utils/db');
+const { agregarConsumos } = require('../utils/consumos');
 const { listRows, saveRows, nextId, crearNotificacion } = require('../utils/mysqlStore');
 const { authenticate, authorize } = require('../utils/auth');
 const { uploadFileToFirebase } = require('../utils/firebaseStorage');
@@ -1316,7 +1317,8 @@ router.get('/auditorias/:idAuditoria/evidencias', authenticate, authorize([1]), 
 {
   const idAuditoria = Number(req.params.idAuditoria);
   const evidencias = await listRows('evidencias');
-  res.json(evidencias.filter(e => e.id_auditoria === idAuditoria));
+  const evidenciasAuditoria = evidencias.filter(evidencia => evidencia.id_auditoria === idAuditoria);
+  res.json(await agregarConsumos(evidenciasAuditoria));
 });
 
 // GET /api/supervisor/empresas-clientes
