@@ -3,8 +3,7 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
 const router = express.Router();
-const { OAuth2Client } = require('google-auth-library');
-const googleClient = new OAuth2Client();
+const { iniciarSesionGoogle } = require('../controllers/google-auth.controller');
 const { query } = require('../utils/db');
 const { listRows, saveRows, nextId } = require('../utils/mysqlStore');
 const { signToken, authenticate } = require('../utils/auth'); // Importamos las utilidades
@@ -77,94 +76,7 @@ router.post('/login', async (req, res) =>
 });
 
 // POST /api/auth/google
-router.post('/google', async (req, res) => 
-{
-  if(process.env.GOOGLE_AUTH_ENABLED !== 'true' ||
-      !/^[a-zA-Z0-9_-]+\.apps\.googleusercontent\.com$/.test(process.env.GOOGLE_CLIENT_ID?.trim() || '')) 
-{
-    return res.status(503).json({ message: 'Inicio de sesión con Google disponible próximamente' });
-  }
-  try 
-{
-    console.log('[Autenticación Google] Petición recibida');
-
-    const { token } = req.body;
-
-    if(!token) 
-{
-      console.error('[Autenticación Google] Error: No se recibió el campo "token" en el cuerpo de la solicitud');
-      return res.status(400).json({ message: 'Token es obligatorio' });
-    }
-    
-    let googlePayload;
-    try 
-{
-      const ticket = await googleClient.verifyIdToken({
-        idToken: token,
-        audience: process.env.GOOGLE_CLIENT_ID.trim()
-      });
-      googlePayload = ticket.getPayload();
-      if(!googlePayload?.sub || !googlePayload.email || googlePayload.email_verified !== true) 
-{
-        return res.status(401).json({ message: 'Token de Google inválido' });
-      }
-    }
- catch
-{
-      return res.status(401).json({ message: 'Token de Google inválido' });
-    }
-
-    const { email, name, sub } = googlePayload;
-
-    const usuarios = await listRows('usuarios');
-    let usuario = usuarios.find(u => u.correo === email);
-    
-    // Si no existe, lo creamos
-    if(!usuario) 
-{
-      console.log('[Autenticación Google] Usuario nuevo detectado. Creando registro...');
-      const idUsuario = await nextId('usuarios', 'id_usuario');
-      
-      usuario = {
-        id_usuario: idUsuario,
-        id_empresa: null, 
-        nombre: name,
-        correo: email,
-        password_hash: null,
-        id_rol: 3, 
-        activo: true,
-        google_id: sub,
-        creado_en: new Date().toISOString()
-      };
-      
-      usuarios.push(usuario);
-      await saveRows('usuarios', usuarios);
-      console.log('[Autenticación Google] Usuario nuevo creado exitosamente. ID:', usuario.id_usuario);
-    }
- else 
-{
-      console.log('[Autenticación Google] Usuario existente encontrado. ID:', usuario.id_usuario);
-    }
-
-    if(!usuario.activo || (usuario.google_id && usuario.google_id !== sub)) 
-{
-      return res.status(403).json({ message: 'Cuenta no disponible' });
-    }
-    const jwtToken = signToken(usuario);
-
-    res.json({
-      token: jwtToken,
-      usuario: buildLoginUser(usuario),
-      require_company_info: !usuario.id_empresa 
-    });
-
-  }
- catch(error) 
-{
-    console.error('[Autenticación Google] Error crítico durante la autenticación:', error.message || error);
-    res.status(500).json({ message: 'Error en autenticación Google' });
-  }
-});
+router.post('/google', iniciarSesionGoogle);
 
 // POST /api/auth/complete-profile
 router.post('/complete-profile', authenticate, async (req, res) => 
@@ -211,12 +123,14 @@ router.post('/complete-profile', authenticate, async (req, res) =>
       await saveRows('usuarios', usuarios);
     }
 
-    // Opcional: regenerar token con id_empresa
-    // const newToken = signToken(usuarios[usuarioIdx]);
+    // Renovar la sesión con la empresa asociada.
+    const usuarioActualizado = usuarios[usuarioIdx];
 
     res.json({ 
       message: 'Perfil completado exitosamente', 
-      id_empresa: idEmpresa
+      id_empresa: idEmpresa,
+      token: signToken(usuarioActualizado),
+      usuario: buildLoginUser(usuarioActualizado)
     });
 
   }

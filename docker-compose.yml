@@ -32,7 +32,7 @@ services:
     restart: unless-stopped
     init: true
     env_file:
-      - path: ./auditcloud_back/.env
+      - path: ./.env
         required: false
     environment:
       NODE_ENV: production
@@ -86,6 +86,7 @@ services:
       - "443:443"
     volumes:
       - /etc/letsencrypt:/etc/letsencrypt:ro
+      - /var/www/certbot:/var/www/certbot:ro
     depends_on:
       backend:
         condition: service_healthy
