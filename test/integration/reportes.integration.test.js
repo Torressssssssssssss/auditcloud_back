@@ -12,6 +12,7 @@ function fixture(t, rows = [{ ...auditoria, id_evidencia: null }])
   const consultas = [];
   f.options.execute = (sql, params) =>
   {
+    if(sql.startsWith('SELECT e.nombre, e.ciudad, e.estado, e.rfc')) return structuredClone(f.tablas.empresas);
     consultas.push({ sql, params });
     return rows;
   };
@@ -43,6 +44,17 @@ describe('AC-05: descarga de reportes con Express y JWT', { concurrency: false }
     const f = fixture(t, []);
     const result = await f.solicitar('GET', '/api/reportes/generar/20', { token: token() });
     assert.equal(result.estado, 404);
+    assert.equal(f.generar.mock.callCount(), 0);
+  });
+  it('rechaza con 403 un perfil sin RFC antes de consultar el reporte o generar PDF', async t =>
+  {
+    const f = fixture(t);
+    f.tablas.empresas[0].rfc = null;
+    const result = await f.solicitar('GET', '/api/reportes/generar/20', { token: token() });
+    assert.equal(result.estado, 403);
+    assert.equal(result.cuerpo.code, 'PERFIL_EMPRESA_INCOMPLETO');
+    assert.deepEqual(result.cuerpo.campos, ['rfc']);
+    assert.equal(f.consultas.length, 0);
     assert.equal(f.generar.mock.callCount(), 0);
   });
   for(const rol of [1, 2, 3]) it(`descarga PDF para el rol ${rol} con consulta parametrizada`, async t =>

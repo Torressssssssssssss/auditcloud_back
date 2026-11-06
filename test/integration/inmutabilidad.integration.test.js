@@ -55,8 +55,10 @@ describe('AC-06: expediente finalizado inmutable', { concurrency: false }, () =>
       assert.equal(escenario.cambios.length, 0);
       assert.equal(escenario.connection.commit.mock.callCount(), 0);
       assert.equal(escenario.connection.rollback.mock.callCount(), 1);
-      assert.ok(escenario.consultas[0].includes('FOR UPDATE'));
-      assert.equal(escenario.pool.execute.mock.callCount(), 0);
+      // El perfil de la solicitud se verifica antes de entrar en la transacción.
+      const consultasEscritura = escenario.consultas.filter(sql => !sql.startsWith('SELECT e.nombre, e.ciudad, e.estado, e.rfc'));
+      assert.ok(consultasEscritura[0].includes('FOR UPDATE'));
+      assert.equal(escenario.pool.execute.mock.callCount(), destino.includes('/solicitudes-pago/') ? 1 : 0);
     });
   }
 

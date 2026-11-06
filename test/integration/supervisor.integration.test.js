@@ -54,10 +54,11 @@ describir('Integración HTTP en memoria: supervisores y Firebase', { concurrency
     const respuesta = await escenario.solicitar('POST', '/api/supervisor/reportes', {
       ...crearFormulario(), token: generarToken(1, 99)
     });
-    afirmar.equal(respuesta.estado, 403);
+    afirmar.equal(respuesta.estado, 404);
+    afirmar.deepEqual(respuesta.cuerpo, { message: 'Recurso no encontrado o sin acceso.' });
     afirmar.equal(escenario.deposito.file.mock.callCount(), 0);
     afirmar.deepEqual(escenario.tablas.reportes, []);
-    afirmar.equal(escenario.connection.rollback.mock.callCount(), 1);
+    afirmar.equal(escenario.pool.getConnection.mock.callCount(), 0);
   });
 
   probar('una excepción SQL no controlada devuelve 500 limpio y revierte la transacción', async prueba =>

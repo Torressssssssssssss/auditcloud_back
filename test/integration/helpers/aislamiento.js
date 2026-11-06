@@ -92,7 +92,9 @@ function prepararAplicacion(prueba)
     solicitudes_pago: [{ id_solicitud: 7, id_estado: 1, monto: 1000, id_cliente: 9,
       id_empresa_auditora: 11, id_empresa: 11, concepto: 'Auditoría ambiental' }],
     auditorias: [{ id_auditoria: 20, id_empresa_auditora: 11, id_cliente: 9, id_estado: 1 }],
-    reportes: [], usuarios: [{ id_usuario: 9, nombre: 'Cliente', correo: 'cliente@example.test' }]
+    reportes: [], usuarios: [{ id_usuario: 9, id_empresa: 12, nombre: 'Cliente', correo: 'cliente@example.test' }],
+    empresas: [{ id_empresa: 12, nombre: 'Empresa Test', ciudad: 'Ciudad Test', estado: 'Estado Test', rfc: 'XEXX010101000' }],
+    auditoria_participantes: [{ id_auditoria: 20, id_auditor: 8 }]
   };
   const columnas = {
     solicitudes_pago: 'id_solicitud id_estado monto id_cliente id_empresa_auditora id_empresa concepto mercadopago_payment_id mercadopago_status mercadopago_status_detail pagada_en mercadopago_actualizado_en mercadopago_transaction_amount',
@@ -105,6 +107,37 @@ function prepararAplicacion(prueba)
     execute(sentencia, parametros)
     {
       let coincidencia;
+      const sql = sentencia.replace(/\s+/g, ' ').trim();
+      if(sql.startsWith('SELECT e.nombre, e.ciudad, e.estado, e.rfc FROM '))
+      {
+        let cliente;
+        if(sql.includes('FROM usuarios u LEFT JOIN empresas e'))
+        {
+          cliente = parametros[0];
+        }
+        else if(sql.includes('FROM solicitudes_pago s'))
+        {
+          const solicitud = tablas.solicitudes_pago.find(fila => fila.id_solicitud === parametros[0] &&
+            (fila.id_empresa_auditora ?? fila.id_empresa) === parametros[1]);
+          cliente = solicitud?.id_cliente;
+        }
+        else if(sql.includes('FROM auditorias a'))
+        {
+          const [id, rol, empresa, , usuario] = parametros;
+          const auditoria = tablas.auditorias.find(fila => fila.id_auditoria === id);
+          const acceso = auditoria && ((rol === 1 && auditoria.id_empresa_auditora === empresa) ||
+            (rol === 2 && tablas.auditoria_participantes.some(fila => fila.id_auditoria === id && fila.id_auditor === usuario)) ||
+            (rol === 3 && auditoria.id_cliente === usuario));
+          if(!acceso) return [];
+          cliente = auditoria.id_cliente;
+        }
+        else afirmar.fail(`SQL de perfil no previsto: ${sentencia}`);
+        const usuario = tablas.usuarios.find(fila => fila.id_usuario === cliente);
+        if(!usuario) return [];
+        const empresa = tablas.empresas.find(fila => fila.id_empresa === usuario.id_empresa);
+        return [{ nombre: empresa?.nombre ?? null, ciudad: empresa?.ciudad ?? null,
+          estado: empresa?.estado ?? null, rfc: empresa?.rfc ?? null }];
+      }
       if(sentencia.startsWith('SELECT a.id_auditoria, a.id_estado FROM auditorias a'))
       {
         let auditoria;
