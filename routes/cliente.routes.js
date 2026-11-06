@@ -43,7 +43,7 @@ router.post('/registro', async (req, res) =>
       id_empresa: idEmpresa,
       id_tipo_empresa: 2, // Tipo CLIENTE
       nombre: nombre_empresa,
-      rfc: rfc || null,
+      rfc: typeof rfc === 'string' ? rfc.trim().toUpperCase() || null : null,
       giro: null,
       direccion: null,
       ciudad: ciudad || null,
@@ -1208,6 +1208,44 @@ router.get('/auditorias/:idAuditoria/reporte', authenticate, authorize([3]), asy
     console.error('Error al descargar reporte:', error);
     res.status(500).json({ message: error.message || 'Error al descargar reporte' });
   }
+});
+
+router.get('/perfil-empresa', authenticate, authorize([3]), async (solicitud, respuesta) =>
+{
+  const empresas = await query(`SELECT e.nombre, e.ciudad, e.estado, e.rfc
+    FROM empresas e JOIN usuarios u ON u.id_empresa = e.id_empresa
+    WHERE u.id_usuario = ?`, [solicitud.user.id_usuario]);
+  if(!empresas.length)
+  {
+    return respuesta.status(404).json({ message: 'No tienes una empresa asociada.' });
+  }
+  return respuesta.json(empresas[0]);
+});
+
+router.put('/perfil-empresa', authenticate, authorize([3]), async (solicitud, respuesta) =>
+{
+  const datos = {};
+  for(const [campo, limite] of Object.entries({ nombre: 160, ciudad: 120, estado: 120, rfc: 20 }))
+  {
+    const valor = solicitud.body[campo];
+    if(typeof valor !== 'string' || valor.trim().length > limite)
+    {
+      return respuesta.status(400).json({ message: `El campo ${campo} es inválido.` });
+    }
+    datos[campo] = valor.trim();
+  }
+  if(!datos.nombre || !datos.ciudad || !datos.estado)
+  {
+    return respuesta.status(400).json({ message: 'Completa nombre, ciudad y estado.' });
+  }
+  const resultado = await query(`UPDATE empresas e JOIN usuarios u ON u.id_empresa = e.id_empresa
+    SET e.nombre = ?, e.ciudad = ?, e.estado = ?, e.rfc = ? WHERE u.id_usuario = ?`,
+    [datos.nombre, datos.ciudad, datos.estado, datos.rfc.toUpperCase() || null, solicitud.user.id_usuario]);
+  if(!resultado.affectedRows)
+  {
+    return respuesta.status(404).json({ message: 'No tienes una empresa asociada.' });
+  }
+  return respuesta.json({ message: 'Perfil de empresa actualizado.' });
 });
 
 module.exports = require('../utils/sqlRouter').transactionalRouter(router);

@@ -1,3 +1,4 @@
+const { verificarPerfilEmpresa } = require('../middleware/verificarPerfilEmpresa');
 // Rutas de supervisor: gestion de auditores, empresa, pagos y evidencias.
 const express = require('express');
 const bcrypt = require('bcrypt');
@@ -195,7 +196,7 @@ router.put('/empresa/:id', authenticate, authorize([1]), async (req, res) =>
 
     // Guardar datos de empresa
     empresas[empresaIdx].nombre = nombre;
-    empresas[empresaIdx].rfc = rfc || null;
+    empresas[empresaIdx].rfc = typeof rfc === 'string' ? rfc.trim().toUpperCase() || null : null;
     empresas[empresaIdx].direccion = direccion || null;
     empresas[empresaIdx].contacto_telefono = telefono || null;
 
@@ -483,7 +484,7 @@ router.get('/clientes-cartera', authenticate, authorize([1]), async (req, res) =
 
 // POST /api/supervisor/solicitudes-pago/:idSolicitud/asignar-auditor
 // Crea/reusa una auditoría para una solicitud pagada y asigna auditor una sola vez.
-router.post('/solicitudes-pago/:idSolicitud/asignar-auditor', authenticate, authorize([1]), async (req, res) => 
+router.post('/solicitudes-pago/:idSolicitud/asignar-auditor', authenticate, authorize([1]), verificarPerfilEmpresa('solicitud'), async (req, res) => 
 {
   try 
 {
@@ -1273,7 +1274,7 @@ router.post('/mensajes', authenticate, authorize([1]), async (req, res) =>
 
 // Reportes y evidencias
 
-router.post('/reportes', authenticate, authorize([1]), upload.single('archivo'), async (solicitud, respuesta) =>
+router.post('/reportes', authenticate, authorize([1]), upload.single('archivo'), verificarPerfilEmpresa('auditoria'), async (solicitud, respuesta) =>
 {
   const { id_auditoria, nombre, observaciones } = solicitud.body;
   if(!solicitud.file || !nombre || !Number.isInteger(Number(id_auditoria)) || Number(id_auditoria) <= 0)

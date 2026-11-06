@@ -1,3 +1,4 @@
+const { verificarPerfilEmpresa } = require('../middleware/verificarPerfilEmpresa');
 // Rutas de auditor: manejo de auditorias, reportes, evidencia y comunicacion.
 const express = require('express');
 const router = express.Router();
@@ -792,7 +793,7 @@ router.get('/reportes', authenticate, authorize([2]), async (req, res) =>
 
 // POST /api/auditor/reportes
 // Sube PDF final y finaliza auditoria
-router.post('/reportes', authenticate, authorize([2]), upload.single('archivo'), async (req, res) => 
+router.post('/reportes', authenticate, authorize([2]), upload.single('archivo'), verificarPerfilEmpresa('auditoria'), async (req, res) => 
 {
   try 
 {

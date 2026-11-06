@@ -1,3 +1,5 @@
+const { query: consultar } = require('../utils/db');
+const { camposPendientes } = require('../middleware/verificarPerfilEmpresa');
 const { listRows, saveRows, nextId } = require('../utils/mysqlStore');
 // Called only after the provider has authenticated the payment and the amount was checked.
 // The route transaction serializes retries, so one request produces at most one audit.
@@ -7,6 +9,11 @@ async function ensurePaidAudit(solicitud)
   const audits = await listRows('auditorias');
   const existing = audits.find(a => Number(a.id_solicitud_pago) === Number(solicitud.id_solicitud));
   if(existing) return existing;
+  // El pago se conserva; la asignación creará la auditoría al completar el perfil.
+  const empresas = await consultar(`SELECT e.nombre, e.ciudad, e.estado, e.rfc
+    FROM usuarios u LEFT JOIN empresas e ON e.id_empresa = u.id_empresa
+    WHERE u.id_usuario = ?`, [Number(solicitud.id_cliente)]);
+  if(camposPendientes(empresas[0]).length) return null;
   const audit = {
     id_auditoria: await nextId('auditorias'),
     id_empresa_auditora: Number(solicitud.id_empresa_auditora || solicitud.id_empresa),

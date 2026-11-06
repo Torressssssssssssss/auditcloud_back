@@ -100,7 +100,7 @@ router.post('/complete-profile', authenticate, async (req, res) =>
       id_empresa: idEmpresa,
       id_tipo_empresa: 2, // Tipo CLIENTE
       nombre: nombre_empresa,
-      rfc: rfc || null,
+      rfc: typeof rfc === 'string' ? rfc.trim().toUpperCase() || null : null,
       giro: null,
       direccion: null,
       ciudad: ciudad,
