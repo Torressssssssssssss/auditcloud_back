@@ -69,5 +69,5 @@ jobs:
             export DB_PASSWORD=$DB_PASSWORD
             export MYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASSWORD
             export JWT_SECRET=$JWT_SECRET
-            docker compose up -d --build --wait
+            docker compose --env-file ../.env up -d --build --wait
             docker system prune -f
