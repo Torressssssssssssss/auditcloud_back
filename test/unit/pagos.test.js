@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const { isolateExternals } = require('./helpers/externalIsolation');
 const { mockPersistence, assertCommitted } = require('./helpers/mysql');
 
-function fixture(t, paymentOverrides = {}) 
+function fixture(t, paymentOverrides = {}, perfilCompleto = true) 
 {
   const { replace } = isolateExternals(t, {
     MERCADOPAGO_ACCESS_TOKEN: 'TEST-token-sin-validez', FRONTEND_URL: 'https://frontend.example.test'
@@ -29,6 +29,10 @@ function fixture(t, paymentOverrides = {})
   const persistence = mockPersistence(t, {
     execute(sql, params) 
 {
+      if(sql.includes('SELECT e.nombre, e.ciudad, e.estado, e.rfc'))
+      {
+        return [{ nombre: 'Cliente', ciudad: 'Ciudad', estado: 'Estado', rfc: perfilCompleto ? 'XEXX010101000' : null }];
+      }
       if(sql === 'SELECT nombre,correo FROM usuarios WHERE id_usuario=?') return [];
       assert.equal(sql, 'SELECT * FROM solicitudes_pago WHERE id_solicitud=?');
       return structuredClone(tables.solicitudes_pago.filter(row => row.id_solicitud === params[0]));
@@ -104,6 +108,15 @@ describe('Pagos: Mercado Pago aislado', { concurrency: false }, () =>
     assert.equal(state.body.estado, 'pagado');
     assert.equal(state.body.pagado, true);
     assert.equal(f.get.mock.callCount(), 2);
+  });
+
+  it('conserva el pago y difiere la auditoría hasta completar el RFC', async prueba =>
+  {
+    const escenario = fixture(prueba, {}, false);
+    await escenario.run('/webhook', { data: { id: 123 } });
+    assert.equal(escenario.tables.solicitudes_pago[0].id_estado, 2);
+    assert.equal(escenario.tables.auditorias.length, 0);
+    assertCommitted(escenario.connection);
   });
 
   it('guarda pago pendiente sin marcar pagado ni crear auditoría', async t => 
