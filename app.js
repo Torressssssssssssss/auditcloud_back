@@ -8,7 +8,7 @@ const fs = require('fs');
 const { createServer: crearServidorHttp } = require('node:http');
 const { configurarWebsocket } = require('./services/websocket.service');
 const casco = require('helmet');
-const limitarPeticiones = require('express-rate-limit');
+const { configurarProteccionHttp } = require('./middleware/proteccionHttp');
 
 const authRoutes = require('./routes/auth.routes');
 const supervisorRoutes = require('./routes/supervisor.routes');
@@ -26,19 +26,6 @@ const interfazEscucha = process.env.HOST || '127.0.0.1';
 
 //Configurar protección global mediante cabeceras HTTP
 app.use(casco());
-
-//Configurar limitador de peticiones
-const limitador = limitarPeticiones(
-{
-  windowMs: 15 * 60 * 1000,
-  max: 100,
-  validate:
-  {
-    ip: false
-  },
-  message: 'Demasiadas peticiones desde esta IP, por favor intente más tarde.'
-});
-app.use(limitador);
 
 function normalizeOrigin(origin) 
 {
@@ -86,6 +73,7 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.options(/(.*)/, cors(corsOptions));
 app.use(express.json());
+configurarProteccionHttp(app);
 
 // Rutas API
 app.use('/api/auth', authRoutes);
