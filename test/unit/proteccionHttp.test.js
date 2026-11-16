@@ -5,8 +5,15 @@ const express = require('express');
 const { setImmediate: esperarTurno } = require('node:timers/promises');
 const { configurarProteccionHttp } = require('../../middleware/proteccionHttp');
 
-function preparar(prueba)
+function preparar(prueba, entorno = 'production')
 {
+  const entornoAnterior = process.env.NODE_ENV;
+  process.env.NODE_ENV = entorno;
+  prueba.after(() =>
+  {
+    if(entornoAnterior === undefined) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = entornoAnterior;
+  });
   const aplicacion = express();
   const protecciones = [];
   prueba.mock.method(aplicacion, 'use', (ruta, proteccion) =>
@@ -17,6 +24,13 @@ function preparar(prueba)
   configurarProteccionHttp(aplicacion);
   return { aplicacion, protecciones };
 }
+
+probar('omite ambos limitadores en test para admitir peticiones simuladas sin IP', prueba =>
+{
+  const escenario = preparar(prueba, 'test');
+  comprobar.equal(escenario.aplicacion.get('trust proxy'), 'loopback');
+  comprobar.deepEqual(escenario.protecciones, []);
+});
 
 async function ejecutar(escenario, posicion, direccion, estado = 200)
 {

@@ -3,6 +3,11 @@ const limitarPeticiones = require('express-rate-limit');
 function configurarProteccionHttp(aplicacion)
 {
   aplicacion.set('trust proxy', 'loopback');
+  // Las peticiones simuladas de integración pueden no tener una IP de conexión.
+  if(process.env.NODE_ENV === 'test')
+  {
+    return;
+  }
   const proteccionGeneral = limitarPeticiones(
   {
     windowMs: 15 * 60 * 1000,
